@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=teacher-profile-photo-20260809">
-    <script src="{{ asset('js/app.js') }}?v=teacher-profile-photo-20260809" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=teacher-supervisor-card-20260809">
+    <script src="{{ asset('js/app.js') }}?v=teacher-supervisor-card-20260809" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">

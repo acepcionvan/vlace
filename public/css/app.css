@@ -14405,7 +14405,7 @@ body.drawer-open {
 
 .teacher-profile-photo-card {
     display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr) minmax(220px, 280px);
     gap: 22px;
     align-items: center;
     border: 1px solid #dce6f1;
@@ -14473,6 +14473,43 @@ body.drawer-open {
     color: #6b8196;
     font-size: 12px;
     font-weight: 850;
+}
+
+.teacher-supervisor-card {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    border: 1px solid #d9e7f3;
+    border-radius: 12px;
+    background: #f8fbff;
+    padding: 16px;
+    text-align: center;
+}
+
+.teacher-supervisor-card > span {
+    color: #3976ad;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .14em;
+}
+
+.teacher-supervisor-card img {
+    width: 88px;
+    height: 88px;
+    border: 1px solid #cddfec;
+    border-radius: 14px;
+    background: #fff;
+    object-fit: cover;
+}
+
+.teacher-supervisor-card strong {
+    color: #153653;
+    font-size: 18px;
+}
+
+.teacher-supervisor-card small {
+    margin: 0;
+    color: #60788e;
 }
 
 .teacher-portal-profile-overview {

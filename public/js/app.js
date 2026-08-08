@@ -1292,6 +1292,13 @@ const teacherPortalPolicyAcknowledgements = {};
 const teacherPortalProfilePictures = {
     'T1-001': '/images/teacher-profile-maria.svg',
 };
+const teacherPortalSupervisors = {
+    'T1-001': {
+        name: 'Angela Reyes',
+        role: 'Academic Supervisor',
+        photo: '/images/supervisor-angela-reyes.svg',
+    },
+};
 let activeEmployeeDocumentUploadSource = 'admin';
 
 const teacherPortalTitles = {
@@ -2246,6 +2253,7 @@ function renderTeacherPortalProfile(teacher) {
     const availability = teacherAvailability[teacher.name]?.slots || [];
     const meetingLinks = teacher.links || {};
     const profilePicture = teacherPortalProfilePictures[teacher.id] || '/images/teacher-profile-maria.svg';
+    const supervisor = teacherPortalSupervisors[teacher.id] || { name: 'Angela Reyes', role: 'Academic Supervisor', photo: '/images/supervisor-angela-reyes.svg' };
     return `
         ${renderTeacherPortalHero(teacher, 'My Profile', 'View your teacher profile, contact details, teaching assignment, meeting setup, and payroll information.')}
         <section class="teacher-portal-profile-dashboard">
@@ -2263,6 +2271,12 @@ function renderTeacherPortalProfile(teacher) {
                     </div>
                     <small>Teachers can upload a new photo, but only Admin or Manager can delete or remove a profile picture.</small>
                 </div>
+                <aside class="teacher-supervisor-card">
+                    <span>SUPERVISOR</span>
+                    <img src="${escapeHtml(supervisor.photo)}" alt="${escapeHtml(supervisor.name)} supervisor picture">
+                    <strong>${escapeHtml(supervisor.name)}</strong>
+                    <small>${escapeHtml(supervisor.role)}</small>
+                </aside>
             </article>
             <section class="teacher-profile-overview teacher-portal-profile-overview">
                 <article class="teacher-profile-info-card">
