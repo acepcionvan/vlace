@@ -5818,6 +5818,32 @@ function renderSystemUsers() {
     `;
 }
 
+function upsertDashboardUserFromAuthPayload(user) {
+    if (!user?.email) return;
+    const role = {
+        admin: 'Admin',
+        manager: 'Manager',
+        teacher: 'Teacher',
+        staff: 'Staff',
+    }[String(user.role || '').toLowerCase()] || 'Staff';
+    const next = {
+        id: role === 'Teacher' ? `T-${user.email}` : `U-${user.email}`,
+        name: user.name || user.email,
+        email: user.email,
+        role,
+        access: roleAccessLabel(role),
+        status: 'Active',
+        lastLogin: 'Saved in live database',
+        canViewStudentContacts: role === 'Admin',
+    };
+    const index = dashboardUsers.findIndex((record) => String(record.email).toLowerCase() === String(user.email).toLowerCase());
+    if (index >= 0) {
+        dashboardUsers[index] = { ...dashboardUsers[index], ...next };
+    } else {
+        dashboardUsers = [...dashboardUsers, next];
+    }
+}
+
 function renderPermissionMatrix() {
     return `
         <article class="panel permission-panel">
@@ -5967,7 +5993,7 @@ async function saveDashboardUserLogin(user, password = '') {
         },
         body: JSON.stringify({
             name: user.name,
-            email: user.email,
+            email: String(user.email || '').trim().toLowerCase(),
             role: normalizeDashboardRoleForLogin(user.role),
             password,
         }),
@@ -6088,7 +6114,7 @@ function openUserForm(userId = null) {
     overlay.querySelector('#saveUserForm')?.addEventListener('click', async () => {
         const role = roleInput.value;
         const name = overlay.querySelector('#userFormName')?.value.trim();
-        const email = overlay.querySelector('#userFormEmail')?.value.trim();
+        const email = overlay.querySelector('#userFormEmail')?.value.trim().toLowerCase();
         const password = overlay.querySelector('#userFormPassword')?.value || '';
         const saveButton = overlay.querySelector('#saveUserForm');
         if (!name || !email) return;
@@ -6111,14 +6137,14 @@ function openUserForm(userId = null) {
                 saveButton.disabled = true;
                 saveButton.textContent = 'Saving...';
             }
-            await saveDashboardUserLogin(next, password);
+            const payload = await saveDashboardUserLogin(next, password);
             if (editingUserId) {
                 dashboardUsers = dashboardUsers.map((record) => record.id === editingUserId ? { ...record, ...next } : record);
                 showUserManagementNotice(password ? 'User details and real login password saved.' : 'User details saved to the real login database.');
             } else {
-                dashboardUsers = [...dashboardUsers, { ...next, id: `ST-${String(dashboardUsers.length + 1).padStart(3, '0')}`, status: 'Active', lastLogin: 'Not yet logged in' }];
                 showUserManagementNotice('Real login created. This email and password can now sign in.');
             }
+            upsertDashboardUserFromAuthPayload(payload.user);
             close();
             renderUserManagement();
         } catch (error) {
@@ -6185,8 +6211,7 @@ function openUserLoginSettings(userId) {
                     <div class="drawer-section-title"><span>2</span><div><h3>Session Control</h3><p>Review and end access on other devices.</p></div></div>
                     <div class="session-row"><div><strong>Last login</strong><small>${escapeHtml(user.lastLogin)}</small></div><button class="secondary-button" type="button" data-user-toast="All sessions sign-out prepared in prototype.">Sign Out All Sessions</button></div>
                 </section>
-                <div class="drawer-audit-note"><i data-lucide="users"></i><div><strong>Security audit trail</strong><p>Password changes, login suspensions, reactivations, and forced sign-outs will record the Admin’s name, date, time, and affected user.</p></div></div>
-                <div class="prototype-security-note"><strong>Secure authentication backend required</strong><p>This interface demonstrates the complete Admin workflow. Real password hashing, session invalidation, login blocking, and server-side Admin authorization must be connected before production use.</p></div>
+                <div class="drawer-audit-note"><i data-lucide="users"></i><div><strong>Real login database</strong><p>Password changes are saved to the live Laravel database. The user can sign in with the exact email address and password after you save.</p></div></div>
             </div>
             <div class="student-edit-footer"><button class="secondary-button" type="button" data-login-close>Close</button></div>
         </aside>
@@ -6232,7 +6257,8 @@ function openUserLoginSettings(userId) {
         try {
             resetButton.disabled = true;
             resetButton.textContent = 'Saving...';
-            await saveDashboardUserPassword(user.email, newPassword.value, confirmPassword.value);
+            const payload = await saveDashboardUserPassword(user.email, newPassword.value, confirmPassword.value);
+            upsertDashboardUserFromAuthPayload(payload.user);
             showUserManagementNotice(`A real new password was saved for ${user.name}. They can sign in with it now.`);
             close();
         } catch (error) {

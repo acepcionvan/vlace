@@ -24,7 +24,7 @@ class AdminUserController extends Controller
             'password' => ['nullable', 'string', 'min:8'],
         ]);
 
-        $email = Str::lower($validated['email']);
+        $email = Str::lower(trim($validated['email']));
         $user = User::where('email', $email)->first();
 
         if (! $user && blank($validated['password'] ?? null)) {
@@ -61,7 +61,7 @@ class AdminUserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user = User::where('email', Str::lower($validated['email']))->firstOrFail();
+        $user = User::where('email', Str::lower(trim($validated['email'])))->firstOrFail();
         $user->forceFill([
             'password' => Hash::make($validated['password']),
         ])->save();
