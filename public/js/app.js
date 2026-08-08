@@ -4414,6 +4414,7 @@ let communicationNotice = '';
 let selectedConversationId = 1;
 let selectedEmailId = 1;
 let communicationEmailFolder = 'Inbox';
+let studentReminderDeliveryMode = 'manual';
 
 let communicationConnections = {
     facebook: true,
@@ -4567,7 +4568,10 @@ function renderSlackPanel() {
 }
 
 function renderStudentRemindersPanel() {
-    return `<section class="reminders-page"><div class="reminder-hero"><div><p class="eyebrow">COMMUNICATION · STUDENT CARE</p><h2>Student Reminders</h2><p>Create editable templates for manual messages or scheduled automatic delivery.</p></div><div class="delivery-mode-card"><span>Delivery Mode</span><div class="delivery-mode-switch"><button class="active" type="button">Manual</button><button type="button">Automatic</button></div><strong>Manual Send Mode</strong></div></div><div class="reminder-workspace"><article class="reminder-card"><header><h3>Recipients</h3><p>Selected Students · China</p></header>${['Liam Chen','Eddie Zhang','Aya Mori','Sophia Kim','Mira Wang'].map((name, index) => `<label class="reminder-recipient"><input type="checkbox" ${index < 2 ? 'checked' : ''}><span><strong>${name}</strong><small>${index < 2 ? 'China' : index === 2 ? 'Japan' : index === 3 ? 'South Korea' : 'UAE'}</small></span></label>`).join('')}</article><article class="reminder-card"><header><h3>Message Template</h3><p>Class in 1 hour</p></header><textarea>Hello {student_name}! This is a friendly reminder that your English class starts in 1 hour. Please prepare your lesson materials and open {meeting_platform} a few minutes early. See you soon!</textarea><div class="modal-actions"><button class="secondary-button" type="button" data-communication-toast="Personalized reminders copied.">Copy Messages</button><button class="primary-button" type="button" data-communication-toast="WhatsApp opened with reminders ready to send.">Send via WhatsApp</button></div></article></div></section>`;
+    const isAutomatic = studentReminderDeliveryMode === 'automatic';
+    const recipients = ['Liam Chen','Eddie Zhang','Aya Mori','Sophia Kim','Mira Wang'];
+    const countries = ['China', 'China', 'Japan', 'South Korea', 'UAE'];
+    return `<section class="reminders-page"><div class="reminder-hero"><div><p class="eyebrow">COMMUNICATION · STUDENT CARE</p><h2>Student Reminders</h2><p>Create editable templates for manual messages or scheduled automatic delivery.</p></div><div class="delivery-mode-card"><span>Delivery Mode</span><div class="delivery-mode-switch"><button class="${!isAutomatic ? 'active' : ''}" type="button" data-reminder-mode="manual">Manual</button><button class="${isAutomatic ? 'active' : ''}" type="button" data-reminder-mode="automatic">Automatic</button></div><strong>${isAutomatic ? 'Automatic Schedule Mode' : 'Manual Send Mode'}</strong></div></div><div class="reminder-workspace"><article class="reminder-card"><header><h3>Recipients</h3><p>${isAutomatic ? 'Auto-selected by upcoming classes' : 'Selected Students · China'}</p></header>${recipients.map((name, index) => `<label class="reminder-recipient"><input type="checkbox" ${isAutomatic || index < 2 ? 'checked' : ''}><span><strong>${name}</strong><small>${countries[index]}</small></span></label>`).join('')}</article><article class="reminder-card"><header><h3>Message Template</h3><p>${isAutomatic ? 'Scheduled 1 hour before class' : 'Class in 1 hour'}</p></header>${isAutomatic ? `<div class="assignment-preview"><span>Automatic schedule</span><strong>Send 1 hour before every scheduled class</strong><small>Channels: WhatsApp, Messenger, and Email when available</small></div>` : ''}<textarea>Hello {student_name}! This is a friendly reminder that your English class starts in 1 hour. Please prepare your lesson materials and open {meeting_platform} a few minutes early. See you soon!</textarea><div class="modal-actions"><button class="secondary-button" type="button" data-communication-toast="${isAutomatic ? 'Automatic reminder schedule previewed.' : 'Personalized reminders copied.'}">${isAutomatic ? 'Preview Schedule' : 'Copy Messages'}</button><button class="primary-button" type="button" data-communication-toast="${isAutomatic ? 'Automatic reminders saved in prototype mode.' : 'WhatsApp opened with reminders ready to send.'}">${isAutomatic ? 'Save Automatic Reminder' : 'Send via WhatsApp'}</button></div></article></div></section>`;
 }
 
 function bindCommunicationEvents(root) {
@@ -4588,6 +4592,11 @@ function bindCommunicationEvents(root) {
         communicationNotice = '';
         renderCommunicationWorkspace();
     });
+    root.querySelectorAll('[data-reminder-mode]').forEach((button) => button.addEventListener('click', () => {
+        studentReminderDeliveryMode = button.dataset.reminderMode === 'automatic' ? 'automatic' : 'manual';
+        renderCommunicationWorkspace();
+        showSparkToast(studentReminderDeliveryMode === 'automatic' ? 'Automatic reminder mode enabled.' : 'Manual reminder mode enabled.');
+    }));
     root.querySelectorAll('[data-communication-toast]').forEach((button) => button.addEventListener('click', () => showSparkToast(button.dataset.communicationToast)));
     root.querySelectorAll('[data-conversation-select]').forEach((button) => button.addEventListener('click', () => {
         selectedConversationId = Number(button.dataset.conversationSelect);
