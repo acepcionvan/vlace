@@ -13,7 +13,6 @@ const sectionTitles = {
     inbox: 'Communication',
     email: 'Email Inbox',
     chatbot: 'Chatbot',
-    slack: 'Slack',
     reminders: 'Student Reminders',
     marketing: 'Marketing',
     campaigns: 'Campaigns',
@@ -1271,7 +1270,7 @@ function getSectionBreadcrumb(section) {
     if (section === 'teachers') return [{ label: 'Teachers', action: 'teachers' }, { label: 'Directory' }];
     if (section === 'staff') return [{ label: 'Staff', action: 'staff' }, { label: 'Directory' }];
     if (section === 'inbox') return [{ label: 'Dashboard', action: 'overview' }, { label: 'Communication' }];
-    if (['email', 'chatbot', 'slack', 'reminders'].includes(section)) return [{ label: 'Communication' }, { label: title }];
+    if (['email', 'chatbot', 'reminders'].includes(section)) return [{ label: 'Communication' }, { label: title }];
     if (['campaigns', 'adsets', 'ads', 'audiences', 'leads', 'creative', 'budget', 'performance', 'integrations'].includes(section)) return [{ label: 'Marketing' }, { label: title }];
     return [{ label: 'Dashboard', action: 'overview' }, { label: title }];
 }
@@ -4451,6 +4450,10 @@ function communicationStatus(value) {
 function renderCommunicationWorkspace() {
     const root = document.getElementById('communicationWorkspace');
     if (!root) return;
+    const communicationTabs = ['Unified Inbox', 'Email Inbox', 'Chatbot', 'Student Reminders'];
+    if (!communicationTabs.includes(activeCommunicationTab)) {
+        activeCommunicationTab = 'Unified Inbox';
+    }
     const unread = communicationConversations.reduce((sum, item) => sum + item.unread, 0);
     root.innerHTML = `
         <section class="communication-hero">
@@ -4463,13 +4466,12 @@ function renderCommunicationWorkspace() {
         </section>
         ${communicationNotice ? `<div class="communication-notice"><span>✓</span>${escapeHtml(communicationNotice)}<button type="button" data-communication-notice-close aria-label="Dismiss">×</button></div>` : ''}
         <nav class="communication-tabs" aria-label="Communication sections">
-            ${['Unified Inbox', 'Email Inbox', 'Chatbot', 'Slack', 'Student Reminders'].map((tab) => `<button type="button" class="${activeCommunicationTab === tab ? 'active' : ''}" data-communication-tab="${tab}">${tab}${tab === 'Unified Inbox' ? `<b>${unread}</b>` : tab === 'Email Inbox' ? '<b>5</b>' : tab === 'Chatbot' ? '<b>2</b>' : tab === 'Slack' ? '<b>4</b>' : ''}</button>`).join('')}
+            ${communicationTabs.map((tab) => `<button type="button" class="${activeCommunicationTab === tab ? 'active' : ''}" data-communication-tab="${tab}">${tab}${tab === 'Unified Inbox' ? `<b>${unread}</b>` : tab === 'Email Inbox' ? '<b>5</b>' : tab === 'Chatbot' ? '<b>2</b>' : ''}</button>`).join('')}
         </nav>
         <div class="communication-tab-content">
             ${activeCommunicationTab === 'Unified Inbox' ? renderUnifiedInboxPanel() : ''}
             ${activeCommunicationTab === 'Email Inbox' ? renderEmailInboxPanel() : ''}
             ${activeCommunicationTab === 'Chatbot' ? renderChatbotPanel() : ''}
-            ${activeCommunicationTab === 'Slack' ? renderSlackPanel() : ''}
             ${activeCommunicationTab === 'Student Reminders' ? renderStudentRemindersPanel() : ''}
         </div>
     `;
@@ -4561,10 +4563,6 @@ function renderEmailInboxPanel() {
 
 function renderChatbotPanel() {
     return `<section class="chatbot-workspace"><div class="chatbot-hero"><div><p>VLACE AUTOMATED SUPPORT</p><h2>Chatbot Control Center</h2><small>Edit chatbot behavior, monitor conversations, and review when staff assistance is needed.</small></div><span class="status status-active">Chatbot online</span></div><div class="chatbot-overview-grid"><article class="chatbot-card"><header><div><h3>Recent Chatbot Activity</h3><p>Live operational events and customer activity</p></div></header>${[['New inquiry','Rose Zhang asked about a trial lesson.','2 min'],['Staff handoff','Conversation transferred after an unanswered scheduling question.','9 min'],['Reply matched','Package information sent to David Cohen.','18 min'],['Conversation resolved','The visitor confirmed that the answer was helpful.','34 min']].map((item) => `<div class="chatbot-activity"><span>•</span><div><strong>${item[0]}</strong><p>${item[1]}</p></div><time>${item[2]}</time></div>`).join('')}</article><article class="chatbot-card"><header><div><h3>Attention Required</h3><p>Items that may affect chatbot accuracy</p></div></header><div class="chatbot-alert"><b>2</b><div><strong>Conversations need staff</strong><p>Visitors asked questions outside the current knowledge base.</p></div></div><div class="chatbot-alert"><b>3</b><div><strong>Replies need review</strong><p>Improve low-confidence answers before publishing.</p></div></div><button class="primary-button" type="button" data-communication-toast="Chatbot knowledge review opened in prototype mode.">Review Knowledge</button></article></div></section>`;
-}
-
-function renderSlackPanel() {
-    return `<section class="slack-workspace-page"><div class="slack-hero"><div class="slack-title"><span>#</span><div><p>COMMUNICATION PLATFORM</p><h2>Slack Workspace</h2><small>Internal collaboration and automated VLACE updates in one protected view.</small></div></div><div class="slack-hero-actions"><span class="slack-connection connected">● Bot connected</span><button type="button" data-communication-toast="Slack display mode changed in prototype mode.">☾ Dark</button></div></div><nav class="slack-tabs"><button class="active">Channels</button><button>Direct Messages</button><button>Notifications <b>4</b></button><button>Settings</button></nav><div class="slack-channel-workspace"><article class="slack-list-card"><header><div><h3>Channels</h3><p>Team spaces</p></div></header>${['#vlace-notifications','#operations','#student-support','#teacher-updates'].map((item, index) => `<button class="slack-list-row ${index === 0 ? 'active' : ''}" type="button"><span class="slack-channel-symbol">#</span><div><strong>${item}</strong><p>${index === 0 ? 'System reminders and alerts' : 'Team communication'}</p></div><span class="slack-row-meta"><small>${index + 1}m</small></span></button>`).join('')}</article><article class="slack-channel-detail"><header><div><h3>#vlace-notifications</h3><p>Automated dashboard events, payment alerts, and schedule updates.</p></div><button type="button">Settings</button></header><div class="slack-channel-summary"><span><b>Integration</b> Connected</span><span><b>Members</b> 12</span><span><b>Messages</b> 4 today</span></div><div class="slack-message-stream"><article><span class="slack-message-avatar">VA</span><div><header><strong>Van Acepcion</strong><time>9:18 AM</time></header><p>Morning operations check complete.</p></div></article><article class="own-message"><span class="slack-message-avatar">AI</span><div><header><strong>VLACE Bot</strong><time>9:24 AM</time></header><p>3 student reminders are scheduled for today.</p></div></article></div><footer class="slack-message-composer"><input placeholder="Message #vlace-notifications"><button type="button">Send</button></footer></article></div></section>`;
 }
 
 function renderStudentRemindersPanel() {
