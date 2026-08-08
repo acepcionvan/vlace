@@ -4029,10 +4029,10 @@
         <section class="modal payslip-modal" role="dialog" aria-modal="true" aria-labelledby="teacherPayslipTitle">
             <header class="payslip-modal-head">
                 <div class="payslip-brand">
-                    <span>V</span>
+                    <span data-payslip-logo-holder>V</span>
                     <div>
-                        <strong>VLACE</strong>
-                        <small>Teacher Payroll Payslip</small>
+                        <strong data-payslip-brand-name>VLACE</strong>
+                        <small data-payslip-document-label>Teacher Payroll Payslip</small>
                     </div>
                 </div>
                 <button type="button" id="teacherPayslipClose" aria-label="Close payslip">×</button>

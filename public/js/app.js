@@ -5181,6 +5181,50 @@ const adminSecurityState = {
     },
 };
 
+const companyBrandingStorageKey = 'vlace.companyBranding';
+
+function loadCompanyBrandingState() {
+    const defaults = {
+        companyName: 'VLACE',
+        logoUrl: '',
+        logoName: '',
+        updatedAt: '',
+    };
+
+    try {
+        return { ...defaults, ...(JSON.parse(window.localStorage.getItem(companyBrandingStorageKey) || '{}')) };
+    } catch {
+        return defaults;
+    }
+}
+
+const companyBrandingState = loadCompanyBrandingState();
+
+function saveCompanyBrandingState() {
+    try {
+        window.localStorage.setItem(companyBrandingStorageKey, JSON.stringify(companyBrandingState));
+    } catch {
+        adminSecurityState.notice = 'Logo preview updated, but browser storage is unavailable in this session.';
+    }
+}
+
+function getCompanyBrandName() {
+    return companyBrandingState.companyName.trim() || 'VLACE';
+}
+
+function renderCompanyLogoMark(className = '') {
+    const safeClass = className ? ` class="${escapeHtml(className)}"` : '';
+    if (companyBrandingState.logoUrl) {
+        return `<img${safeClass} src="${escapeHtml(companyBrandingState.logoUrl)}" alt="${escapeHtml(getCompanyBrandName())} logo">`;
+    }
+    return `<span${safeClass}>${escapeHtml(getCompanyBrandName().charAt(0).toUpperCase() || 'V')}</span>`;
+}
+
+function getCompanyBrandingMetaText() {
+    if (!companyBrandingState.logoName) return 'Default VLACE mark is currently used.';
+    return `${companyBrandingState.logoName}${companyBrandingState.updatedAt ? ` · Updated ${companyBrandingState.updatedAt}` : ''}`;
+}
+
 function adminSettingsStatus(value) {
     const statusClass = String(value).toLowerCase().replaceAll(' ', '-');
     return `<span class="status status-${statusClass}">${escapeHtml(value)}</span>`;
@@ -5222,6 +5266,37 @@ function renderAdminSecuritySettings() {
         </section>
         <section class="admin-settings-layout">
             <div class="admin-settings-main">
+                <article class="panel company-branding-card">
+                    <div class="admin-settings-head">
+                        <div class="admin-lock-icon">◆</div>
+                        <div><span>ADMIN ONLY · COMPANY BRANDING</span><h2>Logo & Payroll Branding</h2><p>Change the company logo used in payroll PDFs, teacher payslips, staff payslips, and receipt previews.</p></div>
+                        <small>Admin Only</small>
+                    </div>
+                    <div class="company-branding-body">
+                        <div class="company-logo-preview">
+                            <div class="company-logo-frame">${renderCompanyLogoMark('company-logo-image')}</div>
+                            <div>
+                                <strong>${escapeHtml(getCompanyBrandName())}</strong>
+                                <span>${escapeHtml(getCompanyBrandingMetaText())}</span>
+                            </div>
+                        </div>
+                        <div class="company-branding-form">
+                            <label>Company name
+                                <input type="text" value="${escapeHtml(companyBrandingState.companyName)}" data-company-brand-name placeholder="VLACE">
+                            </label>
+                            <label class="company-logo-upload">Company logo
+                                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-company-logo-input>
+                                <small>Recommended: PNG, JPG, WebP, or SVG with a transparent background.</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="admin-settings-foot">
+                        <div><strong>Used on payroll documents</strong><span>This logo appears on teacher and staff payslips and payroll receipt previews in this prototype.</span></div>
+                        <div class="company-branding-actions">
+                            <button class="secondary-button" type="button" data-company-logo-reset ${companyBrandingState.logoUrl ? '' : 'disabled'}>Use Default Logo</button>
+                        </div>
+                    </div>
+                </article>
                 <article class="panel ai-controls-card">
                     <div class="ai-controls-heading">
                         <div class="admin-lock-icon">✦</div>
@@ -5352,6 +5427,47 @@ function renderAuthenticatorSetup() {
 function bindAdminSecuritySettings(root) {
     root.querySelector('[data-settings-notice-close]')?.addEventListener('click', () => {
         adminSecurityState.notice = '';
+        renderAdminSecuritySettings();
+    });
+
+    root.querySelector('[data-company-brand-name]')?.addEventListener('input', (event) => {
+        companyBrandingState.companyName = event.target.value || 'VLACE';
+        saveCompanyBrandingState();
+        root.querySelector('.company-logo-preview strong').textContent = getCompanyBrandName();
+    });
+
+    root.querySelector('[data-company-logo-input]')?.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            window.alert('Please choose an image file for the company logo.');
+            event.target.value = '';
+            return;
+        }
+        if (file.size > 1024 * 1024) {
+            window.alert('Please choose a logo image under 1 MB for this prototype.');
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            companyBrandingState.logoUrl = String(reader.result || '');
+            companyBrandingState.logoName = file.name;
+            companyBrandingState.updatedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            adminSecurityState.notice = 'Company logo updated for payroll payslips and receipt previews.';
+            saveCompanyBrandingState();
+            renderAdminSecuritySettings();
+        });
+        reader.readAsDataURL(file);
+    });
+
+    root.querySelector('[data-company-logo-reset]')?.addEventListener('click', () => {
+        companyBrandingState.logoUrl = '';
+        companyBrandingState.logoName = '';
+        companyBrandingState.updatedAt = '';
+        adminSecurityState.notice = 'Default VLACE logo restored for payroll documents.';
+        saveCompanyBrandingState();
         renderAdminSecuritySettings();
     });
 
@@ -6809,6 +6925,30 @@ function getStaffPayrollReceiptKey(staff, cutoff) {
     return `${staff.id}|staff|${cutoff}`;
 }
 
+function getPayrollReceiptBrandSvg(documentLabel) {
+    const brandName = escapeHtml(getCompanyBrandName());
+    const label = escapeHtml(documentLabel);
+    const logo = companyBrandingState.logoUrl
+        ? `<image x="115" y="100" width="78" height="78" href="${escapeHtml(companyBrandingState.logoUrl)}" preserveAspectRatio="xMidYMid meet"/>`
+        : `<rect x="115" y="100" width="78" height="78" rx="18" fill="#ffffff"/><text x="154" y="151" text-anchor="middle" fill="#0f3158" font-family="Arial, sans-serif" font-size="38" font-weight="900">${escapeHtml(brandName.charAt(0).toUpperCase() || 'V')}</text>`;
+
+    return `
+        ${logo}
+        <text x="215" y="145" fill="#ffffff" font-family="Arial, sans-serif" font-size="42" font-weight="800">${brandName}</text>
+        <text x="215" y="182" fill="#c8d8e8" font-family="Arial, sans-serif" font-size="20" font-weight="700">${label}</text>
+    `;
+}
+
+function applyPayslipBranding(documentLabel) {
+    const logoHolder = document.querySelector('[data-payslip-logo-holder]');
+    const brandName = document.querySelector('[data-payslip-brand-name]');
+    const label = document.querySelector('[data-payslip-document-label]');
+
+    if (logoHolder) logoHolder.outerHTML = renderCompanyLogoMark('payslip-logo-mark').replace('<span', '<span data-payslip-logo-holder').replace('<img', '<img data-payslip-logo-holder');
+    if (brandName) brandName.textContent = getCompanyBrandName();
+    if (label) label.textContent = documentLabel;
+}
+
 function getDefaultPayrollReceipt(teacher, period, summary) {
     const status = period.startsWith('January') ? 'For Review' : 'Paid';
     if (status !== 'Paid') return null;
@@ -6818,8 +6958,7 @@ function getDefaultPayrollReceipt(teacher, period, summary) {
             <rect width="900" height="1180" fill="#f7fbff"/>
             <rect x="70" y="70" width="760" height="1040" rx="28" fill="#ffffff" stroke="#d9e5f2" stroke-width="3"/>
             <rect x="70" y="70" width="760" height="150" rx="28" fill="#0f3158"/>
-            <text x="115" y="145" fill="#ffffff" font-family="Arial, sans-serif" font-size="42" font-weight="800">VLACE</text>
-            <text x="115" y="182" fill="#c8d8e8" font-family="Arial, sans-serif" font-size="20" font-weight="700">Teacher Payroll Payment Receipt</text>
+            ${getPayrollReceiptBrandSvg('Teacher Payroll Payment Receipt')}
             <text x="115" y="290" fill="#6d86a3" font-family="Arial, sans-serif" font-size="18" font-weight="800">TEACHER</text>
             <text x="115" y="330" fill="#102b4d" font-family="Arial, sans-serif" font-size="32" font-weight="800">${escapeHtml(teacher.name)}</text>
             <text x="115" y="365" fill="#607891" font-family="Arial, sans-serif" font-size="20">${escapeHtml(teacher.id)} · ${escapeHtml(teacher.country)} · ${escapeHtml(teacher.type)}</text>
@@ -6832,7 +6971,7 @@ function getDefaultPayrollReceipt(teacher, period, summary) {
             <rect x="115" y="810" width="670" height="130" rx="18" fill="#f0faf5" stroke="#abd1bd" stroke-width="2"/>
             <text x="145" y="860" fill="#16764b" font-family="Arial, sans-serif" font-size="18" font-weight="800">NET PAYROLL PAID</text>
             <text x="145" y="910" fill="#16764b" font-family="Arial, sans-serif" font-size="42" font-weight="900">${formatPeso(summary.net)}</text>
-            <text x="115" y="1015" fill="#607891" font-family="Arial, sans-serif" font-size="18">Generated by VLACE Admin Dashboard</text>
+            <text x="115" y="1015" fill="#607891" font-family="Arial, sans-serif" font-size="18">Generated by ${escapeHtml(getCompanyBrandName())} Admin Dashboard</text>
             <text x="115" y="1050" fill="#607891" font-family="Arial, sans-serif" font-size="18">Receipt No. VLACE-${escapeHtml(teacher.id.replace(/[^A-Z0-9]/gi, ''))}-${escapeHtml(period.replace(/[^A-Z0-9]/gi, '').slice(0, 10))}</text>
         </svg>
     `;
@@ -6943,6 +7082,7 @@ function openTeacherPayslip(teacher, period) {
     const lineItems = document.getElementById('teacherPayslipLineItems');
     if (!modal || !lineItems) return;
 
+    applyPayslipBranding('Teacher Payroll Payslip');
     setText('#teacherPayslipTitle', `${teacher.name} Payslip`);
     setText('#teacherPayslipPeriod', period);
     setText('#teacherPayslipStatus', status);
@@ -8567,6 +8707,7 @@ function openStaffPayslip(index) {
     const lineItems = document.getElementById('teacherPayslipLineItems');
     if (!staff || !row || !modal || !lineItems) return;
 
+    applyPayslipBranding('Staff Payroll Payslip');
     setText('#teacherPayslipTitle', `${staff.name} Payslip`);
     setText('#teacherPayslipPeriod', row.cutoff);
     setText('#teacherPayslipStatus', row.status);
@@ -8603,8 +8744,7 @@ function getStaffReceipt(row, staff) {
             <rect width="900" height="1180" fill="#f7fbff"/>
             <rect x="70" y="70" width="760" height="1040" rx="28" fill="#ffffff" stroke="#d9e5f2" stroke-width="3"/>
             <rect x="70" y="70" width="760" height="150" rx="28" fill="#0f3158"/>
-            <text x="115" y="145" fill="#ffffff" font-family="Arial, sans-serif" font-size="42" font-weight="800">VLACE</text>
-            <text x="115" y="182" fill="#c8d8e8" font-family="Arial, sans-serif" font-size="20" font-weight="700">Staff Payroll Payment Receipt</text>
+            ${getPayrollReceiptBrandSvg('Staff Payroll Payment Receipt')}
             <text x="115" y="290" fill="#6d86a3" font-family="Arial, sans-serif" font-size="18" font-weight="800">STAFF MEMBER</text>
             <text x="115" y="330" fill="#102b4d" font-family="Arial, sans-serif" font-size="32" font-weight="800">${escapeHtml(staff.name)}</text>
             <text x="115" y="365" fill="#607891" font-family="Arial, sans-serif" font-size="20">${escapeHtml(staff.id)} · ${escapeHtml(staff.department)} · ${escapeHtml(staff.role)}</text>
@@ -8615,7 +8755,7 @@ function getStaffReceipt(row, staff) {
             <rect x="115" y="720" width="670" height="130" rx="18" fill="#f0faf5" stroke="#abd1bd" stroke-width="2"/>
             <text x="145" y="770" fill="#16764b" font-family="Arial, sans-serif" font-size="18" font-weight="800">NET PAYROLL PAID</text>
             <text x="145" y="820" fill="#16764b" font-family="Arial, sans-serif" font-size="42" font-weight="900">${escapeHtml(row.net)}</text>
-            <text x="115" y="1015" fill="#607891" font-family="Arial, sans-serif" font-size="18">Generated by VLACE Admin Dashboard</text>
+            <text x="115" y="1015" fill="#607891" font-family="Arial, sans-serif" font-size="18">Generated by ${escapeHtml(getCompanyBrandName())} Admin Dashboard</text>
             <text x="115" y="1050" fill="#607891" font-family="Arial, sans-serif" font-size="18">Receipt No. VLACE-${escapeHtml(staff.id.replace(/[^A-Z0-9]/gi, ''))}-${escapeHtml(row.cutoff.replace(/[^A-Z0-9]/gi, '').slice(0, 10))}</text>
         </svg>
     `;

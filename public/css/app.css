@@ -6496,7 +6496,8 @@ nav svg {
     gap: 13px;
 }
 
-.payslip-brand > span {
+.payslip-brand > span,
+.payslip-brand > img {
     display: grid;
     place-items: center;
     width: 42px;
@@ -6506,6 +6507,11 @@ nav svg {
     color: #0f3158;
     font-size: 20px;
     font-weight: 950;
+}
+
+.payslip-brand > img {
+    object-fit: contain;
+    padding: 4px;
 }
 
 .payslip-brand strong,
@@ -13775,7 +13781,8 @@ body.drawer-open {
 
 .admin-password-card,
 .security-setting-card,
-.ai-controls-card {
+.ai-controls-card,
+.company-branding-card {
     overflow: hidden;
 }
 
@@ -13836,6 +13843,107 @@ body.drawer-open {
     color: #18734c;
     font-size: 9px;
     font-weight: 850;
+}
+
+.company-branding-body {
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    gap: 18px;
+    padding: 20px 21px;
+}
+
+.company-logo-preview {
+    display: flex;
+    gap: 13px;
+    align-items: center;
+    border: 1px solid #dce7f2;
+    border-radius: 12px;
+    background: #f8fbff;
+    padding: 14px;
+}
+
+.company-logo-frame {
+    display: grid;
+    place-items: center;
+    width: 82px;
+    height: 82px;
+    flex: 0 0 82px;
+    border: 1px solid #cfe0f1;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.company-logo-frame span,
+.company-logo-frame img {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: #0f3158;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 950;
+}
+
+.company-logo-frame img {
+    object-fit: contain;
+    background: transparent;
+}
+
+.company-logo-preview strong,
+.company-logo-preview span {
+    display: block;
+}
+
+.company-logo-preview strong {
+    color: #173856;
+    font-size: 18px;
+    font-weight: 950;
+}
+
+.company-logo-preview span {
+    margin-top: 5px;
+    color: #74889b;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.company-branding-form {
+    display: grid;
+    gap: 12px;
+}
+
+.company-branding-form label {
+    display: grid;
+    gap: 7px;
+    color: #526b84;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.company-branding-form input[type="text"],
+.company-branding-form input[type="file"] {
+    width: 100%;
+    border: 1px solid #cfe0f1;
+    border-radius: 10px;
+    background: #fff;
+    padding: 11px 12px;
+    color: #173856;
+    font-size: 14px;
+    font-weight: 850;
+}
+
+.company-logo-upload small {
+    color: #7b8d9e;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.company-branding-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .ai-control-list {
