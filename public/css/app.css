@@ -16801,14 +16801,14 @@ body.drawer-open {
     }
 }
 
-/* Dashboard-wide readability scale */
+/* Dashboard-wide standard typography scale */
 .app-shell {
-    font-size: 16px !important;
+    font-size: 14px !important;
 }
 
 .app-shell h1,
 .app-shell .topbar h1 {
-    font-size: 30px !important;
+    font-size: 24px !important;
 }
 
 .app-shell h2,
@@ -16818,7 +16818,7 @@ body.drawer-open {
 .app-shell .finance-hero h2,
 .app-shell .policy-hero-copy h2,
 .app-shell .settings-hero h2 {
-    font-size: 30px !important;
+    font-size: 24px !important;
     line-height: 1.2;
 }
 
@@ -16829,14 +16829,14 @@ body.drawer-open {
 .app-shell .finance-panel-head h3,
 .app-shell .policy-list h3,
 .app-shell .security-setting-head h2 {
-    font-size: 22px !important;
+    font-size: 18px !important;
     line-height: 1.25;
 }
 
 .app-shell h4,
 .app-shell .profile-card-head h4,
 .app-shell .student-activity-card h4 {
-    font-size: 18px !important;
+    font-size: 16px !important;
 }
 
 .app-shell p,
@@ -16851,7 +16851,7 @@ body.drawer-open {
 .app-shell .executive-card-body,
 .app-shell .student-profile-grid dd,
 .app-shell .jarvis-message p {
-    font-size: 16px !important;
+    font-size: 14px !important;
     line-height: 1.45;
 }
 
@@ -16873,14 +16873,14 @@ body.drawer-open {
 .app-shell .policy-list-copy em,
 .app-shell .policy-metadata span,
 .app-shell .security-overview-row article small {
-    font-size: 14px !important;
+    font-size: 12px !important;
     line-height: 1.4;
 }
 
 .app-shell .sidebar nav button,
 .app-shell .sidebar nav button span,
 .app-shell .sidebar-logout span {
-    font-size: 17px !important;
+    font-size: 14px !important;
 }
 
 .app-shell button,
@@ -16892,36 +16892,36 @@ body.drawer-open {
 .app-shell .student-profile-tabs button,
 .app-shell .finance-page-tabs button,
 .app-shell .user-management-tabs button {
-    min-height: 46px;
-    font-size: 16px !important;
+    min-height: 38px;
+    font-size: 13px !important;
 }
 
 .app-shell input,
 .app-shell select,
 .app-shell textarea {
-    min-height: 48px;
+    min-height: 40px;
 }
 
 .app-shell table th {
-    font-size: 14px !important;
+    font-size: 12px !important;
     letter-spacing: .03em;
 }
 
 .app-shell table td {
-    font-size: 15px !important;
+    font-size: 13px !important;
 }
 
 .app-shell .metric-card strong,
 .app-shell .student-summary-grid strong,
 .app-shell .finance-kpi strong,
 .app-shell .executive-kpi strong {
-    font-size: 34px !important;
+    font-size: 28px !important;
 }
 
 .app-shell .policy-summary strong,
 .app-shell .report-cards strong,
 .app-shell .finance-mini-stats strong {
-    font-size: 26px !important;
+    font-size: 22px !important;
 }
 
 .app-shell .box-help-button,
