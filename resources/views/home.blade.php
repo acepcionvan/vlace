@@ -8,6 +8,9 @@
     <title>VLACE Admin Dashboard</title>
 
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
+    </script>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=user-management-readable-20260807">
     <script src="{{ asset('js/app.js') }}?v=user-management-readable-20260807" defer></script>
 </head>
@@ -67,7 +70,7 @@
                     Email address
                     <div class="login-input-wrap">
                         <i data-lucide="mail"></i>
-                        <input type="email" value="admin@vlace.com" autocomplete="username" placeholder="name@company.com">
+                        <input type="email" autocomplete="username" placeholder="name@company.com">
                     </div>
                 </label>
 

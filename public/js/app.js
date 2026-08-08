@@ -3090,6 +3090,17 @@ function showDashboard() {
     refreshIcons();
 }
 
+function showAuthenticatedDashboard(user) {
+    if (!user) return;
+
+    if (user?.role === 'teacher') {
+        showTeacherDashboard(user.email || user.name || '');
+        return;
+    }
+
+    showDashboard();
+}
+
 function showTeacherDashboard(email = '') {
     const normalizedEmail = String(email).toLowerCase();
     const matchedTeacher = teachers.find((teacher) => normalizedEmail.includes(teacher.name.split(' ')[0].toLowerCase())) || teachers[0];
@@ -3110,6 +3121,38 @@ function showLogin() {
     document.querySelector('.premium-login-video')?.play().catch(() => undefined);
     window.vlaceLoginMotion?.start();
     refreshIcons();
+}
+
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
+
+async function submitLogin(email, password, remember) {
+    const response = await fetch('/login', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+        },
+        body: JSON.stringify({ email, password, remember }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Login failed');
+    }
+
+    return response.json();
+}
+
+async function submitLogout() {
+    await fetch('/logout', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+        },
+    });
 }
 
 function activateSection(section) {
@@ -10218,6 +10261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderStaffTable();
     openStaffProfile(staffMembers[0]?.id);
     setupLessonLibrary();
+    showAuthenticatedDashboard(window.VLACE_AUTH_USER);
 
     document.getElementById('dashboardCountry')?.addEventListener('change', updateOverview);
     document.getElementById('phpPerUsd')?.addEventListener('input', updateOverview);
@@ -10692,20 +10736,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const togglePassword = document.getElementById('togglePassword');
     const recoveryModal = document.getElementById('recoveryModal');
 
-    loginForm?.addEventListener('submit', (event) => {
+    loginForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
         const email = loginForm.querySelector('input[type="email"]');
+        const remember = loginForm.querySelector('.login-options input[type="checkbox"]')?.checked ?? false;
+        const submitButton = loginForm.querySelector('.login-submit');
         if (!email.value.trim() || !passwordInput.value.trim()) {
+            if (loginError) loginError.textContent = 'Enter your approved email and password to continue.';
             loginError?.removeAttribute('hidden');
             return;
         }
         loginError?.setAttribute('hidden', '');
-        const emailValue = email.value.trim().toLowerCase();
-        if (emailValue.includes('teacher') || teachers.some((teacher) => emailValue.includes(teacher.name.split(' ')[0].toLowerCase()))) {
-            showTeacherDashboard(emailValue);
-            return;
+
+        try {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Signing In...';
+            const data = await submitLogin(email.value.trim(), passwordInput.value, remember);
+            passwordInput.value = '';
+            showAuthenticatedDashboard(data.user);
+        } catch (error) {
+            if (loginError) loginError.textContent = 'This email or password is not registered as an approved VLACE account.';
+            loginError?.removeAttribute('hidden');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Sign In <span>→</span>';
         }
-        showDashboard();
     });
 
     togglePassword?.addEventListener('click', () => {
@@ -10732,9 +10787,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('logoutConfirmButton')?.addEventListener('click', showLogin);
+    document.getElementById('logoutConfirmButton')?.addEventListener('click', async () => {
+        await submitLogout().catch(() => undefined);
+        showLogin();
+    });
     document.getElementById('logoutStayButton')?.addEventListener('click', () => activateSection('overview'));
-    document.getElementById('teacherPortalLogoutButton')?.addEventListener('click', showLogin);
+    document.getElementById('teacherPortalLogoutButton')?.addEventListener('click', async () => {
+        await submitLogout().catch(() => undefined);
+        showLogin();
+    });
     document.getElementById('teacherMobileMenu')?.addEventListener('click', () => {
         document.getElementById('teacherSidebar')?.classList.toggle('open');
     });
