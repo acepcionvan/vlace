@@ -5953,6 +5953,59 @@ function roleAccessLabel(role) {
     }[role] || 'Limited records';
 }
 
+function normalizeDashboardRoleForLogin(role) {
+    return String(role || 'staff').trim().toLowerCase();
+}
+
+async function saveDashboardUserLogin(user, password = '') {
+    const response = await fetch('/admin/users', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+        },
+        body: JSON.stringify({
+            name: user.name,
+            email: user.email,
+            role: normalizeDashboardRoleForLogin(user.role),
+            password,
+        }),
+    });
+
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const firstError = Object.values(payload.errors || {})?.[0]?.[0];
+        throw new Error(firstError || payload.message || 'Unable to save this real login.');
+    }
+
+    return response.json();
+}
+
+async function saveDashboardUserPassword(email, password, confirmation) {
+    const response = await fetch('/admin/users/password', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+        },
+        body: JSON.stringify({
+            email,
+            password,
+            password_confirmation: confirmation,
+        }),
+    });
+
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const firstError = Object.values(payload.errors || {})?.[0]?.[0];
+        throw new Error(firstError || payload.message || 'Unable to update the password.');
+    }
+
+    return response.json();
+}
+
 function openUserForm(userId = null) {
     const user = dashboardUsers.find((record) => record.id === userId) || null;
     editingUserId = user?.id || null;
@@ -5969,6 +6022,7 @@ function openUserForm(userId = null) {
             </div>
             <label>Full name<input id="userFormName" value="${escapeHtml(user?.name || '')}" placeholder="Enter user’s name"></label>
             <label>Login email<input id="userFormEmail" type="email" value="${escapeHtml(user?.email || '')}" placeholder="name@vlace.com"></label>
+            <label>${user ? 'New password' : 'Temporary password'}<input id="userFormPassword" type="password" placeholder="${user ? 'Leave blank to keep current password' : 'Create a password for first login'}" autocomplete="new-password"><small>${user ? 'Only enter a password if you want to change it.' : 'The user will sign in with this password after you save.'}</small></label>
             <label>Role<select id="userFormRole">${['Admin', 'Manager', 'Teacher', 'Staff'].map((role) => `<option ${role === (user?.role || 'Staff') ? 'selected' : ''}>${role}</option>`).join('')}</select></label>
             <div id="userRoleExtraFields"></div>
             <div class="role-summary"><strong>Default access</strong><span id="userRoleSummary"></span></div>
@@ -6031,11 +6085,17 @@ function openUserForm(userId = null) {
     renderRoleExtras();
     roleInput?.addEventListener('change', renderRoleExtras);
     overlay.querySelectorAll('[data-user-close]').forEach((button) => button.addEventListener('click', close));
-    overlay.querySelector('#saveUserForm')?.addEventListener('click', () => {
+    overlay.querySelector('#saveUserForm')?.addEventListener('click', async () => {
         const role = roleInput.value;
         const name = overlay.querySelector('#userFormName')?.value.trim();
         const email = overlay.querySelector('#userFormEmail')?.value.trim();
+        const password = overlay.querySelector('#userFormPassword')?.value || '';
+        const saveButton = overlay.querySelector('#saveUserForm');
         if (!name || !email) return;
+        if (!editingUserId && password.length < 8) {
+            showUserManagementNotice('Create a temporary password with at least 8 characters.');
+            return;
+        }
         const next = {
             name,
             email,
@@ -6046,15 +6106,28 @@ function openUserForm(userId = null) {
             teacherTitle: role === 'Teacher' ? overlay.querySelector('#userTeacherTitle')?.value : undefined,
             specialTask: ['Staff', 'Teacher'].includes(role) ? overlay.querySelector('#userSpecialTask')?.value.trim() : undefined,
         };
-        if (editingUserId) {
-            dashboardUsers = dashboardUsers.map((record) => record.id === editingUserId ? { ...record, ...next } : record);
-            showUserManagementNotice('User details and permissions saved.');
-        } else {
-            dashboardUsers = [...dashboardUsers, { ...next, id: `ST-${String(dashboardUsers.length + 1).padStart(3, '0')}`, status: 'Active', lastLogin: 'Not yet logged in' }];
-            showUserManagementNotice('User login created and invitation prepared.');
+        try {
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.textContent = 'Saving...';
+            }
+            await saveDashboardUserLogin(next, password);
+            if (editingUserId) {
+                dashboardUsers = dashboardUsers.map((record) => record.id === editingUserId ? { ...record, ...next } : record);
+                showUserManagementNotice(password ? 'User details and real login password saved.' : 'User details saved to the real login database.');
+            } else {
+                dashboardUsers = [...dashboardUsers, { ...next, id: `ST-${String(dashboardUsers.length + 1).padStart(3, '0')}`, status: 'Active', lastLogin: 'Not yet logged in' }];
+                showUserManagementNotice('Real login created. This email and password can now sign in.');
+            }
+            close();
+            renderUserManagement();
+        } catch (error) {
+            showUserManagementNotice(error.message || 'Unable to save this login.');
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = user ? 'Save Changes' : 'Create Login';
+            }
         }
-        close();
-        renderUserManagement();
     });
     overlay.addEventListener('mousedown', (event) => {
         if (event.target === overlay) close();
@@ -6155,9 +6228,19 @@ function openUserLoginSettings(userId) {
             renderUserManagement();
         });
     });
-    resetButton?.addEventListener('click', () => {
-        showUserManagementNotice(`A new password was prepared for ${user.name}. All existing sessions will be signed out when the secure authentication backend is connected.`);
-        close();
+    resetButton?.addEventListener('click', async () => {
+        try {
+            resetButton.disabled = true;
+            resetButton.textContent = 'Saving...';
+            await saveDashboardUserPassword(user.email, newPassword.value, confirmPassword.value);
+            showUserManagementNotice(`A real new password was saved for ${user.name}. They can sign in with it now.`);
+            close();
+        } catch (error) {
+            hint.className = 'password-error';
+            hint.textContent = error.message || 'Unable to save the new password.';
+            resetButton.disabled = false;
+            resetButton.textContent = 'Save New Password & Sign Out Sessions';
+        }
     });
     overlay.addEventListener('mousedown', (event) => {
         if (event.target === overlay) close();

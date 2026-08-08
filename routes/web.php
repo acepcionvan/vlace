@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\TeacherAccountController;
@@ -11,4 +12,6 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('guest')->na
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/setup/{key}', SetupController::class)->name('setup');
 Route::get('/admin/create-teacher-login', TeacherAccountController::class)->middleware('auth')->name('teacher-login.setup');
+Route::post('/admin/users', [AdminUserController::class, 'store'])->middleware('auth')->name('admin.users.store');
+Route::post('/admin/users/password', [AdminUserController::class, 'password'])->middleware('auth')->name('admin.users.password');
 Route::post('/generate', [HomeController::class, 'generate'])->name('generate');
