@@ -152,6 +152,116 @@ const students = [
         schedule: { duration: '25 minutes', frequency: '2x weekly', platform: 'Voov' },
     },
     {
+        id: 'S1-006',
+        name: 'Chloe Huang',
+        country: 'China',
+        type: 'Adult',
+        level: 'B1',
+        teacher: 'Maria Santos',
+        lessons: '10 / 20',
+        payment: 'Paid',
+        status: 'Active',
+        preferredDay: 'Monday & Thursday',
+        preferredTime: '8:00 PM',
+        wechat: 'chloe_huang_esl',
+        whatsapp: '+86 137 4420 1188',
+        email: 'chloe.huang@example.com',
+        guardian: 'Not applicable',
+        phone: '+86 137 4420 1188',
+        referralCode: 'CHLOE-HUANG-2026',
+        referralLink: 'https://vlace.example/ref/chloe-huang-2026',
+        referrals: { total: 2, converted: 1, credits: 2, discount: '5%' },
+        schedule: { duration: '50 minutes', frequency: '2x weekly', platform: 'Google Meet' },
+    },
+    {
+        id: 'S1-007',
+        name: 'Leo Wang',
+        country: 'China',
+        type: 'Kid',
+        level: 'A1',
+        teacher: 'Maria Santos',
+        lessons: '6 / 15',
+        payment: 'Due Aug 12',
+        status: 'Active',
+        preferredDay: 'Tuesday & Friday',
+        preferredTime: '6:30 PM',
+        wechat: 'leo_parent_cn',
+        whatsapp: '+86 136 2210 9090',
+        email: 'leo.guardian@example.com',
+        guardian: 'Anna Wang (Mother)',
+        phone: '+86 136 2210 9090',
+        referralCode: 'LEO-WANG-2026',
+        referralLink: 'https://vlace.example/ref/leo-wang-2026',
+        referrals: { total: 1, converted: 0, credits: 0, discount: '0%' },
+        schedule: { duration: '25 minutes', frequency: '2x weekly', platform: 'Voov' },
+    },
+    {
+        id: 'S1-008',
+        name: 'Aria Lin',
+        country: 'China',
+        type: 'Teen',
+        level: 'A2',
+        teacher: 'Maria Santos',
+        lessons: '12 / 20',
+        payment: 'Paid',
+        status: 'Active',
+        preferredDay: 'Wednesday & Saturday',
+        preferredTime: '7:30 PM',
+        wechat: 'aria_lin_parent',
+        whatsapp: 'Not provided',
+        email: 'aria.lin@example.com',
+        guardian: 'Jun Lin (Father)',
+        phone: '+86 135 6677 1212',
+        referralCode: 'ARIA-LIN-2026',
+        referralLink: 'https://vlace.example/ref/aria-lin-2026',
+        referrals: { total: 4, converted: 2, credits: 4, discount: '8%' },
+        schedule: { duration: '50 minutes', frequency: '2x weekly', platform: 'Voov' },
+    },
+    {
+        id: 'S1-009',
+        name: 'Kevin Zhao',
+        country: 'China',
+        type: 'Adult',
+        level: 'B2',
+        teacher: 'Maria Santos',
+        lessons: '14 / 20',
+        payment: 'Paid',
+        status: 'Active',
+        preferredDay: 'Friday',
+        preferredTime: '9:00 PM',
+        wechat: 'kevin_zhao88',
+        whatsapp: '+86 139 7700 4040',
+        email: 'kevin.zhao@example.com',
+        guardian: 'Not applicable',
+        phone: '+86 139 7700 4040',
+        referralCode: 'KEVIN-ZHAO-2026',
+        referralLink: 'https://vlace.example/ref/kevin-zhao-2026',
+        referrals: { total: 0, converted: 0, credits: 0, discount: '0%' },
+        schedule: { duration: '50 minutes', frequency: '1x weekly', platform: 'Google Meet' },
+    },
+    {
+        id: 'S1-010',
+        name: 'Bella Xu',
+        country: 'China',
+        type: 'Kid',
+        level: 'Starter',
+        teacher: 'Maria Santos',
+        lessons: '3 / 15',
+        payment: 'Trial converted',
+        status: 'Active',
+        preferredDay: 'Sunday',
+        preferredTime: '8:30 PM',
+        wechat: 'bella_xu_mom',
+        whatsapp: '+86 138 4455 6677',
+        email: 'bella.guardian@example.com',
+        guardian: 'Lina Xu (Mother)',
+        phone: '+86 138 4455 6677',
+        referralCode: 'BELLA-XU-2026',
+        referralLink: 'https://vlace.example/ref/bella-xu-2026',
+        referrals: { total: 1, converted: 1, credits: 2, discount: '5%' },
+        schedule: { duration: '25 minutes', frequency: '1x weekly', platform: 'Voov' },
+    },
+    {
         id: 'S1-004',
         name: 'Noah Brown',
         country: 'Israel',
@@ -1194,16 +1304,7 @@ function getTeacherPortalStudents() {
 
 function getTeacherPortalLessons() {
     const teacher = getTeacherPortalTeacher();
-    const assignedStudents = getTeacherPortalStudents();
-    return assignedStudents.slice(0, 6).map((student, index) => ({
-        student,
-        date: ['Today', 'Today', 'Tomorrow', 'Aug 10, 2026', 'Aug 11, 2026', 'Aug 12, 2026'][index] || 'This week',
-        time: student.preferredTime,
-        duration: student.schedule.duration,
-        platform: student.schedule.platform,
-        topic: ['Free Conversation', 'Alphabet and Classroom Words', 'Past Tense Review', 'Speaking Confidence', 'Grammar Practice', 'Reading Fluency'][index % 6],
-        status: index < 2 ? 'Scheduled' : index === 2 ? 'Pending Prep' : 'Upcoming',
-    }));
+    return getTeacherPortalStudentLessonRows(teacher).filter((row) => ['Pending', 'Reassigned to me'].includes(row.status)).slice(0, 8);
 }
 
 function activateTeacherPortal(section) {
@@ -1244,13 +1345,15 @@ function renderTeacherPortalHero(teacher, title, subtitle) {
 function renderTeacherPortalOverview(teacher) {
     const myStudents = getTeacherPortalStudents();
     const lessons = getTeacherPortalLessons();
+    const payStats = getTeacherPortalPayStats(teacher);
+    const pendingVideos = getTeacherPortalStudentLessonRows(teacher).filter((row) => ['Completed', 'Student is late'].includes(row.status) && !getTeacherPortalVideoUrl(row)).length;
     return `
         ${renderTeacherPortalHero(teacher, `Welcome, ${teacher.name}`, 'View today’s classes, assigned students, classroom links, feedback, and policy acknowledgements.')}
         <section class="teacher-portal-kpis">
             <article><span>Classes Today</span><strong>${teacher.today}</strong><small>Scheduled through VLACE</small></article>
             <article><span>My Students</span><strong>${myStudents.length}</strong><small>${teacher.country} team</small></article>
-            <article><span>Attendance</span><strong>98%</strong><small>This month</small></article>
-            <article><span>Pending Feedback</span><strong>2</strong><small>Submit after completed lessons</small></article>
+            <article><span>Pending Video URLs</span><strong>${pendingVideos}</strong><small>No video URL means no salary</small></article>
+            <article><span>Estimated Salary</span><strong>${formatPeso(payStats.monthlySalary)}</strong><small>${payStats.completedThisMonth} payable lessons this month</small></article>
         </section>
         <section class="teacher-portal-grid">
             <article class="teacher-portal-panel"><div class="teacher-panel-head"><div><h3>Today’s Classes</h3><p>Upcoming lessons and classroom access</p></div><button type="button" data-teacher-portal-target="teacher-schedule">View Schedule</button></div>${renderTeacherPortalLessonList(lessons.slice(0, 3))}</article>
@@ -1387,7 +1490,7 @@ function getTeacherPortalPayStats(teacher) {
         completedToday,
         completedThisMonth: completedMonthlyRecords.length,
         monthlySalary,
-        monthLabel: 'January 2026',
+        monthLabel: 'August 2026',
     };
 }
 
@@ -1484,11 +1587,11 @@ function renderTeacherPortalStudents(teacher) {
 function getTeacherPortalStudentLessonRows(teacher) {
     const [meetingPlatform, meetingValue] = getTeacherMeetingSource(teacher);
     const hasClassroom = meetingPlatform !== 'Missing' && Boolean(meetingValue);
-    const topics = ['Past Tense Review', 'Free Conversation', 'Alphabet and Classroom Words', 'Grammar Practice', 'Speaking Confidence', 'Reading Fluency', 'Monthly Review'];
-    const dates = ['Jul 30, 2026', 'Aug 1, 2026', 'Aug 3, 2026', 'Aug 5, 2026', 'Aug 7, 2026', 'Aug 6, 2026', 'Aug 10, 2026'];
-    const statuses = ['Completed', 'Cancelled', 'Student is absent', 'Student is late', 'Reassigned to me', 'Reassigned from me', 'Completed'];
+    const topics = ['Past Tense Review', 'Free Conversation', 'Alphabet and Classroom Words', 'Grammar Practice', 'Speaking Confidence', 'Reading Fluency', 'Monthly Review', 'Listening Check'];
+    const dates = ['Jul 30, 2026', 'Aug 1, 2026', 'Aug 3, 2026', 'Aug 5, 2026', 'Aug 7, 2026', 'Aug 6, 2026', 'Aug 10, 2026', 'Aug 12, 2026'];
+    const statuses = ['Completed', 'Cancelled', 'Student is absent', 'Student is late', 'Reassigned to me', 'Reassigned from me', 'Pending', 'Completed'];
     return getTeacherPortalStudents().flatMap((student, studentIndex) => {
-        const lessonCount = 4;
+        const lessonCount = studentIndex < 3 ? 5 : 4;
         return Array.from({ length: lessonCount }, (_, lessonIndex) => {
             const index = (studentIndex * lessonCount) + lessonIndex;
             const id = `${student.id}-${lessonIndex}`;
@@ -1496,20 +1599,26 @@ function getTeacherPortalStudentLessonRows(teacher) {
             const isDue = isTeacherPortalLessonDue(date);
             const baseStatus = statuses[index % statuses.length];
             const status = isDue ? (teacherPortalLessonStatuses[id] || baseStatus) : 'Pending';
+            const topic = topics[index % topics.length];
+            const videoUrl = ['Completed', 'Student is late'].includes(status) && (index % 3 !== 1)
+                ? `https://vlace.example/recordings/${student.id.toLowerCase()}-${lessonIndex + 1}`
+                : '';
             return {
                 id,
                 student,
                 date,
                 day: student.preferredDay.split('&')[0].trim() || 'Monday',
-                time: student.preferredTime.includes('9:00') ? '21:00' : student.preferredTime.includes('8:') ? '20:00' : student.preferredTime.includes('7:') ? '19:00' : '18:30',
-                topic: topics[index % topics.length],
+                time: student.preferredTime.includes('9:00') ? '21:00' : student.preferredTime.includes('8:30') ? '20:30' : student.preferredTime.includes('8:') ? '20:00' : student.preferredTime.includes('7:30') ? '19:30' : student.preferredTime.includes('7:') ? '19:00' : '18:30',
+                topic,
                 duration: student.schedule.duration,
                 platform: student.schedule.platform,
                 status,
                 baseStatus,
                 isDue,
                 hasClassroom,
-                videoUrl: status === 'Completed' ? `https://vlace.example/recordings/${student.id.toLowerCase()}-${lessonIndex + 1}` : '',
+                videoUrl,
+                module: ['Module 1 - Foundations', 'Module 2 - Guided Speaking', 'Module 3 - Grammar Control', 'Module 4 - Fluency Review'][index % 4],
+                objective: ['Accuracy', 'Conversation', 'Pronunciation', 'Confidence'][index % 4],
             };
         });
     }).sort((a, b) => {
@@ -1562,11 +1671,50 @@ function getTeacherPortalPayWarning(row) {
 }
 
 function renderTeacherPortalLessons(teacher) {
-    return `${renderTeacherPortalHero(teacher, 'Lessons', 'Approved lesson materials and assigned topics for upcoming classes.')}<section class="teacher-lesson-library">${['Alphabet and Classroom Words', 'Free Conversation', 'Past Tense Review', 'Speaking Confidence', 'Grammar Practice', 'Reading Fluency'].map((lesson, index) => `<article><span>${index < 2 ? 'Today' : 'Library'}</span><h3>${lesson}</h3><p>${['Kids', 'Adults', 'Grammar', 'Conversation', 'Review', 'Reading'][index]} · Protected viewer only</p><button type="button" data-teacher-protected-lesson="${escapeHtml(lesson)}">Open Material</button></article>`).join('')}</section>`;
+    const rows = getTeacherPortalStudentLessonRows(teacher);
+    const lessonCards = ['Alphabet and Classroom Words', 'Free Conversation', 'Past Tense Review', 'Speaking Confidence', 'Grammar Practice', 'Reading Fluency', 'Monthly Review', 'Listening Check'];
+    return `
+        ${renderTeacherPortalHero(teacher, 'Lessons', 'Approved PDF lessons are view-only for teacher accounts.')}
+        <section class="teacher-portal-kpis">
+            <article><span>Assigned Materials</span><strong>${lessonCards.length}</strong><small>Protected PDF viewer</small></article>
+            <article><span>Used This Month</span><strong>${new Set(rows.filter((row) => row.isDue).map((row) => row.topic)).size}</strong><small>Based on assigned student lessons</small></article>
+            <article><span>Upcoming Topics</span><strong>${rows.filter((row) => row.status === 'Pending').length}</strong><small>Pending until class time</small></article>
+        </section>
+        <section class="teacher-lesson-library">
+            ${lessonCards.map((lesson, index) => {
+                const matchingRows = rows.filter((row) => row.topic === lesson);
+                return `<article>
+                    <span>${index < 3 ? 'Assigned' : 'Library'}</span>
+                    <h3>${escapeHtml(lesson)}</h3>
+                    <p>${escapeHtml(['Kids', 'Adults', 'Grammar', 'Conversation', 'Review', 'Reading', 'Assessment', 'Listening'][index])} · ${matchingRows.length} student lesson${matchingRows.length === 1 ? '' : 's'}</p>
+                    <small>${escapeHtml(['Module 1 - Foundations', 'Module 2 - Guided Speaking', 'Module 3 - Grammar Control', 'Module 4 - Fluency Review'][index % 4])}</small>
+                    <button type="button" data-teacher-protected-lesson="${escapeHtml(lesson)}">Open Material</button>
+                </article>`;
+            }).join('')}
+        </section>`;
 }
 
 function renderTeacherPortalFeedback(teacher) {
-    return `${renderTeacherPortalHero(teacher, 'Feedback', 'Submit class notes after lessons and review admin feedback.')}<article class="teacher-portal-panel"><div class="teacher-panel-head"><div><h3>Feedback Queue</h3><p>Student-facing feedback is reviewed by Admin or Manager before publishing.</p></div><button type="button" data-teacher-action="feedback">+ Submit Feedback</button></div>${renderTeacherPortalLessonList(getTeacherPortalLessons().slice(0, 4), true)}</article>`;
+    const rows = getTeacherPortalStudentLessonRows(teacher).filter((row) => row.isDue && !['Cancelled', 'Student is absent', 'Reassigned from me'].includes(row.status)).slice(0, 8);
+    return `
+        ${renderTeacherPortalHero(teacher, 'Feedback', 'Submit class notes after lessons and review admin feedback.')}
+        <section class="teacher-portal-grid">
+            <article class="teacher-portal-panel">
+                <div class="teacher-panel-head">
+                    <div><h3>Feedback Queue</h3><p>Student-facing feedback is reviewed by Admin or Manager before publishing.</p></div>
+                    <button type="button" data-teacher-action="feedback">+ Submit Feedback</button>
+                </div>
+                ${renderTeacherPortalLessonList(rows.slice(0, 5), true)}
+            </article>
+            <article class="teacher-portal-panel">
+                <div class="teacher-panel-head"><div><h3>Admin Review Notes</h3><p>Mock comments to test the teacher feedback page.</p></div></div>
+                <div class="teacher-lesson-list">
+                    <article><div><strong>Liam Chen</strong><small>Past Tense Review</small></div><span>Add one pronunciation note before publishing.</span>${marketingStatus('Needs review')}</article>
+                    <article><div><strong>Eddie Zhang</strong><small>Grammar Practice</small></div><span>Approved for parent visibility.</span>${marketingStatus('Approved')}</article>
+                    <article><div><strong>Chloe Huang</strong><small>Speaking Confidence</small></div><span>Waiting for uploaded video URL.</span>${marketingStatus('Pending')}</article>
+                </div>
+            </article>
+        </section>`;
 }
 
 function renderTeacherPortalPolicies(teacher) {
@@ -1574,11 +1722,33 @@ function renderTeacherPortalPolicies(teacher) {
 }
 
 function renderTeacherPortalProfile(teacher) {
-    return `${renderTeacherPortalHero(teacher, 'My Profile', 'Teacher account information visible to you. Contact Admin for changes.')}<section class="teacher-profile-grid"><article><span>Name</span><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></article><article><span>Country Team</span><strong>${escapeHtml(teacher.country)}</strong><small>${escapeHtml(teacher.type)}</small></article><article><span>Rate</span><strong>${escapeHtml(teacher.rate)}</strong><small>Payroll managed by Admin</small></article><article><span>Meeting Setup</span><strong>${hasCompleteMeetingLinks(teacher) ? 'Complete' : 'Needs review'}</strong><small>Links are hidden from students until assigned</small></article></section><article class="teacher-portal-panel"><div class="teacher-panel-head"><div><h3>Account Requests</h3><p>Ask Admin to update profile, schedule preferences, or login access.</p></div><button type="button" data-teacher-action="profile">Request Profile Update</button></div></article>`;
+    const [meetingPlatform, meetingValue] = getTeacherMeetingSource(teacher);
+    const payStats = getTeacherPortalPayStats(teacher);
+    return `
+        ${renderTeacherPortalHero(teacher, 'My Profile', 'Teacher account information visible to you. Contact Admin for changes.')}
+        <section class="teacher-profile-grid">
+            <article><span>Name</span><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></article>
+            <article><span>Country Team</span><strong>${escapeHtml(teacher.country)}</strong><small>${escapeHtml(teacher.type)}</small></article>
+            <article><span>Rate</span><strong>${escapeHtml(teacher.rate)}</strong><small>Payroll managed by Admin</small></article>
+            <article><span>Projected Salary</span><strong>${formatPeso(payStats.monthlySalary)}</strong><small>${payStats.monthLabel}</small></article>
+            <article><span>Meeting Setup</span><strong>${hasCompleteMeetingLinks(teacher) ? 'Complete' : 'Needs review'}</strong><small>${escapeHtml(meetingPlatform)} · ${escapeHtml(meetingValue || 'Missing')}</small></article>
+            <article><span>Assigned Students</span><strong>${getTeacherPortalStudents().length}</strong><small>Visible in this teacher account</small></article>
+        </section>
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head">
+                <div><h3>Account Requests</h3><p>Ask Admin to update profile, schedule preferences, meeting links, or login access.</p></div>
+                <button type="button" data-teacher-action="profile">Request Profile Update</button>
+            </div>
+            <div class="teacher-lesson-list">
+                <article><div><strong>Preferred schedule</strong><small>Evenings, Philippine Time</small></div><span>Monday, Wednesday, Friday, Sunday</span>${marketingStatus('Active')}</article>
+                <article><div><strong>Payroll rule</strong><small>Salary requires payable lesson status plus uploaded video URL.</small></div><span>${formatPeso(payStats.rate)}/hr</span>${marketingStatus('Active')}</article>
+                <article><div><strong>Login email</strong><small>Teacher account created by Admin</small></div><span>vanacepcion@gmail.com</span>${marketingStatus('Verified')}</article>
+            </div>
+        </article>`;
 }
 
 function renderTeacherPortalLessonList(lessons, feedback = false) {
-    return `<div class="teacher-lesson-list">${lessons.map((lesson) => `<article><div><strong>${escapeHtml(lesson.date)} · ${escapeHtml(lesson.time)}</strong><small>${escapeHtml(lesson.student.name)} · ${escapeHtml(lesson.duration)} · ${escapeHtml(lesson.platform)}</small></div><span>${escapeHtml(lesson.topic)}</span>${marketingStatus(lesson.status)}<button type="button" data-teacher-action="${feedback ? 'feedback' : 'classroom'}">${feedback ? 'Add Feedback' : 'Enter Classroom'}</button></article>`).join('')}</div>`;
+    return `<div class="teacher-lesson-list">${lessons.map((lesson) => `<article><div><strong>${escapeHtml(lesson.date)} · ${escapeHtml(inputTimeToRange(lesson.time))}</strong><small>${escapeHtml(lesson.student.name)} · ${escapeHtml(lesson.duration)} · ${escapeHtml(lesson.platform)}</small></div><span>${escapeHtml(lesson.topic)}</span>${marketingStatus(lesson.status)}<button type="button" data-teacher-action="${feedback ? 'feedback' : 'classroom'}">${feedback ? 'Add Feedback' : 'Enter Classroom'}</button></article>`).join('')}</div>`;
 }
 
 function bindTeacherPortalEvents(root) {
