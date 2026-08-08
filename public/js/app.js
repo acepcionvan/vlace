@@ -1512,7 +1512,16 @@ function getTeacherPortalStudentLessonRows(teacher) {
                 videoUrl: status === 'Completed' ? `https://vlace.example/recordings/${student.id.toLowerCase()}-${lessonIndex + 1}` : '',
             };
         });
+    }).sort((a, b) => {
+        const dateDifference = parseTeacherPortalLessonDate(a.date) - parseTeacherPortalLessonDate(b.date);
+        if (dateDifference !== 0) return dateDifference;
+        return a.student.name.localeCompare(b.student.name) || a.topic.localeCompare(b.topic);
     });
+}
+
+function parseTeacherPortalLessonDate(dateLabel) {
+    const parsedDate = Date.parse(dateLabel);
+    return Number.isNaN(parsedDate) ? 0 : parsedDate;
 }
 
 function renderTeacherPortalStatusControl(row) {
