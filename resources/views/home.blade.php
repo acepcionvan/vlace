@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=communication-reminders-20260809">
-    <script src="{{ asset('js/app.js') }}?v=communication-reminders-20260809" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=chatbot-replies-functional-20260809">
+    <script src="{{ asset('js/app.js') }}?v=chatbot-replies-functional-20260809" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -138,7 +138,13 @@
 
                 <div class="sidebar-divider" aria-hidden="true"></div>
 
-                <button data-section-target="inbox"><i data-lucide="inbox"></i><span>Communication</span></button>
+                <button class="nav-parent" data-section-target="inbox" data-group-toggle="communication" aria-expanded="false"><i data-lucide="inbox"></i><span>Communication</span><span class="nav-chevron">›</span></button>
+                <div class="nav-submenu" id="communicationMenu" hidden>
+                    <button data-section-target="inbox"><span>Unified Inbox</span><b class="nav-count">5</b></button>
+                    <button data-section-target="email"><span>Email Inbox</span><b class="nav-count">5</b></button>
+                    <button data-section-target="chatbot"><span>Chatbot</span><b class="nav-count chatbot-count">2</b></button>
+                    <button data-section-target="reminders"><span>Student Reminders</span><b class="nav-count">4</b></button>
+                </div>
 
                 <button data-section-target="marketing"><i data-lucide="megaphone"></i><span>Marketing</span></button>
 
@@ -149,7 +155,7 @@
                 <button data-section-target="settings"><i data-lucide="settings"></i><span>Settings</span><b class="admin-only-nav-label">Admin</b></button>
             </nav>
 
-            <button class="sidebar-logout" id="logoutButton" data-section-target="logout">
+            <button class="sidebar-logout" id="logoutButton" type="button">
                 <i data-lucide="log-out"></i>
                 <span>Log Out</span>
             </button>
@@ -2385,48 +2391,6 @@
                 <div id="adminSecuritySettings"></div>
             </section>
 
-            <section class="page-content dashboard-section logout-page" data-section="logout">
-                <article class="logout-panel">
-                    <div class="logout-hero">
-                        <span class="logout-icon"><i data-lucide="log-out"></i></span>
-                        <div>
-                            <p class="eyebrow">SECURE SESSION</p>
-                            <h2>Log Out</h2>
-                            <small>End this administrator session and return to the protected VLACE sign-in screen.</small>
-                        </div>
-                    </div>
-
-                    <section class="logout-session-card">
-                        <div class="dashboard-user-photo">
-                            <span class="dashboard-user-initials">VA</span>
-                            <span class="dashboard-user-online"></span>
-                        </div>
-                        <div>
-                            <span>Signed in as</span>
-                            <strong>Van Lester Acepcion</strong>
-                            <small>Administrator · admin@vlace.com</small>
-                        </div>
-                        <b>Active session</b>
-                    </section>
-
-                    <section class="logout-details-grid">
-                        <article><span>Device</span><strong>Current browser</strong><small>VLACE Admin Dashboard</small></article>
-                        <article><span>Session Status</span><strong>Protected</strong><small>Private access only</small></article>
-                        <article><span>After logout</span><strong>Sign-in required</strong><small>Password required to return</small></article>
-                    </section>
-
-                    <div class="logout-warning">
-                        <strong>Before you leave</strong>
-                        <p>Make sure any unsaved profile, finance, marketing, schedule, or policy changes have been saved.</p>
-                    </div>
-
-                    <div class="logout-actions">
-                        <button class="secondary-button" type="button" id="logoutStayButton">Stay Logged In</button>
-                        <button class="danger-button" type="button" id="logoutConfirmButton">Log Out Now</button>
-                    </div>
-                </article>
-            </section>
-
             <section class="page-content dashboard-section" data-section="placeholder">
                 <div class="prototype-panel">
                     <p class="eyebrow">NEXT STEP</p>
@@ -4164,6 +4128,19 @@
             <div class="modal-actions">
                 <button class="secondary-button" type="button" id="payrollReceiptViewCancel">Close</button>
                 <a class="primary-button payroll-receipt-download" id="payrollReceiptDownload" href="#" download>Download Receipt</a>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal-backdrop logout-confirm-backdrop" id="logoutConfirmModal" hidden>
+        <section class="modal logout-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="logoutConfirmTitle">
+            <button class="logout-confirm-close" type="button" id="logoutModalClose" aria-label="Close">×</button>
+            <span class="logout-confirm-icon"><i data-lucide="log-out"></i></span>
+            <h3 id="logoutConfirmTitle">Log out?</h3>
+            <p class="logout-confirm-copy">You will return to the secure sign-in screen. Any unsaved form changes will stay on this device only until refresh.</p>
+            <div class="logout-confirm-actions">
+                <button class="secondary-button" type="button" id="logoutStayButton">Cancel</button>
+                <button class="danger-button" type="button" id="logoutConfirmButton">Log Out</button>
             </div>
         </section>
     </div>

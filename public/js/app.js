@@ -10,9 +10,11 @@ const sectionTitles = {
     lessons: 'Lessons',
     packages: 'Packages & Prices',
     finance: 'Finance',
-    inbox: 'Communication',
+    inbox: 'Unified Inbox',
     email: 'Email Inbox',
     chatbot: 'Chatbot',
+    line: 'LINE',
+    kakaotalk: 'KakaoTalk',
     reminders: 'Student Reminders',
     marketing: 'Marketing',
     campaigns: 'Campaigns',
@@ -1269,8 +1271,7 @@ function getSectionBreadcrumb(section) {
     if (section === 'students') return [{ label: 'Students', action: 'students' }, { label: 'Directory' }];
     if (section === 'teachers') return [{ label: 'Teachers', action: 'teachers' }, { label: 'Directory' }];
     if (section === 'staff') return [{ label: 'Staff', action: 'staff' }, { label: 'Directory' }];
-    if (section === 'inbox') return [{ label: 'Dashboard', action: 'overview' }, { label: 'Communication' }];
-    if (['email', 'chatbot', 'reminders'].includes(section)) return [{ label: 'Communication' }, { label: title }];
+    if (['inbox', 'email', 'chatbot', 'line', 'kakaotalk', 'reminders'].includes(section)) return [{ label: 'Dashboard', action: 'overview' }, { label: 'Communication' }];
     if (['campaigns', 'adsets', 'ads', 'audiences', 'leads', 'creative', 'budget', 'performance', 'integrations'].includes(section)) return [{ label: 'Marketing' }, { label: title }];
     return [{ label: 'Dashboard', action: 'overview' }, { label: title }];
 }
@@ -3295,7 +3296,9 @@ function showTeacherDashboard(email = '') {
 function showLogin() {
     document.getElementById('dashboardApp')?.setAttribute('hidden', '');
     document.getElementById('teacherDashboardApp')?.setAttribute('hidden', '');
+    document.getElementById('logoutConfirmModal')?.setAttribute('hidden', '');
     document.getElementById('loginPage')?.removeAttribute('hidden');
+    document.body.classList.remove('modal-open');
     document.querySelector('.premium-login-video')?.play().catch(() => undefined);
     window.vlaceLoginMotion?.start();
     refreshIcons();
@@ -3339,6 +3342,19 @@ function activateSection(section) {
     }
 
     const requestedSection = section;
+    const communicationSectionMap = {
+        inbox: 'Unified Inbox',
+        email: 'Email Inbox',
+        chatbot: 'Chatbot',
+        line: 'LINE',
+        kakaotalk: 'KakaoTalk',
+        reminders: 'Student Reminders',
+    };
+    if (communicationSectionMap[section]) {
+        activeCommunicationTab = communicationSectionMap[section];
+        section = 'inbox';
+    }
+
     if (marketingSectionMap?.[section]) {
         activeMarketingPage = marketingSectionMap[section];
         section = 'marketing';
@@ -4414,6 +4430,43 @@ let selectedConversationId = 1;
 let selectedEmailId = 1;
 let communicationEmailFolder = 'Inbox';
 let studentReminderDeliveryMode = 'manual';
+let studentReminderAutomationOn = false;
+let studentReminderAudience = 'Selected Students';
+let studentReminderCountry = 'All Countries';
+let studentReminderBulkCountry = 'China';
+let studentReminderTiming = '1 hour before class';
+let studentReminderFormat = 'English + Translation';
+let studentReminderTemplateId = 1;
+let studentReminderAutoChannel = 'WhatsApp Business API';
+let studentReminderAutoRules = ['1 hour before class', '30 minutes before class'];
+let studentReminderAutoTemplates = [1, 2];
+let selectedRegionalMessenger = { LINE: 'Yuki Lee', KakaoTalk: 'Seo-jun Kim' };
+let chatbotSection = 'Overview';
+let chatbotEnabled = true;
+let selectedChatbotConversation = 'Rose Zhang';
+let chatbotConversationAssignments = {};
+let chatbotReplies = [
+    { id: 1, topic: 'Lesson packages', triggers: 'price, package, lessons', answer: 'We offer 15, 30, and 45-lesson packages. May I know your country and the student age?', active: true },
+    { id: 2, topic: 'Trial lesson', triggers: 'trial, demo, try', answer: 'Yes, a trial lesson can be arranged. Please share the student age, English level, and preferred schedule.', active: true },
+    { id: 3, topic: 'Class schedule', triggers: 'schedule, available, time', answer: 'Our team will check teacher availability based on your country and preferred class time.', active: true },
+];
+
+const studentReminderRecipients = [
+    { name: 'Liam Chen', country: 'China', contact: 'wx_lchen_parent' },
+    { name: 'Eddie Zhang', country: 'China', contact: 'eddie_mom88' },
+    { name: 'Aya Mori', country: 'Japan', contact: 'aya_guardian' },
+    { name: 'Sophia Kim', country: 'South Korea', contact: 'sophia_parent' },
+    { name: 'Mira Wang', country: 'UAE', contact: 'mira_guardian' },
+];
+let selectedReminderRecipients = ['Liam Chen', 'Eddie Zhang'];
+let studentReminderTemplates = [
+    { id: 1, name: 'Class in 1 hour', description: 'Friendly reminder with meeting link', body: 'Hello {student_name}! This is a friendly reminder that your English class starts in 1 hour. Please prepare your lesson materials and open {meeting_platform} a few minutes early. See you soon!\n\n你好，{student_name}！温馨提醒：你的英语课将在1小时后开始。请准备好学习资料，并提前几分钟打开{meeting_platform}。课堂见！' },
+    { id: 2, name: 'Class in 30 minutes', description: 'Short last-minute reminder', body: 'Hello {student_name}! Your English class starts in 30 minutes. Please get ready and open {meeting_platform}.\n\n你好，{student_name}！你的英语课将在30分钟后开始。请做好准备并打开{meeting_platform}。' },
+    { id: 3, name: 'Teacher changed', description: 'Notify about a replacement teacher', body: 'Hello {student_name}! Your class teacher has been changed to {teacher_name} for {class_date}. Your schedule remains the same.\n\n你好，{student_name}！你在{class_date}的老师已更换为{teacher_name}，上课时间不变。' },
+    { id: 4, name: 'Class rescheduled', description: 'Confirm the new class schedule', body: 'Hello {student_name}! Your English class has been rescheduled to {class_date} at {class_time}. Please confirm that you received this message.\n\n你好，{student_name}！你的英语课已改到{class_date} {class_time}。收到后请确认。' },
+    { id: 5, name: 'General Announcement', description: 'Personalized company announcement', body: 'Hello {student_name}! We have an important announcement from VLACE: {announcement}. Please contact us if you have questions.\n\n你好，{student_name}！VLACE有一则重要通知：{announcement}。如有问题，请联系我们。' },
+    { id: 6, name: 'Package almost finished', description: 'Follow up about remaining credits', body: 'Hello {student_name}! You have {remaining_lessons} lessons remaining in your package. We would be happy to help you arrange your next package.\n\n你好，{student_name}！你的课程套餐还剩{remaining_lessons}节课。我们很乐意帮你安排下一期课程。' },
+];
 
 let communicationConnections = {
     facebook: true,
@@ -4454,20 +4507,24 @@ function renderCommunicationWorkspace() {
     if (!communicationTabs.includes(activeCommunicationTab)) {
         activeCommunicationTab = 'Unified Inbox';
     }
+    root.classList.toggle('email-inbox-page', activeCommunicationTab === 'Email Inbox');
+    root.classList.toggle('unified-inbox-page', activeCommunicationTab === 'Unified Inbox');
+    root.classList.toggle('chatbot-page', activeCommunicationTab === 'Chatbot');
+    root.classList.toggle('student-reminders-page', activeCommunicationTab === 'Student Reminders');
     const unread = communicationConversations.reduce((sum, item) => sum + item.unread, 0);
+    const title = document.getElementById('pageTitle');
+    if (title) title.textContent = activeCommunicationTab;
+    const showUnifiedHero = activeCommunicationTab === 'Unified Inbox';
     root.innerHTML = `
-        <section class="communication-hero">
+        ${showUnifiedHero ? `<section class="communication-hero unified-hero">
             <div>
                 <p class="eyebrow">COMMUNICATION CENTER</p>
-                <h2>Communication</h2>
+                <h2>Customer Conversations</h2>
                 <p>Read and reply to Facebook Messenger, WhatsApp, Website Chat, LINE, KakaoTalk, and company email in one protected workspace.</p>
             </div>
             <div class="communication-total"><strong>${unread}</strong><span>Unread messages</span></div>
-        </section>
+        </section>` : ''}
         ${communicationNotice ? `<div class="communication-notice"><span>✓</span>${escapeHtml(communicationNotice)}<button type="button" data-communication-notice-close aria-label="Dismiss">×</button></div>` : ''}
-        <nav class="communication-tabs" aria-label="Communication sections">
-            ${communicationTabs.map((tab) => `<button type="button" class="${activeCommunicationTab === tab ? 'active' : ''}" data-communication-tab="${tab}">${tab}${tab === 'Unified Inbox' ? `<b>${unread}</b>` : tab === 'Email Inbox' ? '<b>5</b>' : tab === 'Chatbot' ? '<b>2</b>' : ''}</button>`).join('')}
-        </nav>
         <div class="communication-tab-content">
             ${activeCommunicationTab === 'Unified Inbox' ? renderUnifiedInboxPanel() : ''}
             ${activeCommunicationTab === 'Email Inbox' ? renderEmailInboxPanel() : ''}
@@ -4482,12 +4539,10 @@ function renderCommunicationWorkspace() {
 function renderUnifiedInboxPanel() {
     const visibleConversations = communicationConversations.filter((item) => activeCommunicationChannel === 'All' || item.channel === activeCommunicationChannel);
     const selected = visibleConversations.find((item) => item.id === selectedConversationId) || visibleConversations[0] || communicationConversations[0];
-    const connectionsCount = Object.values(communicationConnections).filter(Boolean).length;
     return `
         <div class="inbox-connection-note">
             <span class="communication-note-icon"><i data-lucide="inbox"></i></span>
-            <div><strong>One inbox for every customer channel</strong><p>Connect official accounts to receive live conversations here.</p></div>
-            <span class="status status-active">${connectionsCount} of 3 connected</span>
+            <div><strong>One inbox for every customer channel</strong><p>Connect the official Facebook, WhatsApp, Website Chat, LINE, and KakaoTalk accounts to receive live conversations here.</p></div>
             <button class="secondary-button" type="button" data-open-channel-drawer>Manage Channels</button>
         </div>
         <div class="channel-filters" role="tablist">
@@ -4501,7 +4556,7 @@ function renderUnifiedInboxPanel() {
                         <button type="button" class="${selected.id === item.id ? 'selected' : ''}" data-conversation-select="${item.id}">
                             <span class="conversation-avatar">${communicationInitials(item.name)}</span>
                             <span class="conversation-copy"><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.time)}</small></span><em>${escapeHtml(item.channel)} · Assigned to ${escapeHtml(item.assignedTo)}</em><p>${escapeHtml(item.preview)}</p></span>
-                            ${item.unread ? `<b class="message-count">${item.unread}</b>` : ''}
+                            ${item.unread ? `<b class="message-count blue-count">${item.unread}</b>` : ''}
                         </button>
                     `).join('') || '<div class="conversation-empty">No conversations in this channel.</div>'}
                 </div>
@@ -4515,10 +4570,10 @@ function renderUnifiedInboxPanel() {
                 </header>
                 <div class="message-history">
                     <div class="message-date">Today</div>
-                    ${selected.messages.map((message) => `<div class="message-row ${message[0] === 'vlace' ? 'outgoing' : 'incoming'}"><div><p>${escapeHtml(message[1])}</p><span>${escapeHtml(message[2])}${message[0] === 'vlace' ? ' · VLACE Admin' : ''}</span></div></div>`).join('')}
+                    ${selected.messages.map((message) => `<div class="message-row ${message[0] === 'vlace' ? 'outgoing' : 'incoming'}"><div><p>${escapeHtml(message[1])}</p><span>${escapeHtml(message[2])}${message[0] === 'vlace' ? ' · VLACE Admin' : ''}</span><button type="button" data-communication-toast="English translation preview opened.">View in English</button></div></div>`).join('')}
                 </div>
                 <footer class="reply-box">
-                    <div class="translation-service-off"><strong>OpenAI Translation is off</strong><span>An Administrator can enable it in Settings → AI Controls.</span></div>
+                    <label class="reply-translate"><input type="checkbox"> Translate reply with OpenAI</label>
                     <textarea aria-label="Reply message" placeholder="Reply to ${escapeHtml(selected.name)}..." data-conversation-reply></textarea>
                     <div><span>Replying through <strong>${escapeHtml(selected.channel)}</strong></span><button class="primary-button" type="button" data-send-conversation-reply>Send Reply</button></div>
                 </footer>
@@ -4537,11 +4592,11 @@ function renderEmailInboxPanel() {
     ];
     const visible = communicationEmails.filter((email) => communicationEmailFolder === 'Inbox' ? !email.archived : communicationEmailFolder === 'Unread' ? email.unread && !email.archived : communicationEmailFolder === 'Starred' ? email.starred && !email.archived : email.archived);
     return `
-        <div class="section-intro communication-section-intro"><div><h2>Company Email</h2><p>Read, organize, assign, and reply to emails received by VLACE.</p></div><button class="primary-button" type="button" data-communication-toast="Email composer opened in prototype mode.">+ Compose Email</button></div>
+        <div class="section-intro communication-section-intro email-reference-intro"><div><h2>Company Email</h2><p>Read, organize, assign, and reply to emails received by VLACE.</p></div></div>
         <div class="inbox-connection-note email-connection-note"><span class="communication-note-icon"><i data-lucide="mail"></i></span><div><strong>VLACE email account</strong><p>Connect your company mailbox to receive and send live email from this dashboard.</p></div><button class="secondary-button" type="button" data-communication-toast="Connect Email drawer prepared in prototype mode.">Connect Email</button></div>
         <section class="email-shell">
             <aside class="email-folders">
-                <button class="compose-email" type="button" data-communication-toast="Email composer opened in prototype mode.">+ Compose</button>
+                <button class="compose-email" type="button" data-compose-email>+ Compose</button>
                 ${folders.map(([name, count]) => `<button type="button" class="${communicationEmailFolder === name ? 'active' : ''}" data-email-folder="${name}"><span>${name === 'Inbox' ? '✉' : name === 'Unread' ? '●' : name === 'Starred' ? '★' : '□'}</span>${name}<b>${count}</b></button>`).join('')}
                 <div class="email-access-note"><strong>Private information</strong><p>Email access is controlled under User Management → Roles & Permissions.</p></div>
             </aside>
@@ -4562,14 +4617,91 @@ function renderEmailInboxPanel() {
 }
 
 function renderChatbotPanel() {
-    return `<section class="chatbot-workspace"><div class="chatbot-hero"><div><p>VLACE AUTOMATED SUPPORT</p><h2>Chatbot Control Center</h2><small>Edit chatbot behavior, monitor conversations, and review when staff assistance is needed.</small></div><span class="status status-active">Chatbot online</span></div><div class="chatbot-overview-grid"><article class="chatbot-card"><header><div><h3>Recent Chatbot Activity</h3><p>Live operational events and customer activity</p></div></header>${[['New inquiry','Rose Zhang asked about a trial lesson.','2 min'],['Staff handoff','Conversation transferred after an unanswered scheduling question.','9 min'],['Reply matched','Package information sent to David Cohen.','18 min'],['Conversation resolved','The visitor confirmed that the answer was helpful.','34 min']].map((item) => `<div class="chatbot-activity"><span>•</span><div><strong>${item[0]}</strong><p>${item[1]}</p></div><time>${item[2]}</time></div>`).join('')}</article><article class="chatbot-card"><header><div><h3>Attention Required</h3><p>Items that may affect chatbot accuracy</p></div></header><div class="chatbot-alert"><b>2</b><div><strong>Conversations need staff</strong><p>Visitors asked questions outside the current knowledge base.</p></div></div><div class="chatbot-alert"><b>3</b><div><strong>Replies need review</strong><p>Improve low-confidence answers before publishing.</p></div></div><button class="primary-button" type="button" data-communication-toast="Chatbot knowledge review opened in prototype mode.">Review Knowledge</button></article></div></section>`;
+    const tabs = ['Overview', 'Conversations', 'Replies & Knowledge', 'Settings'];
+    const conversations = [
+        { name: 'Rose Zhang', country: 'China', status: 'Needs staff', preview: 'Can my child take a trial lesson?', time: '2 min', messages: [['Visitor', 'Hello. I am looking for English lessons for my 8-year-old.'], ['VLACE Chatbot', 'Welcome! We offer personalized English lessons for children. Would you like package information or a trial lesson?'], ['Visitor', 'Can my child take a trial lesson?']] },
+        { name: 'David Cohen', country: 'Israel', status: 'Resolved', preview: 'Thank you for the package details.', time: '18 min', messages: [['Visitor', 'What packages do you offer for teenagers?'], ['VLACE Chatbot', 'We offer 15, 30, and 45-lesson packages. I can connect you with our team for the current Israel pricing.'], ['Visitor', 'Thank you for the package details.']] },
+        { name: 'Fatima Al Mansoori', country: 'UAE', status: 'Bot handling', preview: 'Are weekend lessons available?', time: '34 min', messages: [['Visitor', 'Are weekend lessons available?'], ['VLACE Chatbot', 'Weekend availability depends on the teacher schedule. What time would you prefer?']] },
+    ];
+    const active = conversations.find((item) => item.name === selectedChatbotConversation) || conversations[0];
+    return `<div class="chatbot-workspace-page">
+        <section class="chatbot-hero">
+            <div class="chatbot-title"><span>✦</span><div><p>VLACE AUTOMATED SUPPORT</p><h2>Chatbot Control Center</h2><small>Edit chatbot behavior, monitor conversations, and review when staff assistance is needed.</small></div></div>
+            <div class="chatbot-status"><span class="${chatbotEnabled ? 'online' : 'offline'}">● ${chatbotEnabled ? 'Chatbot online' : 'Chatbot offline'}</span><button class="${chatbotEnabled ? 'secondary-button' : 'primary-button'}" type="button" data-toggle-chatbot>${chatbotEnabled ? 'Deactivate Chatbot' : 'Activate Chatbot'}</button></div>
+        </section>
+        <nav class="chatbot-tabs" aria-label="Chatbot sections">${tabs.map((tab) => `<button type="button" class="${chatbotSection === tab ? 'active' : ''}" data-chatbot-section="${tab}">${tab}${tab === 'Conversations' ? '<b>2</b>' : ''}</button>`).join('')}</nav>
+        ${chatbotSection === 'Overview' ? `<section class="chatbot-metrics">${[['Conversations today','38','+12% from yesterday'],['Answered automatically','84%','32 conversations'],['Staff handoffs','6','2 awaiting response'],['Average response','4 sec','Within target']].map((item) => `<article><span>${item[0]}</span><strong>${item[1]}</strong><small>${item[2]}</small></article>`).join('')}</section><div class="chatbot-overview-grid"><article class="chatbot-card"><header><div><h3>Recent Chatbot Activity</h3><p>Live operational events and customer activity</p></div><button class="text-button" type="button" data-chatbot-section="Conversations">View all</button></header>${[['New inquiry','Rose Zhang asked about a trial lesson.','2 min'],['Staff handoff','Conversation transferred after an unanswered scheduling question.','9 min'],['Reply matched','Package information sent to David Cohen.','18 min'],['Conversation resolved','The visitor confirmed that the answer was helpful.','34 min']].map((item) => `<div class="chatbot-activity"><span>•</span><div><strong>${item[0]}</strong><p>${item[1]}</p></div><time>${item[2]}</time></div>`).join('')}</article><article class="chatbot-card"><header><div><h3>Attention Required</h3><p>Items that may affect chatbot accuracy</p></div></header><div class="chatbot-alert"><b>2</b><div><strong>Conversations need staff</strong><p>Visitors asked questions outside the current knowledge base.</p></div></div><div class="chatbot-alert"><b>3</b><div><strong>Replies need review</strong><p>Improve low-confidence answers before publishing.</p></div></div><button class="primary-button" type="button" data-chatbot-section="Replies & Knowledge">Review Knowledge</button></article></div>` : ''}
+        ${chatbotSection === 'Conversations' ? `<section class="chatbot-conversation-grid"><div class="chatbot-conversation-list"><header><h3>Conversations</h3><span>${conversations.length} records</span></header>${conversations.map((item) => `<button type="button" class="${active.name === item.name ? 'active' : ''}" data-chatbot-conversation="${item.name}"><span class="slack-avatar">${communicationInitials(item.name)}</span><div><strong>${item.name}</strong><small>${item.country} · ${item.status}</small><p>${item.preview}</p>${chatbotConversationAssignments[item.name] ? `<em>Assigned to ${escapeHtml(chatbotConversationAssignments[item.name])}</em>` : ''}</div><time>${item.time}</time></button>`).join('')}</div><aside class="chatbot-conversation-detail"><header><div><h3>${active.name}</h3><p>${active.country} · Website Chat</p></div>${communicationStatus(active.status)}</header><section class="chatbot-assignment-panel"><div class="chatbot-assignment-title"><strong>Assignment</strong><small>Choose the right team member for this conversation.</small></div><div class="chatbot-assignment-fields"><label>Filter by team<select data-chatbot-assignee-filter><option>All teams</option><option>China</option><option>South Korea</option><option>UAE</option><option>Operations</option></select></label><label>Assign to employee<select data-chatbot-assignee><option>Angela Reyes · ST-001 · Manager</option><option>Carlo Mendoza · ST-002 · Staff</option><option>Nina Flores · ST-003 · Staff</option><option>Van Acepcion · ADM-001 · Administrator</option></select></label><button class="primary-button" type="button" data-chatbot-assign>Assign</button></div></section><div class="chatbot-transcript">${active.messages.map((message) => `<article class="${message[0] === 'VLACE Chatbot' ? 'bot' : 'visitor'}"><small>${message[0]}</small><p>${message[1]}</p></article>`).join('')}</div><footer><button class="secondary-button" type="button" data-communication-toast="Conversation marked as resolved.">Resolve</button><button class="primary-button" type="button" data-chatbot-assign>Assign & Take Over</button></footer></aside></section>` : ''}
+        ${chatbotSection === 'Replies & Knowledge' ? `<section class="chatbot-knowledge"><header><div><h3>Automated Replies & Knowledge</h3><p>Edit approved information used by the chatbot. Changes remain in draft until published.</p></div><button class="primary-button" type="button" data-add-chatbot-reply>+ Add Reply</button></header><div class="chatbot-reply-list">${chatbotReplies.map((reply, index) => `<article class="chatbot-reply-card reply-tone-${index % 4}"><div class="chatbot-reply-head"><div class="chatbot-reply-number"><span>Reply ${index + 1}</span><strong>${escapeHtml(reply.topic)}</strong></div><label><input type="checkbox" ${reply.active ? 'checked' : ''} data-chatbot-reply-active="${reply.id}"> Active</label><button type="button" data-remove-chatbot-reply="${reply.id}">Remove</button></div><div class="chatbot-reply-fields"><label>Topic<input value="${escapeHtml(reply.topic)}" data-chatbot-reply-topic="${reply.id}"></label><label>Trigger words<input value="${escapeHtml(reply.triggers)}" data-chatbot-reply-triggers="${reply.id}"></label><label class="full">Approved chatbot answer<textarea data-chatbot-reply-answer="${reply.id}">${escapeHtml(reply.answer)}</textarea></label></div></article>`).join('')}</div><div class="chatbot-publish"><span>Last published: Aug 4, 2026 · 3:30 PM by Van A.</span><button class="primary-button" type="button" data-communication-toast="Chatbot knowledge changes published.">Publish Changes</button></div></section>` : ''}
+        ${chatbotSection === 'Settings' ? `<section class="chatbot-settings-grid"><article class="chatbot-card chatbot-settings-card chatbot-identity-card"><header><div><h3>Identity & Greeting</h3><p>Define how the chatbot introduces itself.</p></div></header><div class="chatbot-settings-body"><label>Chatbot name<input value="VLACE Assistant"></label><label>Welcome message<textarea>Hi! Welcome to VLACE. How can I help you with our English lessons today?</textarea></label><label>Response tone<select><option>Friendly and professional</option><option>Formal</option><option>Warm and simple</option></select></label></div></article><article class="chatbot-card chatbot-settings-card chatbot-handoff-card"><header><div><h3>Automation & Handoff</h3><p>Control when staff should take over.</p></div></header><div class="chatbot-settings-body"><label>Staff handoff rule<select><option>After 2 unanswered questions</option><option>After 1 unanswered question</option><option>Only when visitor requests staff</option></select></label><label>Operating hours<select><option>24 hours</option><option>Business hours only</option><option>Weekdays only</option></select></label><div class="chatbot-switch-list"><label class="chatbot-switch"><input type="checkbox" checked><span>Automatically create an inbox conversation</span></label><label class="chatbot-switch"><input type="checkbox" checked><span>Notify staff when confidence is low</span></label></div><div class="chatbot-settings-actions"><button class="primary-button" type="button" data-communication-toast="Chatbot settings saved.">Save Settings</button></div></div></article></section>` : ''}
+    </div>`;
 }
 
 function renderStudentRemindersPanel() {
     const isAutomatic = studentReminderDeliveryMode === 'automatic';
-    const recipients = ['Liam Chen','Eddie Zhang','Aya Mori','Sophia Kim','Mira Wang'];
-    const countries = ['China', 'China', 'Japan', 'South Korea', 'UAE'];
-    return `<section class="reminders-page"><div class="reminder-hero"><div><p class="eyebrow">COMMUNICATION · STUDENT CARE</p><h2>Student Reminders</h2><p>Create editable templates for manual messages or scheduled automatic delivery.</p></div><div class="delivery-mode-card"><span>Delivery Mode</span><div class="delivery-mode-switch"><button class="${!isAutomatic ? 'active' : ''}" type="button" data-reminder-mode="manual">Manual</button><button class="${isAutomatic ? 'active' : ''}" type="button" data-reminder-mode="automatic">Automatic</button></div><strong>${isAutomatic ? 'Automatic Schedule Mode' : 'Manual Send Mode'}</strong></div></div><div class="reminder-workspace"><article class="reminder-card"><header><h3>Recipients</h3><p>${isAutomatic ? 'Auto-selected by upcoming classes' : 'Selected Students · China'}</p></header>${recipients.map((name, index) => `<label class="reminder-recipient"><input type="checkbox" ${isAutomatic || index < 2 ? 'checked' : ''}><span><strong>${name}</strong><small>${countries[index]}</small></span></label>`).join('')}</article><article class="reminder-card"><header><h3>Message Template</h3><p>${isAutomatic ? 'Scheduled 1 hour before class' : 'Class in 1 hour'}</p></header>${isAutomatic ? `<div class="assignment-preview"><span>Automatic schedule</span><strong>Send 1 hour before every scheduled class</strong><small>Channels: WhatsApp, Messenger, and Email when available</small></div>` : ''}<textarea>Hello {student_name}! This is a friendly reminder that your English class starts in 1 hour. Please prepare your lesson materials and open {meeting_platform} a few minutes early. See you soon!</textarea><div class="modal-actions"><button class="secondary-button" type="button" data-communication-toast="${isAutomatic ? 'Automatic reminder schedule previewed.' : 'Personalized reminders copied.'}">${isAutomatic ? 'Preview Schedule' : 'Copy Messages'}</button><button class="primary-button" type="button" data-communication-toast="${isAutomatic ? 'Automatic reminders saved in prototype mode.' : 'WhatsApp opened with reminders ready to send.'}">${isAutomatic ? 'Save Automatic Reminder' : 'Send via WhatsApp'}</button></div></article></div></section>`;
+    const countries = ['All Countries', ...new Set(studentReminderRecipients.map((item) => item.country))];
+    const visibleRecipients = studentReminderCountry === 'All Countries' ? studentReminderRecipients : studentReminderRecipients.filter((item) => item.country === studentReminderCountry);
+    const recipients = studentReminderAudience === 'All Students — All Countries'
+        ? studentReminderRecipients
+        : studentReminderAudience === 'All Students — Selected Country'
+            ? studentReminderRecipients.filter((item) => item.country === studentReminderBulkCountry)
+            : studentReminderRecipients.filter((item) => selectedReminderRecipients.includes(item.name));
+    const template = studentReminderTemplates.find((item) => item.id === studentReminderTemplateId) || studentReminderTemplates[0];
+    const [englishMessage = template.body, translatedMessage = '你好，{student_name}！温馨提醒：你的英语课将在1小时后开始。请准备好学习资料，并提前几分钟打开{meeting_platform}。课堂见！'] = template.body.split('\n\n');
+    const previewRecipients = (recipients.length ? recipients : studentReminderRecipients).slice(0, 2);
+    const personalizeReminder = (message, recipient) => message
+        .replaceAll('{student_name}', recipient.name)
+        .replaceAll('{meeting_platform}', 'VooV Meeting')
+        .replaceAll('{class_date}', 'today')
+        .replaceAll('{class_time}', '7:00 PM')
+        .replaceAll('{teacher_name}', 'Maria Santos')
+        .replaceAll('{remaining_lessons}', '5');
+    return `<div class="reminders-page">
+        <section class="reminder-hero">
+            <div><p class="eyebrow">COMMUNICATION · STUDENT CARE</p><h2>Student Reminders</h2><p>Create editable templates for manual messages or scheduled automatic delivery.</p></div>
+            <div class="delivery-mode-card"><span>Delivery Mode</span><div class="delivery-mode-switch"><button class="${!isAutomatic ? 'active' : ''}" type="button" data-reminder-mode="manual">Manual</button><button class="${isAutomatic ? 'active' : ''}" type="button" data-reminder-mode="automatic">Automatic</button></div>${isAutomatic ? `<label class="master-automation-switch ${studentReminderAutomationOn ? 'on' : 'off'}"><span><b>Automatic Messaging</b><small>${studentReminderAutomationOn ? 'ON - scheduled messages are enabled' : 'OFF - no automatic messages will be sent'}</small></span><input type="checkbox" ${studentReminderAutomationOn ? 'checked' : ''} data-reminder-automation><i></i></label>` : ''}<strong>${isAutomatic ? `Automatic Send Mode - ${studentReminderAutomationOn ? 'ON' : 'OFF'}` : 'Manual Send Mode'}</strong><small>${isAutomatic ? 'Turn on the master switch when your messaging API is connected' : 'Review and send each message yourself'}</small></div>
+        </section>
+        <section class="reminder-summary">${[['Due Today','4','Messages to prepare'],['Scheduled','12','Upcoming reminders'],['Sent Today','18',isAutomatic ? 'Delivery records' : 'Manually confirmed'],['Needs Attention','2','Missing contact number']].map((item, index) => `<article class="${index === 3 ? 'attention' : ''}"><span>${item[0]}</span><strong>${item[1]}</strong><small>${item[2]}</small></article>`).join('')}</section>
+        ${isAutomatic ? `<section class="automatic-mode-panel ${studentReminderAutomationOn ? 'automation-active' : 'automation-inactive'}"><div class="automatic-mode-head"><div><span>Automatic Delivery Settings</span><strong>Choose when reminders are sent</strong><small>Your editable template and each student schedule will be used automatically.</small></div><span class="automation-status-badge ${studentReminderAutomationOn ? 'on' : 'off'}">${studentReminderAutomationOn ? 'AUTOMATIC MESSAGING ON' : 'AUTOMATIC MESSAGING OFF'}</span></div><div class="automatic-settings-grid"><label>Delivery channel<select data-reminder-auto-channel>${['WhatsApp Business API','Email API','SMS API','WeChat Official API'].map((item) => `<option ${studentReminderAutoChannel === item ? 'selected' : ''}>${item}</option>`).join('')}</select></label><label>Time zone<input value="Philippine Time (Asia/Manila)" readonly></label></div><div class="automatic-rule-list"><span>Automatic reminder times</span>${['24 hours before class','1 hour before class','30 minutes before class','10 minutes before class'].map((rule) => `<label><input type="checkbox" data-reminder-rule="${rule}" ${studentReminderAutoRules.includes(rule) ? 'checked' : ''}>${rule}</label>`).join('')}</div><div class="automatic-panel-footer"><p>${studentReminderAutomationOn ? `${studentReminderAutoTemplates.length} templates are allowed to send automatically.` : 'Automatic messaging is paused. Settings and templates are still saved.'}</p><button class="primary-button" type="button" data-communication-toast="Automatic reminder settings saved in prototype mode.">Save Automation Settings</button></div></section>` : ''}
+        <section class="reminder-workspace reminder-workspace-full">
+            <article class="panel reminder-composer">
+                <div class="reminder-panel-head"><div><h3>Create a Message</h3><p>Choose the purpose, recipient, language, and delivery time.</p></div><div class="reminder-type-tabs"><button class="active" type="button">Class Reminder</button><button type="button" data-reminder-announcement>Announcement</button></div></div>
+                <div class="reminder-form-grid"><label>Audience<select data-reminder-audience>${['Selected Students','All Students — Selected Country','All Students — All Countries'].map((item) => `<option ${studentReminderAudience === item ? 'selected' : ''}>${item}</option>`).join('')}</select></label><label>Recipients selected<input value="${recipients.length} student${recipients.length === 1 ? '' : 's'}" readonly></label>${studentReminderAudience === 'All Students — Selected Country' ? `<label class="bulk-country-field">Student country<select data-reminder-bulk-country>${countries.filter((item) => item !== 'All Countries').map((item) => `<option ${studentReminderBulkCountry === item ? 'selected' : ''}>${item}</option>`).join('')}</select><small>Every student assigned to ${studentReminderBulkCountry} will receive the message.</small></label>` : ''}<label>Delivery time<select data-reminder-timing>${['Send now','24 hours before class','1 hour before class','30 minutes before class','10 minutes before class','Custom date and time'].map((item) => `<option ${studentReminderTiming === item ? 'selected' : ''}>${item}</option>`).join('')}</select></label><label>Message format<select data-reminder-format>${['English + Translation','English only','Translation only'].map((item) => `<option ${studentReminderFormat === item ? 'selected' : ''}>${item}</option>`).join('')}</select></label></div>
+                ${studentReminderAudience === 'Selected Students' ? `<div class="recipient-selector"><div class="recipient-selector-head"><div><strong>Choose students</strong><span>Select more than one recipient</span></div><div class="recipient-selector-tools"><label>Filter by country<select data-reminder-country>${countries.map((item) => `<option ${studentReminderCountry === item ? 'selected' : ''}>${item}</option>`).join('')}</select></label><div class="recipient-bulk-actions"><button type="button" data-reminder-select-all>Select all shown</button><button type="button" data-reminder-clear>Clear shown</button></div></div></div><div>${visibleRecipients.map((item) => `<label><input type="checkbox" data-reminder-recipient="${item.name}" ${selectedReminderRecipients.includes(item.name) ? 'checked' : ''}><span><strong>${item.name}</strong><small>${item.country} · ${item.contact}</small></span></label>`).join('')}</div></div>` : ''}
+                <div class="reminder-template-builder">
+                    <div class="template-editor-head"><label>Template name<input value="${escapeHtml(template.name)}" data-reminder-template-name></label><button class="secondary-button" type="button" data-save-reminder-template>Save Template Changes</button></div>
+                    <div class="reminder-message-steps">
+                        <label class="reminder-message-box"><span><b>1</b> English Message</span><textarea data-reminder-message>${escapeHtml(englishMessage)}</textarea><small>${englishMessage.length} characters · Write or edit the original English message.</small></label>
+                        <label class="reminder-message-box translation-box"><span><b>2</b> Simplified Chinese Translation</span><textarea data-reminder-translation>${escapeHtml(translatedMessage)}</textarea><small>${translatedMessage.length} characters · Add or edit the Simplified Chinese translation.</small></label>
+                    </div>
+                    <div class="message-token-row"><span>Insert in both boxes:</span>${['{student_name}', '{class_date}', '{class_time}', '{teacher_name}', '{meeting_platform}', '{remaining_lessons}'].map((token) => `<button type="button" data-communication-toast="${token} token ready to insert.">${token}</button>`).join('')}</div>
+                    <div class="combine-message-step"><strong><b>3</b> Done — Combine Message</strong><span>Move the English message and translation into one final box</span></div>
+                    <section class="combined-message-panel">
+                        <header><strong>✓ Final Message — Ready to Send</strong><span>English + translation combined in one box</span></header>
+                        <article class="combined-message-preview"><div><strong>Combined Message Preview</strong><span>English followed by Simplified Chinese</span></div><p>${escapeHtml(englishMessage)}</p><p>${escapeHtml(translatedMessage)}</p></article>
+                        <div class="personalized-preview final-send-box ready"><h4>Personalized Delivery Preview</h4>${previewRecipients.map((item) => `<article><span>To: ${escapeHtml(item.name)} · ${escapeHtml(item.contact)}</span><p>${escapeHtml(personalizeReminder(englishMessage, item))}</p><p>${escapeHtml(personalizeReminder(translatedMessage, item))}</p></article>`).join('')}</div>
+                    </section>
+                    <div class="reminder-actions"><button class="secondary-button" type="button" data-communication-toast="${isAutomatic ? 'Automatic reminder preview copied.' : 'Personalized reminders copied.'}">${isAutomatic ? 'Copy Preview' : 'Copy Message'}</button><button class="primary-button" type="button" data-communication-toast="${isAutomatic ? 'Automatic template saved. Connect the messaging API to activate live sending.' : 'WhatsApp opened with reminders ready to send.'}">${isAutomatic ? 'Save Automatic Template' : 'Send via WhatsApp'}</button></div>
+                </div>
+            </article>
+            <aside class="panel reminder-templates"><h3>Editable Templates</h3><p>Select a template to edit it. Use each switch to allow or stop automatic sending.</p>${studentReminderTemplates.map((item) => `<div class="template-card ${item.id === studentReminderTemplateId ? 'selected' : ''}"><button class="template-select-button" type="button" data-reminder-template="${item.id}"><strong>${item.name}</strong><span>${item.description}</span><small>${item.id === studentReminderTemplateId ? 'Editing now' : 'Click to edit'}</small></button><label class="template-auto-switch ${studentReminderAutoTemplates.includes(item.id) ? 'on' : 'off'}"><span>Automatic ${studentReminderAutoTemplates.includes(item.id) ? 'ON' : 'OFF'}</span><input type="checkbox" data-reminder-auto-template="${item.id}" ${studentReminderAutoTemplates.includes(item.id) ? 'checked' : ''}><i></i></label></div>`).join('')}<button class="add-reminder-template" type="button" data-add-reminder-template>+ Add New Template</button></aside>
+        </section>
+    </div>`;
+}
+
+function renderRegionalMessengerPanel(provider) {
+    const isLine = provider === 'LINE';
+    const contacts = isLine
+        ? [['YL', 'Yuki Lee', 'Japan Student Support', 'The lesson reminder was delivered.', '6 min'], ['AK', 'Aiko Kimura', 'Parent Contact', 'Thank you. We confirmed Friday’s class.', '34 min'], ['JS', 'Japan Support', 'Operations Group', 'Two enrollment inquiries need review.', '1 hr']]
+        : [['SJ', 'Seo-jun Kim', 'South Korea Student Support', 'The trial lesson time is confirmed.', '4 min'], ['HP', 'Ha-eun Park', 'Parent Contact', 'I received the class materials.', '26 min'], ['KT', 'Korea Team', 'Operations Group', 'The weekly schedule was updated.', '2 hrs']];
+    const selectedName = selectedRegionalMessenger[provider] || contacts[0][1];
+    const active = contacts.find((item) => item[1] === selectedName) || contacts[0];
+    return `<div class="provider-workspace ${isLine ? 'provider-line' : 'provider-kakao'}">
+        <section class="provider-hero"><div class="provider-title"><span class="provider-logo">${isLine ? 'LINE' : 'TALK'}</span><div><p>COMMUNICATION PLATFORM</p><h2>${provider} Workspace</h2><small>${isLine ? 'Japan-focused student and parent communication' : 'South Korea-focused student and parent communication'} in one protected VLACE view.</small></div></div><div class="provider-connection"><span>● Integration ready</span><button type="button" data-communication-toast="${provider} connection settings opened in prototype mode.">Settings</button></div></section>
+        <div class="provider-toolbar"><label><span>⌕</span><input placeholder="Search ${provider} conversations..."></label><button class="primary-button" type="button" data-communication-toast="New ${provider} conversation opened in prototype mode.">+ New Message</button></div>
+        <section class="slack-channel-workspace provider-conversation-workspace"><div class="slack-list-card"><header><div><h3>Conversations</h3><p>${contacts.length} active conversations</p></div><small>Updated just now</small></header>${contacts.map((item) => `<button type="button" class="slack-list-row ${active[1] === item[1] ? 'active' : ''}" data-regional-conversation="${provider}:${item[1]}"><span class="slack-avatar">${item[0]}<i class="online"></i></span><div><strong>${item[1]}</strong><p>${item[3]}</p></div><span class="slack-row-meta"><small>${item[4]}</small></span></button>`).join('')}</div><aside class="slack-channel-detail"><header><div class="slack-dm-person"><span class="slack-avatar">${active[0]}<i class="online"></i></span><div><h3>${active[1]}</h3><p>${active[2]} · <b>Available</b></p></div></div><button type="button" data-communication-toast="Conversation with ${active[1]} marked as read.">Mark as read</button></header><div class="slack-channel-summary"><span>${provider} conversation</span><span>Secure workspace</span><span>Updated ${active[4]} ago</span></div><div class="slack-message-stream"><article><span class="slack-message-avatar">${active[0]}</span><div><header><strong>${active[1]}</strong><time>${active[4]} ago</time></header><p>${active[3]}</p></div></article><article class="own-message"><span class="slack-message-avatar">VA</span><div><header><strong>You</strong><time>Just now</time></header><p>Thank you. I will update the VLACE record and follow up if anything changes.</p></div></article></div><form class="slack-message-composer" data-regional-form><input placeholder="Message ${active[1]}"><button>Send</button></form></aside></section>
+        <footer class="slack-platform-foot"><span>Integration adapter: ${provider}</span><p>Prepared for future official messaging API connection. Credentials will never be displayed.</p></footer>
+    </div>`;
 }
 
 function bindCommunicationEvents(root) {
@@ -4595,6 +4727,132 @@ function bindCommunicationEvents(root) {
         renderCommunicationWorkspace();
         showSparkToast(studentReminderDeliveryMode === 'automatic' ? 'Automatic reminder mode enabled.' : 'Manual reminder mode enabled.');
     }));
+    root.querySelector('[data-reminder-automation]')?.addEventListener('change', (event) => {
+        studentReminderAutomationOn = event.target.checked;
+        renderCommunicationWorkspace();
+    });
+    root.querySelector('[data-reminder-audience]')?.addEventListener('change', (event) => {
+        studentReminderAudience = event.target.value;
+        renderCommunicationWorkspace();
+    });
+    root.querySelector('[data-reminder-country]')?.addEventListener('change', (event) => {
+        studentReminderCountry = event.target.value;
+        renderCommunicationWorkspace();
+    });
+    root.querySelector('[data-reminder-bulk-country]')?.addEventListener('change', (event) => {
+        studentReminderBulkCountry = event.target.value;
+        renderCommunicationWorkspace();
+    });
+    root.querySelector('[data-reminder-timing]')?.addEventListener('change', (event) => {
+        studentReminderTiming = event.target.value;
+    });
+    root.querySelector('[data-reminder-format]')?.addEventListener('change', (event) => {
+        studentReminderFormat = event.target.value;
+    });
+    root.querySelector('[data-reminder-auto-channel]')?.addEventListener('change', (event) => {
+        studentReminderAutoChannel = event.target.value;
+    });
+    root.querySelectorAll('[data-reminder-rule]').forEach((input) => input.addEventListener('change', () => {
+        const rule = input.dataset.reminderRule;
+        studentReminderAutoRules = input.checked
+            ? [...new Set([...studentReminderAutoRules, rule])]
+            : studentReminderAutoRules.filter((item) => item !== rule);
+    }));
+    root.querySelectorAll('[data-reminder-recipient]').forEach((input) => input.addEventListener('change', () => {
+        const name = input.dataset.reminderRecipient;
+        selectedReminderRecipients = input.checked
+            ? [...new Set([...selectedReminderRecipients, name])]
+            : selectedReminderRecipients.filter((item) => item !== name);
+        renderCommunicationWorkspace();
+    }));
+    root.querySelector('[data-reminder-select-all]')?.addEventListener('click', () => {
+        const visible = studentReminderCountry === 'All Countries' ? studentReminderRecipients : studentReminderRecipients.filter((item) => item.country === studentReminderCountry);
+        selectedReminderRecipients = [...new Set([...selectedReminderRecipients, ...visible.map((item) => item.name)])];
+        renderCommunicationWorkspace();
+    });
+    root.querySelector('[data-reminder-clear]')?.addEventListener('click', () => {
+        const visibleNames = new Set((studentReminderCountry === 'All Countries' ? studentReminderRecipients : studentReminderRecipients.filter((item) => item.country === studentReminderCountry)).map((item) => item.name));
+        selectedReminderRecipients = selectedReminderRecipients.filter((item) => !visibleNames.has(item));
+        renderCommunicationWorkspace();
+    });
+    root.querySelectorAll('[data-reminder-template]').forEach((button) => button.addEventListener('click', () => {
+        studentReminderTemplateId = Number(button.dataset.reminderTemplate);
+        renderCommunicationWorkspace();
+    }));
+    root.querySelectorAll('[data-reminder-auto-template]').forEach((input) => input.addEventListener('change', () => {
+        const id = Number(input.dataset.reminderAutoTemplate);
+        studentReminderAutoTemplates = input.checked
+            ? [...new Set([...studentReminderAutoTemplates, id])]
+            : studentReminderAutoTemplates.filter((item) => item !== id);
+        renderCommunicationWorkspace();
+    }));
+    root.querySelector('[data-add-reminder-template]')?.addEventListener('click', () => {
+        const id = Math.max(...studentReminderTemplates.map((item) => item.id)) + 1;
+        studentReminderTemplates.push({
+            id,
+            name: 'New Template',
+            description: 'Custom reusable message',
+            body: 'Hello {student_name}! Type your message here.\n\n你好，{student_name}！请在这里输入你的消息。',
+        });
+        studentReminderTemplateId = id;
+        renderCommunicationWorkspace();
+    });
+    root.querySelector('[data-save-reminder-template]')?.addEventListener('click', () => {
+        const name = root.querySelector('[data-reminder-template-name]')?.value.trim() || 'Untitled Template';
+        const english = root.querySelector('[data-reminder-message]')?.value.trim() || '';
+        const translation = root.querySelector('[data-reminder-translation]')?.value.trim() || '';
+        const body = [english, translation].filter(Boolean).join('\n\n');
+        studentReminderTemplates = studentReminderTemplates.map((item) => item.id === studentReminderTemplateId ? { ...item, name, body } : item);
+        renderCommunicationWorkspace();
+        showSparkToast('Reminder template changes saved.');
+    });
+    root.querySelectorAll('[data-chatbot-section]').forEach((button) => button.addEventListener('click', () => {
+        chatbotSection = button.dataset.chatbotSection;
+        renderCommunicationWorkspace();
+    }));
+    root.querySelector('[data-toggle-chatbot]')?.addEventListener('click', () => {
+        chatbotEnabled = !chatbotEnabled;
+        renderCommunicationWorkspace();
+        showSparkToast(chatbotEnabled ? 'Chatbot activated.' : 'Chatbot deactivated.');
+    });
+    root.querySelectorAll('[data-chatbot-conversation]').forEach((button) => button.addEventListener('click', () => {
+        selectedChatbotConversation = button.dataset.chatbotConversation;
+        renderCommunicationWorkspace();
+    }));
+    root.querySelectorAll('[data-chatbot-assign]').forEach((button) => button.addEventListener('click', () => {
+        const assignee = root.querySelector('[data-chatbot-assignee]')?.value.split(' · ')[0] || 'Angela Reyes';
+        chatbotConversationAssignments[selectedChatbotConversation] = assignee;
+        renderCommunicationWorkspace();
+        showSparkToast(`Chatbot conversation assigned to ${assignee}.`);
+    }));
+    root.querySelector('[data-add-chatbot-reply]')?.addEventListener('click', openChatbotReplyModal);
+    root.querySelectorAll('[data-remove-chatbot-reply]').forEach((button) => button.addEventListener('click', () => {
+        chatbotReplies = chatbotReplies.filter((reply) => reply.id !== Number(button.dataset.removeChatbotReply));
+        renderCommunicationWorkspace();
+        showSparkToast('Reply removed in prototype mode.');
+    }));
+    root.querySelectorAll('[data-chatbot-reply-active]').forEach((input) => input.addEventListener('change', () => {
+        chatbotReplies = chatbotReplies.map((reply) => reply.id === Number(input.dataset.chatbotReplyActive) ? { ...reply, active: input.checked } : reply);
+    }));
+    root.querySelectorAll('[data-chatbot-reply-topic], [data-chatbot-reply-triggers], [data-chatbot-reply-answer]').forEach((field) => field.addEventListener('change', () => {
+        const id = Number(field.dataset.chatbotReplyTopic || field.dataset.chatbotReplyTriggers || field.dataset.chatbotReplyAnswer);
+        chatbotReplies = chatbotReplies.map((reply) => {
+            if (reply.id !== id) return reply;
+            if (field.dataset.chatbotReplyTopic) return { ...reply, topic: field.value };
+            if (field.dataset.chatbotReplyTriggers) return { ...reply, triggers: field.value };
+            return { ...reply, answer: field.value };
+        });
+    }));
+    root.querySelectorAll('[data-regional-conversation]').forEach((button) => button.addEventListener('click', () => {
+        const [provider, name] = button.dataset.regionalConversation.split(':');
+        selectedRegionalMessenger[provider] = name;
+        renderCommunicationWorkspace();
+    }));
+    root.querySelectorAll('[data-regional-form]').forEach((form) => form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        form.querySelector('input').value = '';
+        showSparkToast(`${activeCommunicationTab} message prepared in prototype mode.`);
+    }));
     root.querySelectorAll('[data-communication-toast]').forEach((button) => button.addEventListener('click', () => showSparkToast(button.dataset.communicationToast)));
     root.querySelectorAll('[data-conversation-select]').forEach((button) => button.addEventListener('click', () => {
         selectedConversationId = Number(button.dataset.conversationSelect);
@@ -4616,6 +4874,7 @@ function bindCommunicationEvents(root) {
     root.querySelector('[data-open-channel-drawer]')?.addEventListener('click', openCommunicationChannelDrawer);
     root.querySelector('[data-assign-conversation]')?.addEventListener('click', () => openCommunicationAssignmentModal('conversation'));
     root.querySelector('[data-assign-email]')?.addEventListener('click', () => openCommunicationAssignmentModal('email'));
+    root.querySelector('[data-compose-email]')?.addEventListener('click', openEmailComposeModal);
     root.querySelectorAll('[data-email-folder]').forEach((button) => button.addEventListener('click', () => {
         communicationEmailFolder = button.dataset.emailFolder;
         renderCommunicationWorkspace();
@@ -4642,6 +4901,102 @@ function bindCommunicationEvents(root) {
         if (!value) return;
         showSparkToast('Email reply prepared for sending.');
     });
+}
+
+function openChatbotReplyModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop chatbot-reply-modal-backdrop';
+    overlay.innerHTML = `
+        <div class="modal chatbot-reply-modal" role="dialog" aria-modal="true" aria-labelledby="chatbot-reply-modal-title">
+            <div class="modal-head">
+                <div>
+                    <p>CHATBOT KNOWLEDGE</p>
+                    <h3 id="chatbot-reply-modal-title">Add Reply</h3>
+                </div>
+                <button type="button" data-chatbot-reply-close aria-label="Close">×</button>
+            </div>
+            <form id="chatbotReplyForm" class="chatbot-reply-form">
+                <label>Topic<input id="chatbotReplyTopic" placeholder="Example: Lesson packages" required></label>
+                <label>Trigger words<input id="chatbotReplyTriggers" placeholder="Example: price, package, lessons" required></label>
+                <label class="full">Approved chatbot answer<textarea id="chatbotReplyAnswer" placeholder="Write the approved chatbot answer..." required></textarea></label>
+                <label class="chatbot-modal-active"><input id="chatbotReplyActive" type="checkbox" checked><span>Set this reply as Active</span></label>
+            </form>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-chatbot-reply-close>Cancel</button>
+                <button class="primary-button" type="submit" form="chatbotReplyForm">Add Reply</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    function close() {
+        overlay.remove();
+    }
+
+    overlay.querySelectorAll('[data-chatbot-reply-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('#chatbotReplyForm')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const topic = overlay.querySelector('#chatbotReplyTopic')?.value.trim();
+        const triggers = overlay.querySelector('#chatbotReplyTriggers')?.value.trim();
+        const answer = overlay.querySelector('#chatbotReplyAnswer')?.value.trim();
+        if (!topic || !triggers || !answer) return;
+        const id = Math.max(0, ...chatbotReplies.map((reply) => reply.id)) + 1;
+        chatbotReplies = [...chatbotReplies, { id, topic, triggers, answer, active: Boolean(overlay.querySelector('#chatbotReplyActive')?.checked) }];
+        close();
+        renderCommunicationWorkspace();
+        showSparkToast(`Reply ${chatbotReplies.length} added in draft mode.`);
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('#chatbotReplyTopic')?.focus();
+}
+
+function openEmailComposeModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop email-compose-backdrop';
+    overlay.innerHTML = `
+        <div class="modal email-compose-modal" role="dialog" aria-modal="true" aria-labelledby="emailComposeTitle">
+            <div class="modal-head">
+                <div>
+                    <p>COMPANY EMAIL</p>
+                    <h3 id="emailComposeTitle">Compose Email</h3>
+                </div>
+                <button type="button" data-compose-close aria-label="Close">×</button>
+            </div>
+            <form class="email-compose-form" data-compose-form>
+                <div class="email-compose-grid">
+                    <label>To<input type="email" data-compose-to placeholder="recipient@example.com" required></label>
+                    <label>Sender<select data-compose-sender><option>Van Acepcion</option><option>Angela Reyes</option><option>Carlo Mendoza</option><option>Nina Flores</option></select></label>
+                </div>
+                <div class="email-compose-grid">
+                    <label>Country<select data-compose-country><option>China</option><option>South Korea</option><option>Japan</option><option>UAE</option><option>Israel</option></select></label>
+                    <label>Priority<select data-compose-priority><option>Normal</option><option>High</option><option>Follow up</option></select></label>
+                </div>
+                <label>Subject<input data-compose-subject placeholder="Email subject" required></label>
+                <label>Message<textarea data-compose-message placeholder="Write your message..." required></textarea></label>
+                <div class="modal-actions">
+                    <button class="secondary-button" type="button" data-compose-close>Cancel</button>
+                    <button class="primary-button" type="submit">Send Email</button>
+                </div>
+            </form>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-compose-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('[data-compose-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const to = overlay.querySelector('[data-compose-to]')?.value.trim();
+        const subject = overlay.querySelector('[data-compose-subject]')?.value.trim();
+        const message = overlay.querySelector('[data-compose-message]')?.value.trim();
+        if (!to || !subject || !message) return;
+        close();
+        showSparkToast(`Email prepared for ${to}.`);
+    });
+    overlay.querySelector('[data-compose-to]')?.focus();
 }
 
 function openCommunicationAssignmentModal(kind) {
@@ -4672,7 +5027,7 @@ function openCommunicationChannelDrawer() {
     const overlay = document.createElement('div');
     overlay.className = 'profile-drawer-overlay';
     const connected = Object.values(communicationConnections).filter(Boolean).length;
-    overlay.innerHTML = `<aside class="student-edit-drawer channel-management-drawer" role="dialog" aria-modal="true"><div class="student-edit-head"><div><span>COMMUNICATION · ADMIN ONLY</span><h2>Manage Channels</h2><p>Control which official accounts feed the Unified Inbox.</p></div><button type="button" data-channel-close aria-label="Close">×</button></div><div class="student-edit-body"><div class="channel-drawer-summary"><div><strong>${connected} of 3 channels connected</strong><span>New messages appear automatically in the Unified Inbox.</span></div>${communicationStatus('Healthy')}</div><nav class="channel-drawer-tabs">${[['facebook','Facebook Messenger','f'],['whatsapp','WhatsApp','w'],['website','Website Chat','⌁']].map(([key, name, icon]) => `<button type="button" data-channel-toggle="${key}"><i>${icon}</i><span>${name}</span><b class="${communicationConnections[key] ? 'connected' : 'disconnected'}">${communicationConnections[key] ? 'On' : 'Off'}</b></button>`).join('')}</nav><section class="drawer-form-section channel-account-card"><div class="channel-account-head"><span>f</span><div><h3>Facebook Messenger</h3><p>VLACE English</p></div>${communicationStatus('Connected')}</div><dl><div><dt>Connection</dt><dd>Meta Business Page · Connected</dd></div><div><dt>Activity</dt><dd>2 conversations today</dd></div><div><dt>Last synchronized</dt><dd>Just now · Philippine Time</dd></div><div><dt>Message direction</dt><dd>Receive and reply</dd></div></dl></section><section class="drawer-form-section"><div class="drawer-section-title"><span>1</span><div><h3>Routing & Notifications</h3><p>Choose how new conversations enter the team workflow.</p></div></div>${['Automatically assign new conversations','Notify assigned person','Allow replies from Unified Inbox'].map((label) => `<label class="channel-setting-row"><span><strong>${label}</strong><small>Prepared for the live communication integration.</small></span><input type="checkbox" checked></label>`).join('')}</section><div class="prototype-security-note"><strong>Official API connection required</strong><p>This drawer demonstrates channel administration. Live Facebook, WhatsApp, and website messaging requires verified provider accounts, secure tokens, webhooks, and a backend connection.</p></div></div><div class="student-edit-footer"><button class="secondary-button" type="button" data-channel-close>Cancel</button><button class="primary-button" type="button" data-channel-save>Save Channel Settings</button></div></aside>`;
+    overlay.innerHTML = `<aside class="student-edit-drawer channel-management-drawer" role="dialog" aria-modal="true"><div class="student-edit-head"><div><span>COMMUNICATION · ADMIN ONLY</span><h2>Manage Channels</h2><p>Control which official accounts feed the Unified Inbox.</p></div><button type="button" data-channel-close aria-label="Close">×</button></div><div class="student-edit-body"><div class="channel-drawer-summary"><div class="channel-summary-copy"><strong>${connected} of 3 channels connected</strong><span>New messages appear automatically in the Unified Inbox.</span></div>${communicationStatus('Healthy')}</div><nav class="channel-drawer-tabs">${[['facebook','Facebook Messenger','f'],['whatsapp','WhatsApp','w'],['website','Website Chat','⌁']].map(([key, name, icon]) => `<button type="button" data-channel-toggle="${key}"><i>${icon}</i><span>${name}</span><b class="${communicationConnections[key] ? 'connected' : 'disconnected'}">${communicationConnections[key] ? 'On' : 'Off'}</b></button>`).join('')}</nav><section class="drawer-form-section channel-account-card"><div class="channel-account-head"><span>f</span><div><h3>Facebook Messenger</h3><p>VLACE English</p></div>${communicationStatus('Connected')}</div><dl><div><dt>Connection</dt><dd>Meta Business Page · Connected</dd></div><div><dt>Activity</dt><dd>2 conversations today</dd></div><div><dt>Last synchronized</dt><dd>Just now · Philippine Time</dd></div><div><dt>Message direction</dt><dd>Receive and reply</dd></div></dl></section><section class="drawer-form-section"><div class="drawer-section-title"><span>1</span><div><h3>Routing & Notifications</h3><p>Choose how new conversations enter the team workflow.</p></div></div>${['Automatically assign new conversations','Notify assigned person','Allow replies from Unified Inbox'].map((label) => `<label class="channel-setting-row"><span class="channel-setting-copy"><strong>${label}</strong><small>Prepared for the live communication integration.</small></span><input type="checkbox" checked></label>`).join('')}</section><div class="prototype-security-note"><strong>Official API connection required</strong><p>This drawer demonstrates channel administration. Live Facebook, WhatsApp, and website messaging requires verified provider accounts, secure tokens, webhooks, and a backend connection.</p></div></div><div class="student-edit-footer"><button class="secondary-button" type="button" data-channel-close>Cancel</button><button class="primary-button" type="button" data-channel-save>Save Channel Settings</button></div></aside>`;
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     overlay.querySelectorAll('[data-channel-close]').forEach((button) => button.addEventListener('click', close));
@@ -6380,7 +6735,7 @@ function openUserLoginSettings(userId) {
                         <label class="full">New password<input id="loginNewPassword" type="password" placeholder="At least 8 characters" autocomplete="new-password"></label>
                         <label class="full">Confirm new password<input id="loginConfirmPassword" type="password" placeholder="Enter the new password again" autocomplete="new-password"><small id="loginPasswordHint">Must include an uppercase letter, number, and special character.</small></label>
                     </div>
-                    <label class="login-option"><input type="checkbox" id="loginShowPassword"><span>Show password</span></label>
+                    <label class="login-option login-option-inline"><input type="checkbox" id="loginShowPassword"><span>Show password</span></label>
                     <label class="login-option"><input type="checkbox" checked><span><strong>Require password change at next login</strong><small>Recommended when the Admin creates a temporary password.</small></span></label>
                     <button class="primary-button reset-user-password" id="loginResetPassword" disabled>Save New Password & Sign Out Sessions</button>
                 </section>
@@ -10517,6 +10872,10 @@ function confirmSparkAction() {
 }
 
 function toggleMenu(groupName) {
+    if (groupName === 'communication') {
+        activateSection('inbox');
+    }
+
     if (groupName === 'marketing') {
         activateSection('marketing');
     }
@@ -11082,11 +11441,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const logoutConfirmModal = document.getElementById('logoutConfirmModal');
+    const openLogoutConfirmModal = () => {
+        logoutConfirmModal?.removeAttribute('hidden');
+        lucide.createIcons();
+    };
+    const closeLogoutConfirmModal = () => {
+        logoutConfirmModal?.setAttribute('hidden', '');
+    };
+
+    document.getElementById('logoutButton')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        openLogoutConfirmModal();
+    });
+    document.getElementById('logoutModalClose')?.addEventListener('click', closeLogoutConfirmModal);
+    logoutConfirmModal?.addEventListener('click', (event) => {
+        if (event.target === logoutConfirmModal) {
+            closeLogoutConfirmModal();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && logoutConfirmModal && !logoutConfirmModal.hasAttribute('hidden')) {
+            closeLogoutConfirmModal();
+        }
+    });
+
     document.getElementById('logoutConfirmButton')?.addEventListener('click', async () => {
+        closeLogoutConfirmModal();
         await submitLogout().catch(() => undefined);
         showLogin();
     });
-    document.getElementById('logoutStayButton')?.addEventListener('click', () => activateSection('overview'));
+    document.getElementById('logoutStayButton')?.addEventListener('click', closeLogoutConfirmModal);
     document.getElementById('teacherPortalLogoutButton')?.addEventListener('click', async () => {
         await submitLogout().catch(() => undefined);
         showLogin();
