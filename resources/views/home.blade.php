@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=lesson-upload-action-20260809">
-    <script src="{{ asset('js/app.js') }}?v=lesson-upload-action-20260809" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=teacher-profile-photo-20260809">
+    <script src="{{ asset('js/app.js') }}?v=teacher-profile-photo-20260809" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -2413,11 +2413,11 @@
             </div>
 
             <nav aria-label="Teacher navigation">
-                <button class="active" data-teacher-portal-target="teacher-overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
-                <button data-teacher-portal-target="teacher-schedule"><i data-lucide="calendar-days"></i><span>My Schedule</span></button>
-                <button data-teacher-portal-target="teacher-students"><i data-lucide="graduation-cap"></i><span>My Students</span></button>
-                <button data-teacher-portal-target="teacher-lessons"><i data-lucide="book-open-check"></i><span>Lessons</span></button>
+                <button class="active" data-teacher-portal-target="teacher-schedule"><i data-lucide="calendar-days"></i><span>My Schedule</span></button>
+                <button data-teacher-portal-target="teacher-students"><i data-lucide="graduation-cap"></i><span>My Classes</span></button>
+                <button data-teacher-portal-target="teacher-payroll"><i data-lucide="wallet"></i><span>Payroll</span></button>
                 <button data-teacher-portal-target="teacher-feedback"><i data-lucide="message-square-text"></i><span>Feedback</span></button>
+                <button data-teacher-portal-target="teacher-documents"><i data-lucide="folder-check"></i><span>Documents</span></button>
                 <button data-teacher-portal-target="teacher-policies"><i data-lucide="file-check-2"></i><span>Policies</span></button>
                 <button data-teacher-portal-target="teacher-profile"><i data-lucide="user-round"></i><span>Profile</span></button>
             </nav>

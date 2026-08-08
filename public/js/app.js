@@ -1277,19 +1277,30 @@ if (['inbox', 'email', 'chatbot', 'slack', 'line', 'kakaotalk', 'reminders'].inc
     return [{ label: 'Dashboard', action: 'overview' }, { label: title }];
 }
 
-let activeTeacherPortalSection = 'teacher-overview';
+let activeTeacherPortalSection = 'teacher-schedule';
 let activeTeacherPortalTeacherId = 'T1-001';
+let activeTeacherPortalPayrollPeriod = teacherPayrollPeriodNames[0];
+let activeTeacherPortalPolicyId = 'POL-001';
+let teacherPortalPolicySearch = '';
+let teacherPortalPolicyCategory = 'All categories';
+let teacherPortalPolicyStatus = 'All statuses';
 const teacherPortalSlotOverrides = {};
 const teacherPortalScheduleCounts = {};
 const teacherPortalVideoUrls = {};
 const teacherPortalLessonStatuses = {};
+const teacherPortalPolicyAcknowledgements = {};
+const teacherPortalProfilePictures = {
+    'T1-001': '/images/teacher-profile-maria.svg',
+};
+let activeEmployeeDocumentUploadSource = 'admin';
 
 const teacherPortalTitles = {
     'teacher-overview': 'Teacher Dashboard',
     'teacher-schedule': 'My Schedule',
-    'teacher-students': 'My Students',
-    'teacher-lessons': 'Lessons',
+    'teacher-students': 'My Classes',
+    'teacher-payroll': 'Payroll',
     'teacher-feedback': 'Feedback',
+    'teacher-documents': 'Documents',
     'teacher-policies': 'Company Policies',
     'teacher-profile': 'My Profile',
 };
@@ -1309,6 +1320,7 @@ function getTeacherPortalLessons() {
 }
 
 function activateTeacherPortal(section) {
+    if (section === 'teacher-lessons') section = 'teacher-schedule';
     activeTeacherPortalSection = section;
     document.querySelectorAll('[data-teacher-portal-target]').forEach((button) => {
         button.classList.toggle('active', button.dataset.teacherPortalTarget === section);
@@ -1321,6 +1333,7 @@ function renderTeacherPortal() {
     const root = document.getElementById('teacherPortalContent');
     const teacher = getTeacherPortalTeacher();
     if (!root || !teacher) return;
+    if (activeTeacherPortalSection === 'teacher-lessons') activeTeacherPortalSection = 'teacher-schedule';
 
     setText('#teacherPortalTitle', teacherPortalTitles[activeTeacherPortalSection] || 'Teacher Dashboard');
     setText('#teacherPortalName', teacher.name);
@@ -1330,8 +1343,9 @@ function renderTeacherPortal() {
         ${activeTeacherPortalSection === 'teacher-overview' ? renderTeacherPortalOverview(teacher) : ''}
         ${activeTeacherPortalSection === 'teacher-schedule' ? renderTeacherPortalSchedule(teacher) : ''}
         ${activeTeacherPortalSection === 'teacher-students' ? renderTeacherPortalStudents(teacher) : ''}
-        ${activeTeacherPortalSection === 'teacher-lessons' ? renderTeacherPortalLessons(teacher) : ''}
+        ${activeTeacherPortalSection === 'teacher-payroll' ? renderTeacherPortalPayroll(teacher) : ''}
         ${activeTeacherPortalSection === 'teacher-feedback' ? renderTeacherPortalFeedback(teacher) : ''}
+        ${activeTeacherPortalSection === 'teacher-documents' ? renderTeacherPortalDocuments(teacher) : ''}
         ${activeTeacherPortalSection === 'teacher-policies' ? renderTeacherPortalPolicies(teacher) : ''}
         ${activeTeacherPortalSection === 'teacher-profile' ? renderTeacherPortalProfile(teacher) : ''}
     `;
@@ -1370,6 +1384,7 @@ function renderTeacherPortalSchedule(teacher) {
         ${renderTeacherPortalHero(teacher, 'My Schedule', 'Classes assigned to you by the admin team. Teacher view is read-only except feedback and availability requests.')}
         <section class="teacher-portal-kpis teacher-pay-kpis">
             <article><span>Lessons Completed Today</span><strong>${payStats.completedToday}</strong><small>Finished classes for today</small></article>
+            <article><span>Today’s Earnings</span><strong>${formatPeso(payStats.todayEarnings)}</strong><small>Updates after completed lessons</small></article>
             <article><span>Classes Completed This Month</span><strong>${payStats.completedThisMonth}</strong><small>${payStats.monthLabel} payroll count</small></article>
             <article><span>Estimated Monthly Salary</span><strong>${formatPeso(payStats.monthlySalary)}</strong><small>${formatPeso(payStats.rate)}/hr after completed lessons</small></article>
         </section>
@@ -1484,11 +1499,13 @@ function getTeacherPortalPayStats(teacher) {
     const completedMonthlyRecords = rows.filter((row) => ['Completed', 'Student is late'].includes(row.status));
     const salaryRows = rows.filter(isTeacherPortalLessonPayable);
     const monthlySalary = salaryRows.reduce((sum, row) => sum + (getPayableHours(parseInt(row.duration, 10)) * rate), 0);
-    const completedToday = completedMonthlyRecords.filter((row) => row.date === 'Jul 30, 2026').length;
+    const todayRows = completedMonthlyRecords.filter((row) => row.date === 'Jul 30, 2026');
+    const todayEarnings = todayRows.reduce((sum, row) => sum + (getPayableHours(parseInt(row.duration, 10)) * rate), 0);
 
     return {
         rate,
-        completedToday,
+        completedToday: todayRows.length,
+        todayEarnings,
         completedThisMonth: completedMonthlyRecords.length,
         monthlySalary,
         monthLabel: 'August 2026',
@@ -1528,7 +1545,7 @@ function renderTeacherPortalWeeklyCalendar(teacher) {
 function renderTeacherPortalStudents(teacher) {
     const rows = getTeacherPortalStudentLessonRows(teacher);
     return `
-        ${renderTeacherPortalHero(teacher, 'My Students', 'Assigned students and their lesson access details.')}
+        ${renderTeacherPortalHero(teacher, 'My Classes', 'Assigned students and their lesson access details.')}
         <article class="teacher-portal-panel">
             <div class="teacher-panel-head">
                 <div>
@@ -1623,7 +1640,7 @@ function getTeacherPortalStudentLessonRows(teacher) {
             };
         });
     }).sort((a, b) => {
-        const dateDifference = parseTeacherPortalLessonDate(a.date) - parseTeacherPortalLessonDate(b.date);
+        const dateDifference = parseTeacherPortalLessonDate(b.date) - parseTeacherPortalLessonDate(a.date);
         if (dateDifference !== 0) return dateDifference;
         return a.student.name.localeCompare(b.student.name) || a.topic.localeCompare(b.topic);
     });
@@ -1695,45 +1712,632 @@ function renderTeacherPortalLessons(teacher) {
         </section>`;
 }
 
-function renderTeacherPortalFeedback(teacher) {
-    const rows = getTeacherPortalStudentLessonRows(teacher).filter((row) => row.isDue && !['Cancelled', 'Student is absent', 'Reassigned from me'].includes(row.status)).slice(0, 8);
+function renderTeacherPortalPayroll(teacher) {
+    const period = teacherPayrollPeriodNames.includes(activeTeacherPortalPayrollPeriod) ? activeTeacherPortalPayrollPeriod : teacherPayrollPeriodNames[0];
+    const summary = getTeacherPayrollSummary(teacher, period);
     return `
-        ${renderTeacherPortalHero(teacher, 'Feedback', 'Submit class notes after lessons and review admin feedback.')}
-        <section class="teacher-portal-grid">
-            <article class="teacher-portal-panel">
-                <div class="teacher-panel-head">
-                    <div><h3>Feedback Queue</h3><p>Student-facing feedback is reviewed by Admin or Manager before publishing.</p></div>
-                    <button type="button" data-teacher-action="feedback">+ Submit Feedback</button>
+        ${renderTeacherPortalHero(teacher, 'Payroll', 'Review completed lessons, deductions, and net payroll using the same payroll calculation shown to Admin.')}
+        <section class="teacher-payroll-workspace teacher-portal-payroll">
+            <div class="teacher-panel-head payroll-toolbar">
+                <div>
+                    <p class="detail-kicker">PAYROLL HISTORY</p>
+                    <h3>Teacher Payroll</h3>
+                    <p>Select any payroll period to view its complete daily calculation.</p>
                 </div>
-                ${renderTeacherPortalLessonList(rows.slice(0, 5), true)}
+                <label class="payroll-period-picker">
+                    <span>Payroll period</span>
+                    <select data-teacher-payroll-period>
+                        ${teacherPayrollPeriodNames.map((name) => `<option value="${escapeHtml(name)}" ${name === period ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
+                    </select>
+                </label>
+            </div>
+            <article class="payroll-table-panel teacher-payroll-history-panel">
+                <div class="table-wrap">
+                    <table class="payroll-history-table">
+                        <thead>
+                            <tr>
+                                <th>Payroll Period</th>
+                                <th>Lessons</th>
+                                <th>Hours</th>
+                                <th>Gross Pay</th>
+                                <th>Deductions</th>
+                                <th>Net Payroll</th>
+                                <th>Status</th>
+                                <th>Payslip</th>
+                                <th>Upload Receipt</th>
+                                <th>View Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>${renderTeacherPortalPayrollHistoryRows(teacher, period)}</tbody>
+                    </table>
+                </div>
             </article>
-            <article class="teacher-portal-panel">
-                <div class="teacher-panel-head"><div><h3>Admin Review Notes</h3><p>Mock comments to test the teacher feedback page.</p></div></div>
-                <div class="teacher-lesson-list">
-                    <article><div><strong>Liam Chen</strong><small>Past Tense Review</small></div><span>Add one pronunciation note before publishing.</span>${marketingStatus('Needs review')}</article>
-                    <article><div><strong>Eddie Zhang</strong><small>Grammar Practice</small></div><span>Approved for parent visibility.</span>${marketingStatus('Approved')}</article>
-                    <article><div><strong>Chloe Huang</strong><small>Speaking Confidence</small></div><span>Waiting for uploaded video URL.</span>${marketingStatus('Pending')}</article>
+            <div class="payroll-policy teacher-payroll-rules">
+                <i data-lucide="badge-dollar-sign"></i>
+                <div>
+                    <strong>Automatic pay rules</strong>
+                    <p>25-minute class = 30 minutes of pay · 50-minute class = 1 hour of pay · The 31st carries over to the next 1st–15th payroll.</p>
+                </div>
+            </div>
+            <section class="payroll-summary payroll-summary-five">
+                <article>
+                    <span>Payable Hours</span>
+                    <strong>${summary.hours}</strong>
+                    <small>${summary.records.length} completed lesson${summary.records.length === 1 ? '' : 's'}</small>
+                </article>
+                <article>
+                    <span>Hourly Rate</span>
+                    <strong>${formatPeso(summary.rate)}</strong>
+                    <small>Teacher account rate</small>
+                </article>
+                <article>
+                    <span>Gross Lesson Pay</span>
+                    <strong>${formatPeso(summary.gross)}</strong>
+                    <small>Before deductions</small>
+                </article>
+                <article class="deduction-summary-card">
+                    <span>Deductions</span>
+                    <strong>− ${formatPeso(summary.deductionTotal)}</strong>
+                    <small>${summary.appliedDeductions.length || 'No'} applied deduction${summary.appliedDeductions.length === 1 ? '' : 's'}</small>
+                </article>
+                <article class="total-card">
+                    <span>Net Payroll</span>
+                    <strong>${formatPeso(summary.net)}</strong>
+                    <small>Gross minus deductions</small>
+                </article>
+            </section>
+            <article class="payroll-table-panel">
+                <div class="teacher-panel-head">
+                    <div><h3>Payroll Calculation</h3><p>Daily rows, lesson pay, deductions, and net pay for this payroll period.</p></div>
+                </div>
+                <div class="table-wrap">
+                    <table class="payroll-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Student</th>
+                                <th>Lesson</th>
+                                <th>Actual Duration</th>
+                                <th>Payable Time</th>
+                                <th>Rate</th>
+                                <th>Calculation</th>
+                                <th>Gross Pay</th>
+                                <th>Deductions</th>
+                                <th>Net Pay</th>
+                            </tr>
+                        </thead>
+                        <tbody>${renderTeacherPortalPayrollDetailRows(teacher, summary)}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4">Payroll Period Total</td>
+                                <td>${summary.hours} ${summary.hours === 1 ? 'hour' : 'hours'}</td>
+                                <td colspan="2">${summary.records.length} completed lesson${summary.records.length === 1 ? '' : 's'}</td>
+                                <td>${formatPeso(summary.gross)}</td>
+                                <td>− ${formatPeso(summary.deductionTotal)}</td>
+                                <td>${formatPeso(summary.net)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </article>
+            <article class="payroll-deductions-panel">
+                <div class="teacher-panel-head">
+                    <div>
+                        <p class="detail-kicker">AUTOMATIC · APPROVAL CONTROLLED</p>
+                        <h3>Deductions</h3>
+                        <p>Approved waivers remain visible for auditing, but are excluded from net payroll.</p>
+                    </div>
+                </div>
+                <div class="payroll-note-strip">Nothing is deleted. Payroll corrections and waivers stay visible so the calculation can be audited.</div>
+                <div class="table-wrap">
+                    <table class="payroll-deductions-table">
+                        <thead>
+                            <tr>
+                                <th>Date Added</th>
+                                <th>Reason</th>
+                                <th>Explanation</th>
+                                <th>Related Date</th>
+                                <th>Source</th>
+                                <th>Amount</th>
+                                <th>Status & Approval</th>
+                            </tr>
+                        </thead>
+                        <tbody>${renderTeacherPortalPayrollDeductions(summary)}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5">Net Payroll Calculation</td>
+                                <td colspan="2">${formatPeso(summary.gross)} − ${formatPeso(summary.deductionTotal)} = ${formatPeso(summary.net)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </article>
         </section>`;
 }
 
+function renderTeacherPortalPayrollHistoryRows(teacher, selectedPeriod) {
+    return teacherPayrollPeriodNames.map((period, periodIndex) => {
+        const summary = getTeacherPayrollSummary(teacher, period);
+        const status = period.startsWith('January') ? 'For Review' : 'Paid';
+        const deduction = summary.deductionTotal ? `− ${formatPeso(summary.deductionTotal)}` : '—';
+        const receipt = getPayrollReceipt(teacher, period);
+        const receiptUploaded = Boolean(receipt);
+
+        return `
+            <tr class="${period === selectedPeriod ? 'selected-payroll-period' : ''}">
+                <td>
+                    <button type="button" class="payroll-period-link" data-teacher-payroll-period-index="${periodIndex}">
+                        <strong>${escapeHtml(period)}</strong>
+                        <small>${period.includes('1–15') ? '1st–15th payroll' : '16th–30th payroll'}</small>
+                    </button>
+                </td>
+                <td>${summary.records.length}</td>
+                <td>${summary.hours} hrs</td>
+                <td>${formatPeso(summary.gross)}</td>
+                <td class="${summary.deductionTotal ? 'deduction-amount' : ''}">${deduction}</td>
+                <td class="pay-amount">${formatPeso(summary.net)}</td>
+                <td><span class="status-pill ${status === 'Paid' ? 'positive' : 'warning'}">${status}</span></td>
+                <td><button type="button" class="row-action" data-teacher-payroll-action="payslip" data-teacher-payroll-period-index="${periodIndex}">View</button></td>
+                <td><button type="button" class="row-action" data-teacher-payroll-action="upload-receipt" data-teacher-payroll-period-index="${periodIndex}">${receiptUploaded ? 'Replace Receipt' : 'Upload Receipt'}</button></td>
+                <td><button type="button" class="row-action" data-teacher-payroll-action="view-receipt" data-teacher-payroll-period-index="${periodIndex}" ${receiptUploaded ? '' : 'disabled'}>${receiptUploaded ? 'View Receipt' : 'No Receipt'}</button></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderTeacherPortalPayrollDetailRows(teacher, summary) {
+    const dates = [...new Set([
+        ...summary.records.map((record) => record.date),
+        ...summary.deductions.map((item) => item.relatedDate).filter(Boolean),
+    ])].sort((first, second) => new Date(first).getTime() - new Date(second).getTime());
+
+    return dates.flatMap((date) => {
+        const dailyRecords = summary.records.filter((record) => record.date === date);
+        const dailyDeductions = summary.deductions.filter((item) => item.relatedDate === date);
+        const dailyHours = dailyRecords.reduce((sum, lesson) => sum + getPayableHours(lesson.actualMinutes), 0);
+        const dailyGross = dailyRecords.reduce((sum, lesson) => sum + (getPayableHours(lesson.actualMinutes) * summary.rate), 0);
+        const dailyDeductionTotal = dailyDeductions
+            .filter((item) => item.status !== 'Waived')
+            .reduce((sum, item) => sum + item.amount, 0);
+        const rows = dailyRecords.map((lesson, index) => {
+            const hours = getPayableHours(lesson.actualMinutes);
+            const amount = lesson.status === 'Completed' ? hours * summary.rate : 0;
+            return `
+                <tr class="payroll-lesson-row ${date.startsWith('Dec 31') ? 'carryover-row' : ''}">
+                    <td>${index === 0 ? `<strong>${escapeHtml(date)}</strong>${date.startsWith('Dec 31') ? '<small class="carryover-label">31ST CARRYOVER</small>' : ''}` : ''}</td>
+                    <td>${escapeHtml(lesson.student)}</td>
+                    <td>${escapeHtml(lesson.lesson)}</td>
+                    <td>${lesson.actualMinutes} min</td>
+                    <td>${hours === 0.5 ? '30 min' : '1 hour'}</td>
+                    <td>${formatPeso(summary.rate)}/hr</td>
+                    <td class="calculation">${hours} × ${formatPeso(summary.rate)}</td>
+                    <td class="pay-amount">${formatPeso(amount)}</td>
+                    <td>—</td>
+                    <td class="pay-amount">${formatPeso(amount)}</td>
+                </tr>
+            `;
+        });
+
+        dailyDeductions.forEach((item, index) => {
+            const waived = item.status === 'Waived';
+            rows.push(`
+                <tr class="payroll-deduction-row ${waived ? 'waived-deduction-row' : ''}">
+                    <td>${!dailyRecords.length && index === 0 ? `<strong>${escapeHtml(date)}</strong>` : ''}</td>
+                    <td>${escapeHtml(teacher.name)}</td>
+                    <td><span class="deduction-reason">${escapeHtml(item.reason)}</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td class="calculation">${escapeHtml(item.source)} attendance rule</td>
+                    <td>—</td>
+                    <td class="${waived ? 'waived-amount' : 'deduction-amount'}">${waived ? `Waived · ${formatPeso(item.amount)}` : `− ${formatPeso(item.amount)}`}</td>
+                    <td class="${waived ? 'waived-amount' : 'deduction-amount'}">${waived ? 'Not applied' : `− ${formatPeso(item.amount)}`}</td>
+                </tr>
+            `);
+        });
+
+        rows.push(`
+            <tr class="daily-total">
+                <td colspan="4">Daily Total — ${escapeHtml(date)}</td>
+                <td>${dailyHours} ${dailyHours === 1 ? 'hour' : 'hours'}</td>
+                <td colspan="2">${dailyRecords.length} ${dailyRecords.length === 1 ? 'lesson' : 'lessons'}${dailyDeductions.length ? ` · ${dailyDeductions.length} deduction` : ''}</td>
+                <td>${formatPeso(dailyGross)}</td>
+                <td class="${dailyDeductionTotal ? 'deduction-amount' : ''}">${dailyDeductionTotal ? `− ${formatPeso(dailyDeductionTotal)}` : '—'}</td>
+                <td>${formatPeso(Math.max(0, dailyGross - dailyDeductionTotal))}</td>
+            </tr>
+        `);
+
+        return rows;
+    }).join('');
+}
+
+function renderTeacherPortalPayrollDeductions(summary) {
+    if (!summary.deductions.length) {
+        return `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-deductions">
+                        <strong>No deductions for this payroll period</strong>
+                        <span>Gross lesson pay and net payroll are currently the same.</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    return summary.deductions.map((item) => {
+        const waived = item.status === 'Waived';
+        return `
+            <tr class="${waived ? 'waived-deduction-row' : ''}">
+                <td><strong>${escapeHtml(item.addedAt)}</strong><small class="deduction-id">${escapeHtml(item.id)}</small></td>
+                <td><span class="deduction-reason">${escapeHtml(item.reason)}</span></td>
+                <td>${escapeHtml(item.note)}<small class="manager-request-note">Visible to payroll audit only.</small></td>
+                <td>${escapeHtml(item.relatedDate || '—')}</td>
+                <td><strong>${escapeHtml(item.source)}</strong><small>${escapeHtml(item.addedBy)}</small></td>
+                <td class="${waived ? 'waived-amount' : 'deduction-amount'}">${waived ? `<s>${formatPeso(item.amount)}</s><small>Not applied</small>` : `− ${formatPeso(item.amount)}`}</td>
+                <td><span class="status-pill ${item.status === 'Applied' ? 'warning' : 'neutral'}">${escapeHtml(item.status)}</span></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderTeacherPortalFeedback(teacher) {
+    const publishedRecords = teacherFeedbackRecords.filter((record) => record.visibility !== 'Private');
+    const pendingAcknowledgement = teacherFeedbackRecords.filter((record) => !record.acknowledged).length;
+    const latestRecord = teacherFeedbackRecords[0];
+
+    return `
+        ${renderTeacherPortalHero(teacher, 'Feedback', 'Review the same teacher feedback records prepared in Admin and acknowledge items that need your confirmation.')}
+        <section class="teacher-portal-kpis teacher-record-kpis">
+            <article><span>Total feedback records</span><strong>${teacherFeedbackRecords.length}</strong><small>Admin review history</small></article>
+            <article><span>Published feedback</span><strong>${publishedRecords.length}</strong><small>Visible to teacher</small></article>
+            <article><span>Pending acknowledgement</span><strong>${pendingAcknowledgement}</strong><small>Require your review</small></article>
+            <article><span>Latest result</span><strong>${escapeHtml(latestRecord?.result || '—')}</strong><small>${escapeHtml(latestRecord?.period || 'No record yet')}</small></article>
+        </section>
+        <article class="teacher-portal-panel teacher-portal-record-panel">
+            <div class="teacher-panel-head">
+                <div><h3>Feedback Records</h3><p>Performance reviews, student feedback summaries, and coaching notes from Admin.</p></div>
+            </div>
+            <div class="table-wrap">
+                <table class="teacher-portal-table teacher-record-table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Feedback Type</th>
+                            <th>Reviewed By</th>
+                            <th>Result</th>
+                            <th>Visibility</th>
+                            <th>Acknowledgement</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${teacherFeedbackRecords.map((record, index) => `
+                            <tr>
+                                <td><strong>${escapeHtml(record.period)}</strong></td>
+                                <td><button class="feedback-type-link" type="button" data-teacher-portal-feedback-view="${index}">${escapeHtml(record.type)}</button><small>${escapeHtml(record.summary || 'Admin feedback record')}</small></td>
+                                <td>${escapeHtml(record.reviewedBy)}</td>
+                                <td>${escapeHtml(record.result)}</td>
+                                <td><span class="status-pill ${record.visibility === 'Private' || record.visibility === 'Management Only' ? 'neutral' : 'positive'}">${escapeHtml(getFeedbackVisibilityLabel(record.visibility))}</span></td>
+                                <td><span class="acknowledgment-status ${record.acknowledged ? 'is-acknowledged' : 'is-pending'}">${record.acknowledged ? '✓ Acknowledged' : 'Pending'}</span></td>
+                                <td><div class="employee-record-actions"><button type="button" data-teacher-portal-feedback-view="${index}">${record.acknowledged ? 'View' : 'Review'}</button></div></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    `;
+}
+
+function renderTeacherPortalDocuments(teacher) {
+    const expiringCount = teacherDocuments.filter((documentRecord) => documentRecord.status === 'Expiring Soon').length;
+    const approvedCount = teacherDocuments.filter((documentRecord) => ['Approved', 'Verified'].includes(documentRecord.status)).length;
+    const latestDocument = teacherDocuments[0];
+
+    return `
+        ${renderTeacherPortalHero(teacher, 'Documents', 'View the same teacher documents stored in Admin. Files are protected and view-only in the teacher portal.')}
+        <section class="teacher-portal-kpis teacher-record-kpis">
+            <article><span>Total documents</span><strong>${teacherDocuments.length}</strong><small>Teacher record files</small></article>
+            <article><span>Approved or verified</span><strong>${approvedCount}</strong><small>Ready for payroll and compliance</small></article>
+            <article><span>Needs attention</span><strong>${expiringCount}</strong><small>Expiring soon</small></article>
+            <article><span>Latest update</span><strong>${escapeHtml(latestDocument?.updated || '—')}</strong><small>${escapeHtml(latestDocument?.title || 'No document yet')}</small></article>
+        </section>
+        <article class="teacher-portal-panel teacher-portal-record-panel">
+            <div class="teacher-panel-head">
+                <div><h3>Teacher Documents</h3><p>Contracts, certificates, identification, and clearance files. Teachers can upload and view only; Admin manages edit and delete actions.</p></div>
+                <button class="primary-button" type="button" data-teacher-portal-document-upload>Upload Document</button>
+            </div>
+            <div class="table-wrap">
+                <table class="teacher-portal-table teacher-record-table">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Category</th>
+                            <th>File Type</th>
+                            <th>Updated</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${teacherDocuments.map((documentRecord, index) => `
+                            <tr>
+                                <td><strong>${escapeHtml(documentRecord.title)}</strong><small>${escapeHtml(teacher.name)} · Teacher file</small></td>
+                                <td>${escapeHtml(documentRecord.category)}</td>
+                                <td><span class="document-file-badge">${escapeHtml(documentRecord.type)}</span></td>
+                                <td>${escapeHtml(documentRecord.updated)}</td>
+                                <td><span class="status-pill ${documentRecord.status === 'Expiring Soon' ? 'warning' : 'positive'}">${escapeHtml(documentRecord.status)}</span></td>
+                                <td><div class="employee-record-actions"><button type="button" data-teacher-portal-document-view="${index}">View</button></div></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="teacher-document-permission-note">
+                <strong>Teacher access</strong>
+                <span>Uploaded documents are submitted for Admin review. Teachers cannot edit or delete documents after upload.</span>
+            </div>
+        </article>
+    `;
+}
+
+function getTeacherPortalPolicyStorageKey(teacher = getTeacherPortalTeacher()) {
+    return `vlace-teacher-portal-policy-acknowledgements-${teacher?.id || 'T1-001'}`;
+}
+
+function loadTeacherPortalPolicyAcknowledgements(teacher = getTeacherPortalTeacher()) {
+    const key = teacher?.id || 'T1-001';
+    if (teacherPortalPolicyAcknowledgements[key]) return teacherPortalPolicyAcknowledgements[key];
+    try {
+        teacherPortalPolicyAcknowledgements[key] = JSON.parse(localStorage.getItem(getTeacherPortalPolicyStorageKey(teacher)) || '{}');
+    } catch {
+        teacherPortalPolicyAcknowledgements[key] = {};
+    }
+    return teacherPortalPolicyAcknowledgements[key];
+}
+
+function saveTeacherPortalPolicyAcknowledgements(teacher = getTeacherPortalTeacher()) {
+    try {
+        localStorage.setItem(getTeacherPortalPolicyStorageKey(teacher), JSON.stringify(loadTeacherPortalPolicyAcknowledgements(teacher)));
+    } catch {
+        // Keep the prototype usable if local storage is unavailable.
+    }
+}
+
+function getTeacherPortalPolicyCategories() {
+    return ['All categories', ...new Set(companyPolicies.map((policy) => policy.category))];
+}
+
+function getVisibleTeacherPortalPolicies() {
+    const search = teacherPortalPolicySearch.trim().toLowerCase();
+    return companyPolicies.filter((policy) => (
+        (teacherPortalPolicyCategory === 'All categories' || policy.category === teacherPortalPolicyCategory) &&
+        (teacherPortalPolicyStatus === 'All statuses' || policy.status === teacherPortalPolicyStatus) &&
+        (!search || `${policy.id} ${policy.title} ${policy.category}`.toLowerCase().includes(search))
+    ));
+}
+
+function getSelectedTeacherPortalPolicy() {
+    return companyPolicies.find((policy) => policy.id === activeTeacherPortalPolicyId) || companyPolicies[0];
+}
+
+function formatTeacherPortalAcknowledgementDate() {
+    return `${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} PHT`;
+}
+
+function renderTeacherPolicyAcknowledgementCard(policy, teacher, acknowledgedAt) {
+    const required = policy.acknowledgementRequired ?? true;
+    if (policy.status !== 'Published') {
+        return `
+            <section class="policy-acknowledgement optional teacher-policy-ack-card">
+                <div><span>!</span><div><strong>Draft policy</strong><p>This policy is visible for review only. Acknowledgement becomes available when Admin publishes it.</p></div></div>
+                <span class="teacher-policy-ack-state">Not available</span>
+            </section>
+        `;
+    }
+    if (!required) {
+        return `
+            <section class="policy-acknowledgement optional teacher-policy-ack-card">
+                <div><span>i</span><div><strong>Acknowledgement not required</strong><p>Read this policy for guidance. Admin has not required individual acknowledgement.</p></div></div>
+                <span class="teacher-policy-ack-state">View only</span>
+            </section>
+        `;
+    }
+    if (acknowledgedAt) {
+        return `
+            <section class="policy-acknowledgement required teacher-policy-ack-card acknowledged">
+                <div><span>✓</span><div><strong>Acknowledged by ${escapeHtml(teacher.name)}</strong><p>${escapeHtml(acknowledgedAt)} · Recorded in the teacher policy log.</p></div></div>
+                <span class="teacher-policy-ack-state acknowledged">Acknowledged</span>
+            </section>
+        `;
+    }
+    return `
+        <section class="policy-acknowledgement required teacher-policy-ack-card">
+            <div><span>✓</span><div><strong>Acknowledge this policy</strong><p>Please confirm that you have read, understood, and agree to follow this published VLACE policy.</p></div></div>
+            <div class="teacher-policy-ack-actions">
+                <label><input type="checkbox" data-teacher-policy-confirm> I have read and understood this policy.</label>
+                <button class="primary-button" type="button" data-teacher-policy-acknowledge="${escapeHtml(policy.id)}" disabled>Acknowledge Policy</button>
+            </div>
+        </section>
+    `;
+}
+
 function renderTeacherPortalPolicies(teacher) {
-    return `${renderTeacherPortalHero(teacher, 'Company Policies', 'Read and acknowledge policies assigned to teachers.')}<section class="teacher-policy-list">${companyPolicies.filter((policy) => policy.status === 'Published').slice(0, 6).map((policy, index) => `<article><div><strong>${escapeHtml(policy.title)}</strong><small>${escapeHtml(policy.category)} · Version ${escapeHtml(policy.version)}</small></div>${marketingStatus(index < 4 ? 'Acknowledged' : 'Pending')}<button type="button" data-teacher-policy="${escapeHtml(policy.id)}">${index < 4 ? 'View' : 'Acknowledge'}</button></article>`).join('')}</section>`;
+    const acknowledgements = loadTeacherPortalPolicyAcknowledgements(teacher);
+    const categories = getTeacherPortalPolicyCategories();
+    const visiblePolicies = getVisibleTeacherPortalPolicies();
+    if (!visiblePolicies.some((policy) => policy.id === activeTeacherPortalPolicyId) && visiblePolicies.length) {
+        activeTeacherPortalPolicyId = visiblePolicies[0].id;
+    }
+    const selected = getSelectedTeacherPortalPolicy();
+    const publishedPolicies = companyPolicies.filter((policy) => policy.status === 'Published');
+    const requiredPolicies = publishedPolicies.filter((policy) => policy.acknowledgementRequired ?? true);
+    const acknowledgedCount = requiredPolicies.filter((policy) => acknowledgements[policy.id]).length;
+    const pendingCount = Math.max(0, requiredPolicies.length - acknowledgedCount);
+    const selectedAcknowledgement = acknowledgements[selected.id];
+
+    return `
+        ${renderTeacherPortalHero(teacher, 'Company Policies', 'Review VLACE policies and acknowledge published documents assigned to your teacher account.')}
+        <section class="teacher-portal-policy-manual">
+            <section class="policy-summary" aria-label="Teacher policy summary">
+                <article><span>Published policies</span><strong>${publishedPolicies.length}</strong><small>Currently in force</small></article>
+                <article><span>Need acknowledgement</span><strong>${pendingCount}</strong><small>Assigned to you</small></article>
+                <article><span>Acknowledged</span><strong>${acknowledgedCount}/${requiredPolicies.length}</strong><small>Your completed policies</small></article>
+                <article><span>Next scheduled review</span><strong>Sep 1</strong><small>Annual compliance review</small></article>
+            </section>
+            <section class="policy-toolbar">
+                <label class="policy-search"><span>⌕</span><input value="${escapeHtml(teacherPortalPolicySearch)}" placeholder="Search policies by title, category, or ID…" data-teacher-policy-search></label>
+                <select aria-label="Filter policies by category" data-teacher-policy-category>
+                    ${categories.map((category) => `<option ${teacherPortalPolicyCategory === category ? 'selected' : ''}>${escapeHtml(category)}</option>`).join('')}
+                </select>
+                <select aria-label="Filter policies by status" data-teacher-policy-status>
+                    ${['All statuses', 'Published', 'Draft'].map((status) => `<option ${teacherPortalPolicyStatus === status ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}
+                </select>
+            </section>
+            <section class="policy-workspace teacher-policy-workspace">
+                <aside class="policy-list">
+                    <header><div><h3>Policy Library</h3><p>${visiblePolicies.length} policies shown</p></div><span>Your copy</span></header>
+                    <div class="policy-list-scroll">
+                        ${visiblePolicies.length ? visiblePolicies.map((policy) => {
+                            const acknowledged = acknowledgements[policy.id];
+                            return `
+                                <button type="button" class="${selected.id === policy.id ? 'active' : ''}" data-teacher-policy-select="${escapeHtml(policy.id)}">
+                                    <span class="policy-doc-icon">▤</span>
+                                    <span class="policy-list-copy">
+                                        <strong>${escapeHtml(policy.title)}</strong>
+                                        <small>${escapeHtml(policy.id)} · ${escapeHtml(policy.category)}</small>
+                                        <em>Version ${escapeHtml(policy.version)} · ${escapeHtml(policy.effective)}</em>
+                                    </span>
+                                    <b class="${acknowledged ? 'published' : policy.status.toLowerCase()}">${acknowledged ? 'Acknowledged' : escapeHtml(policy.status)}</b>
+                                </button>
+                            `;
+                        }).join('') : '<div class="policy-empty-state">No policies match the selected filters.</div>'}
+                    </div>
+                </aside>
+                <article class="policy-detail">
+                    <header>
+                        <div><p>${escapeHtml(selected.id)} · VERSION ${escapeHtml(selected.version)}</p><h2>${escapeHtml(selected.title)}</h2><small>${escapeHtml(selected.category)}</small></div>
+                        <div class="policy-detail-actions">
+                            <span class="${selected.status.toLowerCase()}">${escapeHtml(selected.status)}</span>
+                            ${selectedAcknowledgement ? '<span class="published">Acknowledged</span>' : ''}
+                        </div>
+                    </header>
+                    <div class="policy-metadata">
+                        <div><span>Policy owner</span><strong>${escapeHtml(selected.owner)}</strong></div>
+                        <div><span>Effective date</span><strong>${escapeHtml(selected.effective)}</strong></div>
+                        <div><span>Applies to</span><strong>Teachers</strong></div>
+                        <div><span>Your status</span><strong>${selectedAcknowledgement ? 'Acknowledged' : 'Pending'}</strong></div>
+                    </div>
+                    <section class="policy-content-block"><h3>1. Purpose and scope</h3><p>${escapeHtml(selected.purpose)}</p></section>
+                    <section class="policy-content-block"><h3>2. Policy requirements</h3><ol>${selected.rules.map((rule, index) => `<li><span>${index + 1}</span><p>${escapeHtml(rule)}</p></li>`).join('')}</ol></section>
+                    ${renderTeacherPolicyAcknowledgementCard(selected, teacher, selectedAcknowledgement)}
+                    <footer><span>Last updated by Van Acepcion · Administrator</span><span>Your acknowledgement is saved to this teacher account.</span></footer>
+                </article>
+            </section>
+        </section>
+    `;
 }
 
 function renderTeacherPortalProfile(teacher) {
     const [meetingPlatform, meetingValue] = getTeacherMeetingSource(teacher);
     const payStats = getTeacherPortalPayStats(teacher);
+    const contact = teacherContacts[teacher.name] || {};
+    const availability = teacherAvailability[teacher.name]?.slots || [];
+    const meetingLinks = teacher.links || {};
+    const profilePicture = teacherPortalProfilePictures[teacher.id] || '/images/teacher-profile-maria.svg';
     return `
-        ${renderTeacherPortalHero(teacher, 'My Profile', 'Teacher account information visible to you. Contact Admin for changes.')}
-        <section class="teacher-profile-grid">
-            <article><span>Name</span><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></article>
-            <article><span>Country Team</span><strong>${escapeHtml(teacher.country)}</strong><small>${escapeHtml(teacher.type)}</small></article>
-            <article><span>Rate</span><strong>${escapeHtml(teacher.rate)}</strong><small>Payroll managed by Admin</small></article>
-            <article><span>Projected Salary</span><strong>${formatPeso(payStats.monthlySalary)}</strong><small>${payStats.monthLabel}</small></article>
-            <article><span>Meeting Setup</span><strong>${hasCompleteMeetingLinks(teacher) ? 'Complete' : 'Needs review'}</strong><small>${escapeHtml(meetingPlatform)} · ${escapeHtml(meetingValue || 'Missing')}</small></article>
-            <article><span>Assigned Students</span><strong>${getTeacherPortalStudents().length}</strong><small>Visible in this teacher account</small></article>
+        ${renderTeacherPortalHero(teacher, 'My Profile', 'View your teacher profile, contact details, teaching assignment, meeting setup, and payroll information.')}
+        <section class="teacher-portal-profile-dashboard">
+            <article class="teacher-profile-photo-card">
+                <div class="teacher-profile-photo-frame">
+                    <img src="${escapeHtml(profilePicture)}" alt="${escapeHtml(teacher.name)} profile picture">
+                </div>
+                <div class="teacher-profile-photo-copy">
+                    <span>PROFILE PICTURE</span>
+                    <h3>${escapeHtml(teacher.name)}</h3>
+                    <p>Upload your teacher profile picture. It will appear in your teacher portal and can be reviewed by Admin.</p>
+                    <div class="teacher-profile-photo-actions">
+                        <button class="primary-button" type="button" data-teacher-profile-photo-upload>Upload Profile Picture</button>
+                        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-teacher-profile-photo-input hidden>
+                    </div>
+                    <small>Teachers can upload a new photo, but only Admin or Manager can delete or remove a profile picture.</small>
+                </div>
+            </article>
+            <section class="teacher-profile-overview teacher-portal-profile-overview">
+                <article class="teacher-profile-info-card">
+                    <h4>Teacher Information</h4>
+                    <p>Individual employment record</p>
+                    <dl>
+                        <div><dt>Teacher ID</dt><dd>${escapeHtml(teacher.id)}</dd></div>
+                        <div><dt>Teacher Name</dt><dd>${escapeHtml(teacher.name)}</dd></div>
+                        <div><dt>Assigned Country</dt><dd>${escapeHtml(teacher.country)}</dd></div>
+                        <div><dt>Student Type</dt><dd>${escapeHtml(teacher.type)}</dd></div>
+                        <div><dt>Account Status</dt><dd><span class="status-pill ${teacher.status === 'Active' ? 'positive' : 'warning'}">${escapeHtml(teacher.status)}</span></dd></div>
+                        <div><dt>Login Status</dt><dd>${escapeHtml(teacher.loginStatus || 'Logged in')}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card">
+                    <h4>Teaching Assignment</h4>
+                    <p>Current workload and payroll rate</p>
+                    <dl>
+                        <div><dt>Assigned Students</dt><dd>${getTeacherPortalStudents().length}</dd></div>
+                        <div><dt>Classes Today</dt><dd>${teacher.today}</dd></div>
+                        <div><dt>Hourly Rate</dt><dd>${escapeHtml(teacher.rate)}</dd></div>
+                        <div><dt>Projected Salary</dt><dd>${formatPeso(payStats.monthlySalary)}</dd></div>
+                        <div><dt>Completed This Month</dt><dd>${payStats.completedThisMonth}</dd></div>
+                        <div><dt>Today’s Earnings</dt><dd>${formatPeso(payStats.todayEarnings)}</dd></div>
+                    </dl>
+                </article>
+            </section>
+
+            <section class="teacher-contact-card teacher-portal-contact-card">
+                <div class="student-sensitive-head teacher-contact-head">
+                    <div class="student-sensitive-title">
+                        <span class="student-sensitive-icon teacher-contact-icon"><i data-lucide="address-book"></i></span>
+                        <div>
+                            <span>CONTACT INFORMATION</span>
+                            <h4>Teacher Contact Details</h4>
+                            <p>Employment contact information shown in Admin and available in your teacher profile.</p>
+                        </div>
+                    </div>
+                </div>
+                <dl class="student-sensitive-list teacher-contact-list">
+                    <div><dt>Primary Phone Number</dt><dd>${escapeHtml(contact.primary || 'Not provided')}</dd></div>
+                    <div><dt>Secondary Phone Number</dt><dd>${escapeHtml(contact.secondary || 'Not provided')}</dd></div>
+                    <div><dt>Email Address</dt><dd>${escapeHtml(contact.email || 'Not provided')}</dd></div>
+                    <div><dt>Emergency Contact Name</dt><dd>${escapeHtml(contact.emergencyName || 'Not provided')}</dd></div>
+                    <div><dt>Emergency Contact Number</dt><dd>${escapeHtml(contact.emergencyPhone || 'Not provided')}</dd></div>
+                </dl>
+                <footer>
+                    <span>Used for work-related and emergency communication.</span>
+                    <button class="secondary-button" type="button" data-teacher-action="profile">Request Update</button>
+                </footer>
+            </section>
+
+            <section class="teacher-profile-overview teacher-portal-profile-overview">
+                <article class="teacher-profile-info-card">
+                    <h4>Meeting Link / ID Setup</h4>
+                    <p>Classroom access saved on your teacher profile</p>
+                    <dl>
+                        <div><dt>Primary Source</dt><dd>${escapeHtml(meetingPlatform === 'Missing' ? 'Missing link' : meetingPlatform)}</dd></div>
+                        <div><dt>Primary Link / ID</dt><dd>${escapeHtml(meetingValue || 'Missing')}</dd></div>
+                        <div><dt>Voov</dt><dd>${escapeHtml(meetingLinks.voov || 'Missing')}</dd></div>
+                        <div><dt>Google Meet</dt><dd>${escapeHtml(meetingLinks.meet || 'Missing')}</dd></div>
+                        <div><dt>Microsoft Teams</dt><dd>${escapeHtml(meetingLinks.teams || 'Missing')}</dd></div>
+                        <div><dt>Zoom</dt><dd>${escapeHtml(meetingLinks.zoom || 'Missing')}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card">
+                    <h4>Available Teaching Blocks</h4>
+                    <p>Weekly availability saved by Admin</p>
+                    <dl>
+                        ${availability.length ? availability.map((slot) => `<div><dt>${escapeHtml(slot.days.join(', '))}</dt><dd>${slot.times.map(inputTimeToDisplay).map(escapeHtml).join(' · ')} PHT</dd></div>`).join('') : '<div><dt>Weekly slots</dt><dd>No weekly slots saved</dd></div>'}
+                    </dl>
+                </article>
+            </section>
         </section>
         <article class="teacher-portal-panel">
             <div class="teacher-panel-head">
@@ -1761,6 +2365,54 @@ function bindTeacherPortalEvents(root) {
     });
     root.querySelectorAll('[data-teacher-protected-lesson]').forEach((button) => {
         button.addEventListener('click', () => openTeacherProtectedLesson(button.dataset.teacherProtectedLesson));
+    });
+    root.querySelectorAll('[data-teacher-payroll-period]').forEach((select) => {
+        select.addEventListener('change', () => {
+            activeTeacherPortalPayrollPeriod = select.value;
+            renderTeacherPortal();
+        });
+    });
+    root.querySelectorAll('.payroll-period-link[data-teacher-payroll-period-index]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeTeacherPortalPayrollPeriod = teacherPayrollPeriodNames[Number(button.dataset.teacherPayrollPeriodIndex)] || activeTeacherPortalPayrollPeriod;
+            renderTeacherPortal();
+        });
+    });
+    root.querySelectorAll('[data-teacher-payroll-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const teacher = getTeacherPortalTeacher();
+            const period = teacherPayrollPeriodNames[Number(button.dataset.teacherPayrollPeriodIndex)] || activeTeacherPortalPayrollPeriod;
+            const action = button.dataset.teacherPayrollAction;
+            if (action === 'payslip') openTeacherPayslip(teacher, period);
+            if (action === 'upload-receipt') openPayrollReceiptUpload(teacher, period);
+            if (action === 'view-receipt') openPayrollReceiptView(teacher, period);
+        });
+    });
+    root.querySelectorAll('[data-teacher-portal-feedback-view]').forEach((button) => {
+        button.addEventListener('click', () => openTeacherFeedbackDetails(Number(button.dataset.teacherPortalFeedbackView), getTeacherPortalTeacher()));
+    });
+    root.querySelectorAll('[data-teacher-portal-document-view]').forEach((button) => {
+        button.addEventListener('click', () => openTeacherDocumentViewer(Number(button.dataset.teacherPortalDocumentView), getTeacherPortalTeacher()));
+    });
+    root.querySelector('[data-teacher-portal-document-upload]')?.addEventListener('click', openTeacherPortalDocumentUpload);
+    root.querySelector('[data-teacher-profile-photo-upload]')?.addEventListener('click', () => {
+        root.querySelector('[data-teacher-profile-photo-input]')?.click();
+    });
+    root.querySelector('[data-teacher-profile-photo-input]')?.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showSparkToast('Please choose an image file for the profile picture.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            const teacher = getTeacherPortalTeacher();
+            teacherPortalProfilePictures[teacher.id] = reader.result;
+            showSparkToast('Profile picture uploaded for Admin review.');
+            renderTeacherPortal();
+        });
+        reader.readAsDataURL(file);
     });
     root.querySelectorAll('[data-teacher-lesson-room]').forEach((button) => {
         button.addEventListener('click', () => openTeacherPortalStudentLessonClassroom(button.dataset.teacherLessonRoom));
@@ -1795,6 +2447,39 @@ function bindTeacherPortalEvents(root) {
     root.querySelectorAll('[data-teacher-student]').forEach((button) => {
         const student = students.find((item) => item.id === button.dataset.teacherStudent);
         button.addEventListener('click', () => openTeacherPortalInfo('Student Profile', student?.name || 'Student', `${student?.level || 'Level'} · ${student?.country || 'Country'} · ${student?.schedule?.platform || 'Classroom'}`));
+    });
+    root.querySelector('[data-teacher-policy-search]')?.addEventListener('input', (event) => {
+        teacherPortalPolicySearch = event.target.value;
+        renderTeacherPortal();
+    });
+    root.querySelector('[data-teacher-policy-category]')?.addEventListener('change', (event) => {
+        teacherPortalPolicyCategory = event.target.value;
+        renderTeacherPortal();
+    });
+    root.querySelector('[data-teacher-policy-status]')?.addEventListener('change', (event) => {
+        teacherPortalPolicyStatus = event.target.value;
+        renderTeacherPortal();
+    });
+    root.querySelectorAll('[data-teacher-policy-select]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeTeacherPortalPolicyId = button.dataset.teacherPolicySelect;
+            renderTeacherPortal();
+        });
+    });
+    const policyConfirm = root.querySelector('[data-teacher-policy-confirm]');
+    const policyAcknowledge = root.querySelector('[data-teacher-policy-acknowledge]');
+    policyConfirm?.addEventListener('change', () => {
+        if (policyAcknowledge) policyAcknowledge.disabled = !policyConfirm.checked;
+    });
+    policyAcknowledge?.addEventListener('click', () => {
+        const teacher = getTeacherPortalTeacher();
+        const policy = companyPolicies.find((item) => item.id === policyAcknowledge.dataset.teacherPolicyAcknowledge);
+        if (!policy) return;
+        const acknowledgements = loadTeacherPortalPolicyAcknowledgements(teacher);
+        acknowledgements[policy.id] = formatTeacherPortalAcknowledgementDate();
+        saveTeacherPortalPolicyAcknowledgements(teacher);
+        showSparkToast(`${policy.title} acknowledged.`);
+        renderTeacherPortal();
     });
     root.querySelectorAll('[data-teacher-policy]').forEach((button) => {
         const policy = companyPolicies.find((item) => item.id === button.dataset.teacherPolicy);
@@ -2020,74 +2705,59 @@ function getTeacherPortalStatusHelp(status) {
 
 function openTeacherProtectedLesson(lessonTitle = 'Lesson Material') {
     const teacher = getTeacherPortalTeacher();
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-backdrop teacher-portal-modal-backdrop';
+    const overlay = document.createElement('section');
+    overlay.className = 'lesson-pdf-reader teacher-protected-lesson-reader';
+    overlay.id = 'teacherProtectedLessonReader';
     overlay.tabIndex = -1;
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Protected lesson presentation viewer');
     overlay.innerHTML = `
-        <div class="modal teacher-portal-modal teacher-protected-lesson-modal" role="dialog" aria-modal="true" aria-label="Protected PDF lesson viewer">
-            <div class="modal-head">
-                <div>
-                    <p>TEACHER PORTAL · PROTECTED PDF VIEWER</p>
-                    <h3>${escapeHtml(lessonTitle)}</h3>
-                </div>
-                <button type="button" data-teacher-modal-close aria-label="Close">×</button>
+        <header class="lesson-pdf-reader-head teacher-protected-reader-head">
+            <button class="secondary-button" type="button" data-teacher-modal-close>Back to Classes</button>
+            <div>
+                <p>TEACHER PORTAL · LESSON PRESENTATION</p>
+                <h3>${escapeHtml(lessonTitle)}</h3>
             </div>
-            <div class="teacher-protected-notice">
-                <strong>Protected material</strong>
-                <span>PDF view only. Downloading, right-clicking, copying, printing, and URL sharing are disabled for teacher accounts.</span>
-            </div>
-            <div class="teacher-protected-viewer" data-protected-viewer tabindex="0" aria-label="Protected lesson preview">
-                <div class="teacher-protected-pdf-shell">
-                    <span>VLACE lesson PDF</span>
-                    <strong>View-only preview</strong>
-                    <button class="teacher-pdf-expand-button" type="button" data-protected-expand aria-pressed="false">Expand</button>
-                    <b>Page 1 of 1</b>
-                </div>
-                <article class="teacher-protected-pdf-page">
-                    <div class="protected-watermark">VLACE</div>
-                    <header>
-                        <span>VLACE English Learning</span>
-                        <strong>Protected Lesson Material</strong>
-                    </header>
-                    <section>
-                        <span>Lesson Objective</span>
-                        <h4>${escapeHtml(lessonTitle)}</h4>
-                        <p>Guide the student through the target language using approved VLACE classroom prompts, correction patterns, and speaking practice.</p>
-                    </section>
-                    <section>
-                        <span>Warm Up</span>
-                        <p>Ask short questions, review prior vocabulary, and confirm the student can answer in complete sentences.</p>
-                    </section>
-                    <section>
-                        <span>Practice Flow</span>
-                        <ol>
-                            <li>Model the sentence pattern clearly.</li>
-                            <li>Let the student repeat and personalize the answer.</li>
-                            <li>Correct pronunciation and grammar gently.</li>
-                            <li>Finish with a short independent speaking task.</li>
-                        </ol>
-                    </section>
-                    <section>
-                        <span>Teacher Reminder</span>
-                        <p>Submit feedback and upload the video URL after class so payroll can include the completed lesson.</p>
-                    </section>
-                    <footer>VLACE protected PDF preview · Teacher account: ${escapeHtml(teacher.name)}</footer>
-                </article>
-            </div>
-            <div class="modal-actions">
-                <button class="secondary-button" type="button" data-teacher-modal-close>Close Viewer</button>
-            </div>
-        </div>`;
+            <span class="status-pill positive">Protected Slide</span>
+        </header>
+        <main class="lesson-pdf-reader-stage teacher-protected-presentation-stage" data-protected-viewer tabindex="0" aria-label="Protected lesson slide">
+            <article class="lesson-slide-canvas teacher-protected-slide">
+                <header>
+                    <span>VLACE ESL COMPANY</span>
+                    <b>Teacher Lesson</b>
+                </header>
+                <section>
+                    <div>
+                        <small>VLACE CLASSROOM · LESSON SLIDE</small>
+                        <h2>${escapeHtml(lessonTitle)}</h2>
+                        <p>Speak, listen, and practice with your teacher.</p>
+                    </div>
+                    <aside>
+                        <strong>Today</strong>
+                        <ul>
+                            <li>Warm-up question</li>
+                            <li>Guided vocabulary</li>
+                            <li>Speaking practice</li>
+                        </ul>
+                    </aside>
+                </section>
+                <footer>
+                    <span>Teacher account: ${escapeHtml(teacher.name)}</span>
+                    <b>Slide 1 of 1</b>
+                </footer>
+            </article>
+        </main>`;
     document.body.appendChild(overlay);
+    document.body.classList.add('lesson-preview-open');
     overlay.focus({ preventScroll: true });
     const close = () => {
         document.removeEventListener('keydown', blockProtectedShortcut, true);
+        document.body.classList.remove('lesson-preview-open');
         overlay.remove();
     };
-    const modal = overlay.querySelector('.teacher-protected-lesson-modal');
-    const expandButton = overlay.querySelector('[data-protected-expand]');
     const blockProtectedAction = (event) => {
-        if (event.target.closest('.teacher-protected-lesson-modal')) {
+        if (event.target.closest('.teacher-protected-lesson-reader')) {
             event.preventDefault();
             showSparkToast('Protected lesson material is view-only.');
         }
@@ -2103,19 +2773,10 @@ function openTeacherProtectedLesson(lessonTitle = 'Lesson Material') {
         }
     };
     overlay.querySelectorAll('[data-teacher-modal-close]').forEach((button) => button.addEventListener('click', close));
-    expandButton?.addEventListener('click', () => {
-        const expanded = !modal?.classList.contains('is-expanded');
-        modal?.classList.toggle('is-expanded', expanded);
-        expandButton.textContent = expanded ? 'Exit Full Screen' : 'Expand';
-        expandButton.setAttribute('aria-pressed', String(expanded));
-    });
     ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach((eventName) => {
         overlay.addEventListener(eventName, blockProtectedAction);
     });
     document.addEventListener('keydown', blockProtectedShortcut, true);
-    overlay.addEventListener('mousedown', (event) => {
-        if (event.target === overlay) close();
-    });
 }
 
 function openTeacherPortalVideoUrlModal(rowId) {
@@ -2272,13 +2933,50 @@ function openTeacherPortalAction(kind) {
 function openTeacherPortalInfo(title, subject, detail, kind = '') {
     const overlay = document.createElement('div');
     overlay.className = 'modal-backdrop teacher-portal-modal-backdrop';
-    overlay.innerHTML = `<div class="modal teacher-portal-modal" role="dialog" aria-modal="true"><div class="modal-head"><div><p>TEACHER PORTAL</p><h3>${escapeHtml(title)}</h3></div><button type="button" data-teacher-modal-close aria-label="Close">×</button></div><div class="teacher-portal-modal-body"><strong>${escapeHtml(subject)}</strong><p>${escapeHtml(detail)}</p>${kind === 'feedback' ? '<label>Feedback note<textarea placeholder="Write lesson feedback for admin review"></textarea></label>' : kind === 'availability' ? '<label>Availability note<textarea placeholder="Example: I can open Tuesday and Thursday 7 PM slots next week."></textarea></label>' : kind === 'profile' ? '<label>Request details<textarea placeholder="Describe what needs to be updated"></textarea></label>' : ''}</div><div class="modal-actions"><button class="secondary-button" type="button" data-teacher-modal-close>Close</button><button class="primary-button" type="button" data-teacher-modal-save>${kind ? 'Submit' : 'Done'}</button></div></div>`;
+    const feedbackForm = `
+        <div class="teacher-feedback-section-grid">
+            <label>
+                Vocabulary Practiced
+                <textarea data-teacher-feedback-field required placeholder="List the new vocabulary words practiced in class."></textarea>
+            </label>
+            <label>
+                Pronunciation Corrections
+                <textarea data-teacher-feedback-field required placeholder="List mispronounced words and the corrected pronunciation."></textarea>
+            </label>
+            <label>
+                Grammar Focus
+                <textarea data-teacher-feedback-field required placeholder="Note grammar corrections, sentence patterns, or target structures."></textarea>
+            </label>
+            <label>
+                Needs Improvement
+                <textarea data-teacher-feedback-field required placeholder="Write the main skill or behavior the student should keep improving."></textarea>
+            </label>
+            <label>
+                Student Strengths
+                <textarea data-teacher-feedback-field required placeholder="Write what the student did best during the lesson."></textarea>
+            </label>
+            <label>
+                Teacher Recommendation
+                <textarea data-teacher-feedback-field required placeholder="Give a clear practice recommendation for the next lesson or homework."></textarea>
+            </label>
+        </div>
+    `;
+    overlay.innerHTML = `<div class="modal teacher-portal-modal ${kind === 'feedback' ? 'teacher-feedback-entry-modal' : ''}" role="dialog" aria-modal="true"><div class="modal-head"><div><p>TEACHER PORTAL</p><h3>${escapeHtml(title)}</h3></div><button type="button" data-teacher-modal-close aria-label="Close">×</button></div><div class="teacher-portal-modal-body"><strong>${escapeHtml(subject)}</strong><p>${escapeHtml(detail)}</p>${kind === 'feedback' ? feedbackForm : kind === 'availability' ? '<label>Availability note<textarea placeholder="Example: I can open Tuesday and Thursday 7 PM slots next week."></textarea></label>' : kind === 'profile' ? '<label>Request details<textarea placeholder="Describe what needs to be updated"></textarea></label>' : ''}</div><div class="modal-actions"><button class="secondary-button" type="button" data-teacher-modal-close>Close</button><button class="primary-button" type="button" data-teacher-modal-save>${kind === 'feedback' ? 'Submit Feedback' : kind ? 'Submit' : 'Done'}</button></div></div>`;
     document.body.appendChild(overlay);
     const close = () => overlay.remove();
     overlay.querySelectorAll('[data-teacher-modal-close]').forEach((button) => button.addEventListener('click', close));
     overlay.querySelector('[data-teacher-modal-save]')?.addEventListener('click', () => {
+        if (kind === 'feedback') {
+            const fields = Array.from(overlay.querySelectorAll('[data-teacher-feedback-field]'));
+            const emptyField = fields.find((field) => !field.value.trim());
+            if (emptyField) {
+                emptyField.focus();
+                showSparkToast('Please complete every feedback section before submitting.');
+                return;
+            }
+        }
         close();
-        showSparkToast('Teacher portal action saved in prototype mode.');
+        showSparkToast(kind === 'feedback' ? 'Teacher feedback submitted for Admin review.' : 'Teacher portal action saved in prototype mode.');
     });
     overlay.addEventListener('mousedown', (event) => {
         if (event.target === overlay) close();
@@ -3384,7 +4082,7 @@ function showTeacherDashboard(email = '') {
     const normalizedEmail = String(email).toLowerCase();
     const matchedTeacher = teachers.find((teacher) => normalizedEmail.includes(teacher.name.split(' ')[0].toLowerCase())) || teachers[0];
     activeTeacherPortalTeacherId = matchedTeacher.id;
-    activeTeacherPortalSection = 'teacher-overview';
+    activeTeacherPortalSection = 'teacher-schedule';
     document.getElementById('loginPage')?.setAttribute('hidden', '');
     document.getElementById('dashboardApp')?.setAttribute('hidden', '');
     document.getElementById('teacherDashboardApp')?.removeAttribute('hidden');
@@ -7470,22 +8168,36 @@ function closeTeacherDocumentViewer() {
 }
 
 function openTeacherDocumentUpload() {
+    activeEmployeeDocumentUploadSource = 'admin';
     openEmployeeDocumentUpload('teacher');
 }
 
 function openEmployeeDocumentUpload(kind) {
     const employee = getEmployeeDocumentOwner(kind);
+    activeEmployeeDocumentUploadSource = activeEmployeeDocumentUploadSource || 'admin';
     activeEmployeeDocumentKind = kind;
+    const isTeacherPortalUpload = activeEmployeeDocumentUploadSource === 'teacher-portal';
+    const overlay = document.getElementById('teacherDocumentUploadOverlay');
+    const statusField = document.getElementById('teacherDocumentStatus');
+    const visibilityField = document.getElementById('teacherDocumentVisibility');
+    const notesField = document.getElementById('teacherDocumentNotes');
     setText('#teacherDocumentUploadInitials', getInitials(employee?.name || 'Maria Santos'));
     setText('#teacherDocumentUploadName', employee?.name || 'Maria Santos');
     const employeeMeta = document.querySelector('#teacherDocumentUploadName')?.nextElementSibling;
-    if (employeeMeta) employeeMeta.textContent = `${getEmployeeKindLabel(kind)} · Employee record`;
+    if (employeeMeta) employeeMeta.textContent = isTeacherPortalUpload ? 'Teacher · Submitted for Admin review' : `${getEmployeeKindLabel(kind)} · Employee record`;
+    const uploadHead = document.querySelector('.upload-document-head');
+    const uploadScope = uploadHead?.querySelector('span');
+    const uploadDescription = uploadHead?.querySelector('p');
+    if (uploadScope) uploadScope.textContent = isTeacherPortalUpload ? 'TEACHER PORTAL · DOCUMENT UPLOAD' : 'ADMIN & MANAGER · DOCUMENT MANAGEMENT';
+    if (uploadDescription) uploadDescription.textContent = isTeacherPortalUpload
+        ? 'Upload a secure file for Admin review. After upload, teachers can view it but cannot edit or delete it.'
+        : 'Add a secure, view-only file to this employee record.';
     setFieldValue('#teacherDocumentTitle', '');
     setFieldValue('#teacherDocumentCategory', 'Contract');
     setFieldValue('#teacherDocumentStatus', 'Pending Review');
     setFieldValue('#teacherDocumentIssueDate', '');
     setFieldValue('#teacherDocumentExpiryDate', '');
-    setFieldValue('#teacherDocumentVisibility', 'Admin & Manager Only');
+    setFieldValue('#teacherDocumentVisibility', isTeacherPortalUpload ? 'Employee & Management' : 'Admin & Manager Only');
     setFieldValue('#teacherDocumentNotes', '');
     setFieldValue('#teacherDocumentFile', '');
     setText('#teacherDocumentFileName', 'Choose a file to upload');
@@ -7493,12 +8205,32 @@ function openEmployeeDocumentUpload(kind) {
     document.getElementById('teacherDocumentDrop')?.classList.remove('has-file');
     document.getElementById('teacherDocumentNotify')?.classList.remove('on');
     document.getElementById('teacherDocumentNotify')?.setAttribute('aria-checked', 'false');
-    document.getElementById('teacherDocumentUploadOverlay')?.removeAttribute('hidden');
+    if (statusField) statusField.disabled = isTeacherPortalUpload;
+    if (visibilityField) visibilityField.disabled = isTeacherPortalUpload;
+    if (notesField) notesField.placeholder = isTeacherPortalUpload ? 'Optional note for Admin reviewer…' : 'Add a short note for authorized reviewers…';
+    overlay?.classList.toggle('teacher-submitted-upload', isTeacherPortalUpload);
+    overlay?.removeAttribute('hidden');
     document.body.classList.add('drawer-open');
+}
+
+function openTeacherPortalDocumentUpload() {
+    const teacher = getTeacherPortalTeacher();
+    activeEmployeeDocumentUploadSource = 'teacher-portal';
+    activeEmployeeDocumentKind = 'teacher';
+    const previousSelectedTeacherId = selectedTeacherId;
+    selectedTeacherId = teacher.id;
+    openEmployeeDocumentUpload('teacher');
+    selectedTeacherId = previousSelectedTeacherId;
 }
 
 function closeTeacherDocumentUpload() {
     document.getElementById('teacherDocumentUploadOverlay')?.setAttribute('hidden', '');
+    document.getElementById('teacherDocumentUploadOverlay')?.classList.remove('teacher-submitted-upload');
+    const statusField = document.getElementById('teacherDocumentStatus');
+    const visibilityField = document.getElementById('teacherDocumentVisibility');
+    if (statusField) statusField.disabled = false;
+    if (visibilityField) visibilityField.disabled = false;
+    activeEmployeeDocumentUploadSource = 'admin';
     document.body.classList.remove('drawer-open');
 }
 
@@ -7521,6 +8253,7 @@ function saveTeacherDocumentUpload() {
     const title = document.getElementById('teacherDocumentTitle')?.value.trim();
     if (!title) return;
 
+    const isTeacherPortalUpload = activeEmployeeDocumentUploadSource === 'teacher-portal';
     const documents = getEmployeeDocuments(activeEmployeeDocumentKind);
     documents.unshift({
         title,
@@ -7534,9 +8267,14 @@ function saveTeacherDocumentUpload() {
         addStaffActivity('Document uploaded', `${title} was added to the staff document record.`);
     } else {
         renderTeacherDocuments();
+        if (isTeacherPortalUpload || activeTeacherPortalSection === 'teacher-documents') {
+            renderTeacherPortal();
+        }
     }
     closeTeacherDocumentUpload();
-    showSparkToast(`${title} was added as a view-only document.`);
+    showSparkToast(isTeacherPortalUpload
+        ? `${title} uploaded for Admin review.`
+        : `${title} was added as a view-only document.`);
 }
 
 function getFeedbackVisibilityLabel(visibility) {
@@ -11845,9 +12583,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showLogin();
     });
     document.getElementById('logoutStayButton')?.addEventListener('click', closeLogoutConfirmModal);
-    document.getElementById('teacherPortalLogoutButton')?.addEventListener('click', async () => {
-        await submitLogout().catch(() => undefined);
-        showLogin();
+    document.getElementById('teacherPortalLogoutButton')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        openLogoutConfirmModal();
     });
     document.getElementById('teacherMobileMenu')?.addEventListener('click', () => {
         document.getElementById('teacherSidebar')?.classList.toggle('open');
