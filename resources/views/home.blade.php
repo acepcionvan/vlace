@@ -23,7 +23,7 @@
 
         <section class="login-brand-panel">
             <div class="login-brand">
-                <span>V</span>
+                <img src="{{ asset('images/vlace-logo.png') }}" alt="VLACE logo">
                 <div>
                     <strong>VLACE</strong>
                     <small>ADMIN DASHBOARD</small>
@@ -54,7 +54,7 @@
         </section>
 
         <section class="login-form-panel">
-            <div class="login-mobile-brand"><span>V</span><strong>VLACE</strong></div>
+            <div class="login-mobile-brand"><img src="{{ asset('images/vlace-logo.png') }}" alt="VLACE logo"><strong>VLACE</strong></div>
             <form class="login-form-card" id="loginForm">
                 <div class="login-welcome">
                     <span class="login-lock"><i data-lucide="lock"></i></span>
@@ -106,7 +106,7 @@
     <div class="app-shell" id="dashboardApp" hidden>
         <aside class="sidebar" id="sidebar">
             <div class="brand">
-                <div class="brand-mark">V</div>
+                <img class="brand-logo" src="{{ asset('images/vlace-logo.png') }}" alt="VLACE logo">
                 <div>
                     <strong>VLACE</strong>
                     <span>Admin Dashboard</span>
@@ -2437,7 +2437,7 @@
     <div class="teacher-app-shell" id="teacherDashboardApp" hidden>
         <aside class="teacher-sidebar" id="teacherSidebar">
             <div class="brand teacher-brand">
-                <div class="brand-mark">V</div>
+                <img class="brand-logo" src="{{ asset('images/vlace-logo.png') }}" alt="VLACE logo">
                 <div>
                     <strong>VLACE</strong>
                     <span>Teacher Portal</span>
@@ -4029,7 +4029,7 @@
         <section class="modal payslip-modal" role="dialog" aria-modal="true" aria-labelledby="teacherPayslipTitle">
             <header class="payslip-modal-head">
                 <div class="payslip-brand">
-                    <span data-payslip-logo-holder>V</span>
+                    <img data-payslip-logo-holder src="{{ asset('images/vlace-logo.png') }}" alt="VLACE logo">
                     <div>
                         <strong data-payslip-brand-name>VLACE</strong>
                         <small data-payslip-document-label>Teacher Payroll Payslip</small>

@@ -5182,6 +5182,7 @@ const adminSecurityState = {
 };
 
 const companyBrandingStorageKey = 'vlace.companyBranding';
+const defaultCompanyLogoUrl = '/images/vlace-logo.png';
 
 function loadCompanyBrandingState() {
     const defaults = {
@@ -5214,14 +5215,11 @@ function getCompanyBrandName() {
 
 function renderCompanyLogoMark(className = '') {
     const safeClass = className ? ` class="${escapeHtml(className)}"` : '';
-    if (companyBrandingState.logoUrl) {
-        return `<img${safeClass} src="${escapeHtml(companyBrandingState.logoUrl)}" alt="${escapeHtml(getCompanyBrandName())} logo">`;
-    }
-    return `<span${safeClass}>${escapeHtml(getCompanyBrandName().charAt(0).toUpperCase() || 'V')}</span>`;
+    return `<img${safeClass} src="${escapeHtml(companyBrandingState.logoUrl || defaultCompanyLogoUrl)}" alt="${escapeHtml(getCompanyBrandName())} logo">`;
 }
 
 function getCompanyBrandingMetaText() {
-    if (!companyBrandingState.logoName) return 'Default VLACE mark is currently used.';
+    if (!companyBrandingState.logoName) return 'Default VLACE gold logo is currently used.';
     return `${companyBrandingState.logoName}${companyBrandingState.updatedAt ? ` · Updated ${companyBrandingState.updatedAt}` : ''}`;
 }
 
@@ -6928,9 +6926,8 @@ function getStaffPayrollReceiptKey(staff, cutoff) {
 function getPayrollReceiptBrandSvg(documentLabel) {
     const brandName = escapeHtml(getCompanyBrandName());
     const label = escapeHtml(documentLabel);
-    const logo = companyBrandingState.logoUrl
-        ? `<image x="115" y="100" width="78" height="78" href="${escapeHtml(companyBrandingState.logoUrl)}" preserveAspectRatio="xMidYMid meet"/>`
-        : `<rect x="115" y="100" width="78" height="78" rx="18" fill="#ffffff"/><text x="154" y="151" text-anchor="middle" fill="#0f3158" font-family="Arial, sans-serif" font-size="38" font-weight="900">${escapeHtml(brandName.charAt(0).toUpperCase() || 'V')}</text>`;
+    const logoUrl = companyBrandingState.logoUrl || new URL(defaultCompanyLogoUrl, window.location.href).href;
+    const logo = `<image x="115" y="92" width="92" height="92" href="${escapeHtml(logoUrl)}" preserveAspectRatio="xMidYMid meet"/>`;
 
     return `
         ${logo}

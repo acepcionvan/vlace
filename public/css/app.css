@@ -121,7 +121,9 @@ button {
 }
 
 .login-brand > span,
-.login-mobile-brand > span {
+.login-brand > img,
+.login-mobile-brand > span,
+.login-mobile-brand > img {
     width: 58px;
     height: 58px;
     display: grid;
@@ -131,6 +133,12 @@ button {
     color: #0b477d;
     font-size: 27px;
     font-weight: 950;
+}
+
+.login-brand > img,
+.login-mobile-brand > img {
+    object-fit: contain;
+    padding: 5px;
 }
 
 .login-brand > div {
@@ -488,7 +496,8 @@ button {
     padding: 0 8px 17px;
 }
 
-.brand-mark {
+.brand-mark,
+.brand-logo {
     width: 35px;
     height: 35px;
     border-radius: 10px;
@@ -499,6 +508,11 @@ button {
     font-size: 20px;
     font-weight: 800;
     box-shadow: 0 5px 16px #001f403d;
+}
+
+.brand-logo {
+    object-fit: contain;
+    padding: 3px;
 }
 
 .brand strong {
@@ -13888,7 +13902,8 @@ body.drawer-open {
 
 .company-logo-frame img {
     object-fit: contain;
-    background: transparent;
+    background: #050505;
+    padding: 4px;
 }
 
 .company-logo-preview strong,
