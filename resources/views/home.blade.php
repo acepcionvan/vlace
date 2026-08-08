@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=chatbot-replies-functional-20260809">
-    <script src="{{ asset('js/app.js') }}?v=chatbot-replies-functional-20260809" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=lesson-upload-action-20260809">
+    <script src="{{ asset('js/app.js') }}?v=lesson-upload-action-20260809" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -140,9 +140,10 @@
 
                 <button class="nav-parent" data-section-target="inbox" data-group-toggle="communication" aria-expanded="false"><i data-lucide="inbox"></i><span>Communication</span><span class="nav-chevron">›</span></button>
                 <div class="nav-submenu" id="communicationMenu" hidden>
-                    <button data-section-target="inbox"><span>Unified Inbox</span><b class="nav-count">5</b></button>
+                    <button data-section-target="inbox"><span>Unified Inbox</span><b class="nav-count">3</b></button>
                     <button data-section-target="email"><span>Email Inbox</span><b class="nav-count">5</b></button>
                     <button data-section-target="chatbot"><span>Chatbot</span><b class="nav-count chatbot-count">2</b></button>
+                    <button data-section-target="slack"><span>Slack</span><b class="nav-count slack-count">4</b></button>
                     <button data-section-target="reminders"><span>Student Reminders</span><b class="nav-count">4</b></button>
                 </div>
 
@@ -4135,9 +4136,8 @@
     <div class="modal-backdrop logout-confirm-backdrop" id="logoutConfirmModal" hidden>
         <section class="modal logout-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="logoutConfirmTitle">
             <button class="logout-confirm-close" type="button" id="logoutModalClose" aria-label="Close">×</button>
-            <span class="logout-confirm-icon"><i data-lucide="log-out"></i></span>
+            <span class="logout-confirm-icon"><img src="{{ asset('images/vlace-logo.png') }}" alt="VLACE"></span>
             <h3 id="logoutConfirmTitle">Log out?</h3>
-            <p class="logout-confirm-copy">You will return to the secure sign-in screen. Any unsaved form changes will stay on this device only until refresh.</p>
             <div class="logout-confirm-actions">
                 <button class="secondary-button" type="button" id="logoutStayButton">Cancel</button>
                 <button class="danger-button" type="button" id="logoutConfirmButton">Log Out</button>

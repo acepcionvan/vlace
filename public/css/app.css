@@ -641,6 +641,11 @@ nav svg {
     color: #fff;
 }
 
+.nav-count.slack-count {
+    background: #ea3f72;
+    color: #fff;
+}
+
 .sidebar-divider {
     height: 1px;
     margin: 8px 10px;
@@ -7588,6 +7593,40 @@ nav svg {
     display: block;
 }
 
+.lesson-title-button,
+.lesson-card-title-button {
+    display: grid;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.lesson-title-button strong,
+.lesson-card-title-button h4 {
+    color: #173856;
+    transition: color .16s ease;
+}
+
+.lesson-title-button:hover strong,
+.lesson-title-button:focus-visible strong,
+.lesson-card-title-button:hover h4,
+.lesson-card-title-button:focus-visible h4 {
+    color: #1769e8;
+    text-decoration: underline;
+}
+
+.lesson-title-button:focus-visible,
+.lesson-card-title-button:focus-visible {
+    border-radius: 6px;
+    outline: 3px solid rgba(23, 105, 232, .22);
+    outline-offset: 3px;
+}
+
 .prototype-lesson-table td small {
     margin-top: 3px;
     color: #8192a3;
@@ -7601,6 +7640,14 @@ nav svg {
     color: #86a0b8;
     font-weight: 950;
     cursor: grab;
+}
+
+.lesson-clickable-row {
+    cursor: pointer;
+}
+
+.lesson-clickable-row:hover td {
+    background: #f6fbff;
 }
 
 .lesson-code {
@@ -7696,35 +7743,221 @@ nav svg {
 .preview-overlay {
     position: fixed;
     inset: 0;
-    z-index: 90;
+    z-index: 250;
     display: flex;
-    justify-content: flex-end;
-    background: rgba(16, 42, 67, .55);
+    align-items: stretch;
+    justify-content: stretch;
+    background: rgba(9, 25, 42, .82);
+}
+
+body.lesson-preview-open {
+    overflow: hidden;
+}
+
+.lesson-pdf-reader {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: 100vw;
+    height: 100vh;
+    background: #101827;
+    color: #173856;
+}
+
+.lesson-pdf-reader-head,
+.lesson-pdf-reader-foot {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid #d7e4f0;
+    background: #fff;
+    padding: 14px 24px;
+    box-shadow: 0 8px 22px rgba(16, 42, 67, .08);
+}
+
+.lesson-pdf-reader-head h3 {
+    margin: 6px 0 0;
+    color: #173856;
+    font-size: 20px;
+}
+
+.lesson-pdf-reader-head .status-pill {
+    margin-left: auto;
+}
+
+.lesson-pdf-reader-stage {
+    display: grid;
+    align-items: center;
+    justify-items: center;
+    overflow: hidden;
+    padding: 18px 24px;
+    background: radial-gradient(circle at 20% 20%, rgba(46, 204, 113, .16), transparent 28%), #101827;
+}
+
+.lesson-slide-canvas {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: min(calc((100vh - 190px) * 1.777), calc(100vw - 56px));
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 10px;
+    background:
+        linear-gradient(135deg, rgba(255, 223, 86, .96) 0 24%, transparent 24%),
+        linear-gradient(145deg, #ffffff 0%, #f4fbff 58%, #e7f5ed 100%);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .42);
+    overflow: hidden;
+}
+
+.lesson-slide-canvas header,
+.lesson-slide-canvas footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: clamp(14px, 2vw, 28px) clamp(22px, 3vw, 46px);
+    color: #173856;
+    font-weight: 950;
+}
+
+.lesson-slide-canvas header span {
+    color: #1769e8;
+    font-size: clamp(11px, .95vw, 16px);
+    letter-spacing: .16em;
+}
+
+.lesson-slide-canvas header b,
+.lesson-slide-canvas footer {
+    font-size: clamp(12px, 1vw, 18px);
+}
+
+.lesson-slide-canvas section {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(240px, .62fr);
+    align-items: center;
+    gap: clamp(20px, 3vw, 58px);
+    padding: 0 clamp(28px, 5vw, 76px);
+}
+
+.lesson-slide-canvas small {
+    color: #24945c;
+    font-size: clamp(12px, 1.05vw, 18px);
+    font-weight: 950;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.lesson-slide-canvas h2 {
+    margin: clamp(12px, 2vw, 24px) 0;
+    color: #102a43;
+    font-size: clamp(42px, 5.2vw, 88px);
+    line-height: 1.02;
+}
+
+.lesson-slide-canvas p {
+    max-width: 760px;
+    margin: 0;
+    color: #4f6680;
+    font-size: clamp(20px, 2vw, 34px);
+    font-weight: 850;
+}
+
+.lesson-slide-canvas aside {
+    border: 1px solid #cfe7da;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .72);
+    padding: clamp(18px, 2.2vw, 34px);
+    box-shadow: 0 18px 45px rgba(36, 148, 92, .14);
+}
+
+.lesson-slide-canvas aside strong {
+    color: #176a44;
+    font-size: clamp(24px, 2.6vw, 42px);
+}
+
+.lesson-slide-canvas ul {
+    display: grid;
+    gap: clamp(10px, 1vw, 18px);
+    margin: clamp(14px, 1.8vw, 26px) 0 0;
+    padding-left: 22px;
+    color: #173856;
+    font-size: clamp(16px, 1.45vw, 25px);
+    font-weight: 850;
+}
+
+.lesson-pdf-reader-foot {
+    border-top: 1px solid #d7e4f0;
+    border-bottom: 0;
+    box-shadow: 0 -8px 22px rgba(16, 42, 67, .08);
+}
+
+.lesson-pdf-reader-foot .preview-controls {
+    margin-top: 0;
+}
+
+.lesson-pdf-reader-foot .preview-meta {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 0;
+}
+
+.lesson-pdf-reader-foot .preview-meta div {
+    min-width: 128px;
+    background: #f8fbff;
+}
+
+#lessonLibraryPreview.preview-overlay {
+    inset: 0 !important;
+    z-index: 300 !important;
+    display: grid !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(9, 25, 42, .88) !important;
 }
 
 .lesson-preview-panel {
-    width: min(620px, 100%);
-    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: 100vw;
+    height: 100vh;
     overflow: auto;
-    background: #fff;
-    box-shadow: -18px 0 50px rgba(16, 42, 67, .22);
+    background: #eef3f8;
+    box-shadow: none;
+}
+
+#lessonLibraryPreview .lesson-preview-panel {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+}
+
+.lesson-preview-fullscreen {
+    max-width: none;
+    border-radius: 0;
 }
 
 .preview-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 14px;
     border-bottom: 1px solid #e1eaf3;
-    padding: 22px;
+    background: #fff;
+    padding: 14px 24px;
+    box-shadow: 0 8px 22px rgba(16, 42, 67, .08);
+    z-index: 1;
 }
 
 .preview-head h3 {
-    margin: 8px 0 0;
+    margin: 6px 0 0;
     color: #173856;
+    font-size: 20px;
 }
 
 .preview-head button {
-    margin-left: auto;
     border: 1px solid #cdddec;
     border-radius: 8px;
     background: #fff;
@@ -7735,18 +7968,34 @@ nav svg {
     cursor: pointer;
 }
 
-.mock-preview {
-    padding: 22px;
+.preview-head .secondary-button {
+    width: auto;
+    min-width: 120px;
+    height: 38px;
+    margin-left: auto;
     background: #f4f8fc;
+    color: #1769e8;
+    font-size: 13px;
+}
+
+.mock-preview {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    justify-items: center;
+    overflow: auto;
+    padding: 26px 24px;
+    background: #dfe7f0;
 }
 
 .mock-pdf {
-    min-height: 320px;
+    width: min(920px, calc(100vw - 64px));
+    min-height: 1180px;
     border: 1px solid #d8e5f2;
-    border-radius: 12px;
+    border-radius: 4px;
     background: #fff;
-    padding: 32px;
+    padding: 70px 78px;
     color: #173856;
+    box-shadow: 0 22px 55px rgba(16, 42, 67, .24);
 }
 
 .mock-pdf small {
@@ -7759,15 +8008,48 @@ nav svg {
     margin: 18px 0 10px;
 }
 
-.mock-pdf div {
+.mock-pdf-line-grid {
+    display: grid;
+    gap: 9px;
     margin-top: 38px;
+}
+
+.mock-pdf-line-grid span {
+    display: block;
+    height: 10px;
+    border-radius: 999px;
+    background: #dbe7f2;
+}
+
+.mock-pdf-line-grid .short {
+    width: 58%;
+}
+
+.mock-pdf h4 {
+    margin: 28px 0 10px;
+}
+
+.mock-pdf ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #173856;
+    font-weight: 800;
+}
+
+.mock-pdf footer {
+    margin-top: 34px;
     border-top: 1px solid #e1eaf3;
-    padding-top: 18px;
+    padding-top: 14px;
     color: #627894;
+    font-size: 12px;
     font-weight: 800;
 }
 
 .preview-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
     margin-top: 12px;
     border-radius: 8px;
     background: #173856;
@@ -7775,6 +8057,19 @@ nav svg {
     padding: 12px;
     text-align: center;
     font-weight: 850;
+}
+
+.preview-controls button {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, .3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 950;
 }
 
 .preview-meta {
@@ -7809,14 +8104,67 @@ nav svg {
 }
 
 .preview-footer {
-    position: sticky;
+    position: static;
     bottom: 0;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     border-top: 1px solid #e0e9f2;
     background: #fff;
-    padding: 16px 22px;
+    padding: 14px 24px;
+}
+
+@media (max-width: 760px) {
+    .preview-head {
+        flex-wrap: wrap;
+        padding: 12px 14px;
+    }
+
+    .preview-head .secondary-button {
+        margin-left: 0;
+    }
+
+    .mock-preview {
+        padding: 14px;
+    }
+
+    .mock-pdf {
+        width: min(100%, 620px);
+        min-height: 820px;
+        padding: 36px 26px;
+    }
+
+    .preview-footer {
+        flex-wrap: wrap;
+        padding: 12px 14px;
+    }
+
+    .lesson-pdf-reader-head,
+    .lesson-pdf-reader-foot {
+        flex-wrap: wrap;
+        padding: 12px 14px;
+    }
+
+    .lesson-pdf-reader-head .status-pill {
+        margin-left: 0;
+    }
+
+    .lesson-pdf-reader-stage {
+        padding: 12px;
+    }
+
+    .lesson-slide-canvas {
+        width: calc(100vw - 24px);
+    }
+
+    .lesson-slide-canvas section {
+        grid-template-columns: 1fr;
+        align-content: center;
+    }
+
+    .lesson-slide-canvas aside {
+        display: none;
+    }
 }
 
 .curriculum-modal-backdrop {
@@ -18139,6 +18487,15 @@ body.drawer-open {
     background: #061b3380;
 }
 
+#lessonLibraryPreview.preview-overlay {
+    inset: 0 !important;
+    z-index: 300 !important;
+    display: grid !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(9, 25, 42, .88) !important;
+}
+
 .ad-preview-panel {
     position: absolute;
     right: 0;
@@ -23478,9 +23835,9 @@ body .logout-confirm-backdrop {
 }
 
 body .logout-confirm-modal {
-    width: min(282px, calc(100vw - 40px)) !important;
-    max-width: 282px !important;
-    padding: 20px !important;
+    width: min(238px, calc(100vw - 40px)) !important;
+    max-width: 238px !important;
+    padding: 18px 18px 16px !important;
     border: 1px solid #e3edf7 !important;
     border-radius: 14px !important;
     box-shadow: 0 22px 60px rgba(7, 28, 54, .24) !important;
@@ -23510,20 +23867,20 @@ body .logout-confirm-close:hover {
 }
 
 body .logout-confirm-icon {
-    width: 42px !important;
-    height: 42px !important;
+    width: 48px !important;
+    height: 48px !important;
     display: grid !important;
     place-items: center !important;
-    margin: 0 auto 12px !important;
+    margin: 0 auto 10px !important;
     border: 1px solid #d7ebff !important;
-    border-radius: 12px !important;
-    background: linear-gradient(180deg, #f4f9ff 0%, #eaf4ff 100%) !important;
-    color: #1769e8 !important;
+    border-radius: 14px !important;
+    background: #fff !important;
 }
 
-body .logout-confirm-icon svg {
-    width: 20px !important;
-    height: 20px !important;
+body .logout-confirm-icon img {
+    width: 34px !important;
+    height: 34px !important;
+    object-fit: contain !important;
 }
 
 body .logout-confirm-modal h3 {
@@ -23536,18 +23893,14 @@ body .logout-confirm-modal h3 {
 }
 
 body .logout-confirm-copy {
-    margin: 8px 0 16px !important;
-    color: #667d93 !important;
-    font-size: 12px !important;
-    font-weight: 650 !important;
-    line-height: 1.45 !important;
+    display: none !important;
 }
 
 body .logout-confirm-actions {
     display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 9px !important;
-    margin: 0 !important;
+    gap: 8px !important;
+    margin: 14px 0 0 !important;
     padding: 0 !important;
     border: 0 !important;
     background: transparent !important;
@@ -23555,8 +23908,8 @@ body .logout-confirm-actions {
 
 body .logout-confirm-actions button {
     width: 100% !important;
-    min-height: 38px !important;
-    padding: 9px 12px !important;
+    min-height: 34px !important;
+    padding: 8px 10px !important;
     justify-content: center !important;
     border-radius: 9px !important;
     font-size: 12px !important;
@@ -23838,6 +24191,918 @@ body .main .page-content.dashboard-section.communication-page.active #communicat
 
 @media (max-width: 900px) {
     body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Chatbot conversations reference layout */
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 180px !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 0 14px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-search {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 46px !important;
+    border: 1px solid #d7e5f2 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #8fa2b4 !important;
+    padding: 0 14px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-search input,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools select {
+    width: 100% !important;
+    min-width: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #123452 !important;
+    font: inherit !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    outline: none !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools select {
+    min-height: 46px !important;
+    border: 1px solid #d7e5f2 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    padding: 0 12px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-grid {
+    grid-template-columns: minmax(360px, .72fr) minmax(0, 1.35fr) !important;
+    gap: 14px !important;
+    min-height: 560px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail {
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    min-height: 560px !important;
+    height: auto !important;
+    border: 1px solid #dbe6f2 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    box-shadow: 0 8px 24px rgba(23, 56, 88, .06) !important;
+    overflow: hidden !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail {
+    grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list header,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail header {
+    min-height: 68px !important;
+    padding: 18px 20px !important;
+    border-bottom: 1px solid #dbe6f2 !important;
+    background: #fff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list header h3,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail header h3 {
+    margin: 0 !important;
+    color: #123452 !important;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list header span {
+    color: #607892 !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-scroll {
+    overflow-y: auto !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    width: 100% !important;
+    min-height: 88px !important;
+    padding: 14px 18px !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf2f7 !important;
+    background: #fff !important;
+    color: #123452 !important;
+    text-align: left !important;
+    box-shadow: none !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button.active {
+    background: #eaf6ff !important;
+    box-shadow: inset 4px 0 #1687e7 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .slack-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    background: #e5f2ff !important;
+    color: #165d9f !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list strong {
+    display: block !important;
+    color: #123452 !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list small {
+    display: block !important;
+    margin-top: 4px !important;
+    color: #0573c7 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list p {
+    margin-top: 7px !important;
+    color: #55718d !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list time {
+    color: #607892 !important;
+    font-size: 12px !important;
+    font-weight: 750 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-panel {
+    display: grid !important;
+    grid-template-columns: minmax(220px, .6fr) minmax(0, 1.4fr) !important;
+    align-items: end !important;
+    gap: 18px !important;
+    padding: 18px 20px !important;
+    border-bottom: 1px solid #dbeaf7 !important;
+    background: #eaf6ff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields {
+    grid-template-columns: minmax(190px, 1fr) minmax(250px, 1.25fr) 92px !important;
+    gap: 12px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 28px !important;
+    min-height: 0 !important;
+    padding: 82px 22px !important;
+    border-bottom: 0 !important;
+    background: #f3f8fc !important;
+    overflow-y: auto !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript article {
+    width: fit-content !important;
+    max-width: 74% !important;
+    border: 1px solid #d7e4ef !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    padding: 12px 14px !important;
+    box-shadow: none !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript article.bot {
+    align-self: flex-end !important;
+    margin-left: 0 !important;
+    background: #e5f3ff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript article.visitor {
+    align-self: flex-start !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript article small {
+    display: block !important;
+    margin-bottom: 7px !important;
+    color: #6f849a !important;
+    font-size: 11px !important;
+    font-weight: 750 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript article p {
+    color: #123452 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1.45 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail footer {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    min-height: 74px !important;
+    padding: 14px 18px !important;
+    border-top: 1px solid #dbe6f2 !important;
+    background: #fff !important;
+}
+
+.chatbot-empty-state {
+    padding: 22px;
+    color: #6d8195;
+    font-size: 14px;
+    font-weight: 750;
+}
+
+@media (max-width: 1100px) {
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-grid,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-panel,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Prototype communication cleanup: keep Chatbot tabs and conversation panes stable. */
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page {
+    width: min(100%, 1540px) !important;
+    max-width: 1540px !important;
+    margin-inline: auto !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-hero,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-tabs,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-grid,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-settings-grid,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-overview-grid,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-metrics,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-knowledge {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    min-height: 54px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-tabs button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-height: 54px !important;
+    height: 54px !important;
+    padding: 0 18px !important;
+    line-height: 1.2 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 180px !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+    margin: 18px 0 14px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-search {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    padding: 0 14px !important;
+    border: 1px solid #d5e4f1 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-search input,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools select {
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    border: 1px solid #d5e4f1 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #123452 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-search input {
+    height: auto !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    outline: 0 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools select {
+    padding: 0 12px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-grid {
+    display: grid !important;
+    grid-template-columns: minmax(390px, 0.78fr) minmax(720px, 1.6fr) !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+    min-height: 610px !important;
+    height: 610px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail {
+    min-height: 0 !important;
+    height: 610px !important;
+    max-height: 610px !important;
+    overflow: hidden !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list {
+    display: grid !important;
+    grid-template-rows: 74px minmax(0, 1fr) !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail {
+    display: grid !important;
+    grid-template-rows: 76px auto minmax(0, 1fr) 74px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-scroll,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) 54px !important;
+    column-gap: 12px !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 86px !important;
+    padding: 14px 18px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button > div {
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button strong,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button small,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button p,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list .chatbot-conversation-scroll > button em {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail > header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    min-height: 76px !important;
+    padding: 18px 20px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-panel {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.75fr) !important;
+    align-items: end !important;
+    gap: 18px !important;
+    min-height: 112px !important;
+    padding: 16px 20px !important;
+    border-bottom: 1px solid #dbeaf7 !important;
+    background: #eaf6ff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-title {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-title strong,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-title small {
+    display: block !important;
+    margin: 0 !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields {
+    display: grid !important;
+    grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.25fr) 98px !important;
+    gap: 12px !important;
+    align-items: end !important;
+    min-width: 0 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields label {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    color: #49657f !important;
+    font-size: 11px !important;
+    font-weight: 850 !important;
+    letter-spacing: .04em !important;
+    line-height: 1.2 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields select {
+    width: 100% !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    border: 1px solid #cfe0ee !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #123452 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields .primary-button {
+    width: 98px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
+    align-self: end !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-transcript {
+    gap: 26px !important;
+    padding: 34px 22px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    min-height: 74px !important;
+    padding: 14px 18px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-settings-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-settings-card {
+    min-height: 330px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-switch-list {
+    display: grid !important;
+    gap: 12px !important;
+    margin-top: 4px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-switch {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    color: #49657f !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-settings-body .chatbot-switch input[type="checkbox"] {
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    accent-color: #2f73e6 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-settings-body .chatbot-switch span {
+    line-height: 1.35 !important;
+}
+
+@media (max-width: 1220px) {
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-grid,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-settings-grid {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-list,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-detail {
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-panel,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-conversation-tools {
+        grid-template-columns: 1fr !important;
+    }
+
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.chatbot-page .chatbot-assignment-fields .primary-button {
+        width: 100% !important;
+    }
+}
+
+/* Email inbox proportion and bottom spacing repair */
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page {
+    padding-bottom: 28px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell {
+    grid-template-columns: 190px minmax(320px, 340px) minmax(0, 1fr) !important;
+    min-height: 0 !important;
+    height: clamp(560px, calc(100dvh - 400px), 680px) !important;
+    max-height: 680px !important;
+    margin-bottom: 32px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders {
+    padding: 16px 12px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .compose-email,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders button:not(.compose-email) {
+    width: 100% !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders button:not(.compose-email) {
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) 20px !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 38px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    text-align: left !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders button:not(.compose-email) > span {
+    display: grid !important;
+    place-items: center !important;
+    width: 24px !important;
+    min-width: 24px !important;
+    color: inherit !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders button:not(.compose-email) > b {
+    display: grid !important;
+    place-items: center !important;
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-workspace-link {
+    color: #506b84 !important;
+    background: #fff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-workspace-link:hover {
+    background: #f3f8ff !important;
+    color: #176bd1 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folder-divider {
+    width: 100% !important;
+    height: 1px !important;
+    margin: 8px 0 !important;
+    background: #dbe6f2 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .compose-email {
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-content: start !important;
+    gap: 8px !important;
+    min-height: 58px !important;
+    margin: 0 0 14px !important;
+    padding: 0 18px !important;
+    border-radius: 8px !important;
+    text-align: left !important;
+    line-height: 1 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .compose-email span,
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .compose-email strong {
+    display: block !important;
+    color: #fff !important;
+    line-height: 1 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .compose-email span {
+    font-size: 20px !important;
+    font-weight: 950 !important;
+    text-align: center !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .compose-email strong {
+    min-width: 0 !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-list {
+    display: grid !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-scroll {
+    border-left: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    padding-bottom: 24px !important;
+    box-sizing: border-box !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-scroll button {
+    border-left: 4px solid transparent !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-scroll button.selected {
+    border-left-color: #2673e8 !important;
+    background: #eaf4ff !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-scroll button:last-child {
+    margin-bottom: 28px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-scroll::after {
+    content: "" !important;
+    display: block !important;
+    height: 28px !important;
+}
+
+body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-access-note {
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+}
+
+/* Final logout modal size lock. */
+body .modal.logout-confirm-modal {
+    width: min(238px, calc(100vw - 40px)) !important;
+    max-width: 238px !important;
+}
+
+/* Keep all Communication submenu items visible. */
+body .app-shell .sidebar #communicationMenu.nav-submenu.open {
+    display: grid !important;
+    max-height: 260px !important;
+    overflow: visible !important;
+}
+
+body .app-shell .sidebar #communicationMenu.nav-submenu button {
+    display: grid !important;
+    grid-template-columns: 8px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    min-height: 31px !important;
+}
+
+/* Fit customer conversation bubbles to their message text. */
+body #communicationWorkspace.unified-inbox-page .message-row > div {
+    display: grid !important;
+    justify-items: start !important;
+    width: fit-content !important;
+    max-width: min(72%, 620px) !important;
+}
+
+body #communicationWorkspace.unified-inbox-page .message-row.outgoing > div {
+    justify-items: end !important;
+}
+
+body #communicationWorkspace.unified-inbox-page .message-row p {
+    display: inline-block !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+}
+
+/* Slack workspace button polish. */
+body #communicationWorkspace.slack-page .slack-hero .provider-connection {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+}
+
+body #communicationWorkspace.slack-page .slack-hero .provider-connection .secondary-button,
+body #communicationWorkspace.slack-page .slack-channel-detail > header .secondary-button {
+    min-height: 38px !important;
+    border: 1px solid #cfe1f1 !important;
+    border-radius: 8px !important;
+    background: #f4f9ff !important;
+    color: #245e91 !important;
+    padding: 0 14px !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+}
+
+body #communicationWorkspace.slack-page .slack-channel-detail > header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+}
+
+body #communicationWorkspace.slack-page .slack-channel-detail > header .secondary-button {
+    justify-self: end !important;
+}
+
+body #communicationWorkspace.slack-page .slack-message-composer {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    border-top: 1px solid #dbe6f2 !important;
+    background: #fff !important;
+}
+
+body #communicationWorkspace.slack-page .slack-message-composer input {
+    width: 100% !important;
+    min-height: 42px !important;
+    border: 1px solid #cfddeb !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    padding: 0 14px !important;
+    color: #193754 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+body #communicationWorkspace.slack-page .slack-message-composer .primary-button {
+    min-width: 86px !important;
+    min-height: 42px !important;
+    border-radius: 8px !important;
+    padding: 0 16px !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+}
+
+/* Slack workspace width balance. */
+body #communicationWorkspace.slack-page .slack-channel-workspace {
+    grid-template-columns: clamp(360px, 28vw, 500px) minmax(0, 1fr) !important;
+    gap: 14px !important;
+}
+
+body #communicationWorkspace.slack-page .slack-list-card {
+    width: 100% !important;
+}
+
+body #communicationWorkspace.slack-page .slack-channel-detail {
+    width: 100% !important;
+}
+
+/* Slack tab management controls. */
+body #communicationWorkspace.slack-page .slack-tabs-bar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    border-bottom: 1px solid #dbe6f2 !important;
+    margin: 14px 0 !important;
+}
+
+body #communicationWorkspace.slack-page .slack-tabs-bar .slack-tabs {
+    margin: 0 !important;
+    border-bottom: 0 !important;
+}
+
+body #communicationWorkspace.slack-page .slack-edit-tabs-button {
+    min-height: 38px !important;
+    border: 1px solid #cfe1f1 !important;
+    border-radius: 8px !important;
+    background: #f4f9ff !important;
+    color: #245e91 !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+}
+
+body .slack-tabs-backdrop {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px !important;
+}
+
+body .modal.slack-tabs-modal {
+    width: min(760px, calc(100vw - 48px)) !important;
+    max-width: 760px !important;
+    max-height: min(760px, calc(100vh - 48px)) !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto auto !important;
+    overflow: hidden !important;
+    border-radius: 12px !important;
+}
+
+body .slack-tab-manager-list {
+    display: grid !important;
+    gap: 10px !important;
+    padding: 18px 20px !important;
+    overflow-y: auto !important;
+}
+
+body .slack-tab-manager-row {
+    display: grid !important;
+    grid-template-columns: minmax(140px, .8fr) minmax(180px, 1fr) 86px 78px !important;
+    align-items: end !important;
+    gap: 10px !important;
+    border: 1px solid #dbe6f2 !important;
+    border-radius: 8px !important;
+    background: #f8fbff !important;
+    padding: 12px !important;
+}
+
+body .slack-tabs-modal label {
+    display: grid !important;
+    gap: 6px !important;
+    color: #526b84 !important;
+    font-size: 12px !important;
+    font-weight: 850 !important;
+}
+
+body .slack-tabs-modal input {
+    width: 100% !important;
+    min-height: 38px !important;
+    border: 1px solid #cfddeb !important;
+    border-radius: 7px !important;
+    background: #fff !important;
+    color: #173858 !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+}
+
+body .slack-tab-manager-row .danger-button {
+    min-height: 38px !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+}
+
+body .slack-tab-add-box {
+    display: grid !important;
+    gap: 10px !important;
+    border-top: 1px solid #dbe6f2 !important;
+    background: #f4f9ff !important;
+    padding: 16px 20px !important;
+}
+
+body .slack-tab-add-box h4 {
+    margin: 0 !important;
+    color: #173858 !important;
+    font-size: 14px !important;
+}
+
+body .slack-tab-add-box > div {
+    display: grid !important;
+    grid-template-columns: minmax(160px, .85fr) minmax(180px, 1fr) auto !important;
+    align-items: end !important;
+    gap: 10px !important;
+}
+
+@media (max-width: 820px) {
+    body .slack-tab-manager-row,
+    body .slack-tab-add-box > div {
         grid-template-columns: 1fr !important;
     }
 }

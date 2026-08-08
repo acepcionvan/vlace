@@ -13,6 +13,7 @@ const sectionTitles = {
     inbox: 'Unified Inbox',
     email: 'Email Inbox',
     chatbot: 'Chatbot',
+    slack: 'Slack',
     line: 'LINE',
     kakaotalk: 'KakaoTalk',
     reminders: 'Student Reminders',
@@ -1271,7 +1272,7 @@ function getSectionBreadcrumb(section) {
     if (section === 'students') return [{ label: 'Students', action: 'students' }, { label: 'Directory' }];
     if (section === 'teachers') return [{ label: 'Teachers', action: 'teachers' }, { label: 'Directory' }];
     if (section === 'staff') return [{ label: 'Staff', action: 'staff' }, { label: 'Directory' }];
-    if (['inbox', 'email', 'chatbot', 'line', 'kakaotalk', 'reminders'].includes(section)) return [{ label: 'Dashboard', action: 'overview' }, { label: 'Communication' }];
+if (['inbox', 'email', 'chatbot', 'slack', 'line', 'kakaotalk', 'reminders'].includes(section)) return [{ label: 'Dashboard', action: 'overview' }, { label: 'Communication' }];
     if (['campaigns', 'adsets', 'ads', 'audiences', 'leads', 'creative', 'budget', 'performance', 'integrations'].includes(section)) return [{ label: 'Marketing' }, { label: title }];
     return [{ label: 'Dashboard', action: 'overview' }, { label: title }];
 }
@@ -2436,7 +2437,7 @@ function renderCompletedLessons(lessons) {
     body.innerHTML = lessons.map((lesson) => {
         const paidHours = lesson.minutes === 25 ? 0.5 : 1;
         return `
-            <tr>
+            <tr class="lesson-clickable-row" data-lesson-row-open="${escapeHtml(lesson.id)}">
                 <td>${lesson.country}</td>
                 <td>${lesson.teacher}</td>
                 <td>${lesson.minutes} minutes</td>
@@ -2608,11 +2609,16 @@ function renderLessonRows(rows) {
     const cards = document.getElementById('lessonCardGrid');
     if (body) {
         body.innerHTML = rows.map((lesson, index) => `
-            <tr>
+            <tr class="lesson-clickable-row" data-lesson-row-open="${escapeHtml(lesson.id)}">
                 <td><button class="row-drag" type="button" aria-label="Drag lesson ${index + 1}">☰</button></td>
                 <td><b>${index + 1}</b></td>
                 <td><code class="lesson-code">${escapeHtml(lesson.code)}</code></td>
-                <td><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.topic)} · ESL Basics</small></td>
+                <td>
+                    <button class="lesson-title-button" type="button" data-lesson-open="${escapeHtml(lesson.id)}" aria-label="View PDF for ${escapeHtml(lesson.title)}">
+                        <strong>${escapeHtml(lesson.title)}</strong>
+                        <small>${escapeHtml(lesson.topic)} · ESL Basics</small>
+                    </button>
+                </td>
                 <td>${escapeHtml(lesson.level)}</td>
                 <td><strong>${escapeHtml(lesson.type)}</strong><small>${escapeHtml(lesson.size)}</small></td>
                 <td>${escapeHtml(lesson.duration)}</td>
@@ -2621,6 +2627,11 @@ function renderLessonRows(rows) {
                 <td>
                     <select class="lesson-action-select" data-lesson-action="${escapeHtml(lesson.id)}" aria-label="Choose an action for ${escapeHtml(lesson.title)}">
                         <option value="" selected disabled>Choose action...</option>
+                        <option value="add">Add lesson</option>
+                        <option value="upload">Upload / Replace file</option>
+                        <option value="preview">View PDF</option>
+                        <option value="download">Download PDF</option>
+                        <option value="edit">Edit lesson</option>
                         <option value="assign">Assign to scheduled class</option>
                         <option value="delete">Delete lesson</option>
                     </select>
@@ -2636,11 +2647,18 @@ function renderLessonRows(rows) {
                     <code class="lesson-code">${escapeHtml(lesson.code)}</code>
                     <strong>${escapeHtml(lesson.type)}</strong>
                 </div>
-                <h4>${escapeHtml(lesson.title)}</h4>
+                <button class="lesson-card-title-button" type="button" data-lesson-open="${escapeHtml(lesson.id)}" aria-label="View PDF for ${escapeHtml(lesson.title)}">
+                    <h4>${escapeHtml(lesson.title)}</h4>
+                </button>
                 <p>${escapeHtml(lesson.topic)} · ${escapeHtml(lesson.level)}</p>
                 <div><span class="status-pill ${lesson.status === 'Published' ? 'positive' : 'warning'}">${escapeHtml(lesson.status)}</span><span>${escapeHtml(lesson.duration)}</span></div>
                 <select class="lesson-action-select card-action-select" data-lesson-action="${escapeHtml(lesson.id)}" aria-label="Choose an action for ${escapeHtml(lesson.title)}">
                     <option value="" selected disabled>Choose action...</option>
+                    <option value="add">Add lesson</option>
+                    <option value="upload">Upload / Replace file</option>
+                    <option value="preview">View PDF</option>
+                    <option value="download">Download PDF</option>
+                    <option value="edit">Edit lesson</option>
                     <option value="assign">Assign to scheduled class</option>
                     <option value="delete">Delete lesson</option>
                 </select>
@@ -2708,6 +2726,19 @@ function bindLessonLibraryControls() {
             select.value = '';
         };
     });
+    document.querySelectorAll('[data-lesson-open]').forEach((button) => {
+        button.onclick = () => {
+            const lesson = lessonLibraryState.lessons.find((item) => item.id === button.dataset.lessonOpen);
+            if (lesson) openLessonLibraryPreview(lesson);
+        };
+    });
+    document.querySelectorAll('[data-lesson-row-open]').forEach((row) => {
+        row.onclick = (event) => {
+            if (event.target.closest('button, select, option, input, a, textarea, label')) return;
+            const lesson = lessonLibraryState.lessons.find((item) => item.id === row.dataset.lessonRowOpen);
+            if (lesson) openLessonLibraryPreview(lesson);
+        };
+    });
 }
 
 function handleLessonLibraryAction(action, lessonId) {
@@ -2716,6 +2747,16 @@ function handleLessonLibraryAction(action, lessonId) {
 
     if (action === 'preview') {
         openLessonLibraryPreview(lesson);
+        return;
+    }
+
+    if (action === 'add') {
+        openLessonLibraryModal('lesson');
+        return;
+    }
+
+    if (action === 'upload') {
+        openLessonFileUpload(lesson);
         return;
     }
 
@@ -2749,6 +2790,38 @@ function handleLessonLibraryAction(action, lessonId) {
     if (action === 'delete') {
         openLessonDeleteModal(lesson);
     }
+}
+
+function getLessonFileType(file) {
+    const name = file?.name?.toLowerCase() || '';
+    const type = file?.type || '';
+    if (name.endsWith('.ppt') || name.endsWith('.pptx')) return 'PowerPoint';
+    if (type.startsWith('image/')) return 'Images';
+    if (type.startsWith('video/')) return 'Video';
+    if (type.startsWith('audio/')) return 'Audio';
+    return 'PDF';
+}
+
+function openLessonFileUpload(lesson) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.ppt,.pptx,image/*,video/*,audio/*';
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    input.setAttribute('aria-label', `Upload file for ${lesson.title}`);
+    document.body.appendChild(input);
+    input.addEventListener('change', () => {
+        const file = input.files?.[0];
+        input.remove();
+        if (!file) return;
+        lesson.type = getLessonFileType(file);
+        lesson.size = `${Math.max(0.1, file.size / 1024 / 1024).toFixed(1)} MB`;
+        lesson.updated = 'Today';
+        lesson.by = 'Admin';
+        renderLessonLibrary();
+        showSparkToast(`${file.name} uploaded for ${lesson.title}.`);
+    }, { once: true });
+    input.click();
 }
 
 function openLessonDeleteModal(lesson) {
@@ -2802,55 +2875,82 @@ function openLessonDeleteModal(lesson) {
 }
 
 function openLessonLibraryPreview(lesson) {
-    const existing = document.getElementById('lessonLibraryPreview');
+    const existing = document.getElementById('lessonPdfReader') || document.getElementById('lessonLibraryPreview');
     existing?.remove();
-    const overlay = document.createElement('div');
-    overlay.className = 'preview-overlay';
-    overlay.id = 'lessonLibraryPreview';
-    overlay.innerHTML = `
-        <aside class="lesson-preview-panel">
-            <div class="preview-head">
+    const reader = document.createElement('section');
+    reader.className = 'lesson-pdf-reader';
+    reader.id = 'lessonPdfReader';
+    reader.setAttribute('aria-labelledby', 'lessonPreviewTitle');
+    reader.innerHTML = `
+            <header class="lesson-pdf-reader-head">
+                <button class="secondary-button" type="button" data-close-preview>Back to Lessons</button>
                 <div>
                     <code class="lesson-code">${escapeHtml(lesson.code)}</code>
-                    <h3>${escapeHtml(lesson.title)}</h3>
+                    <h3 id="lessonPreviewTitle">${escapeHtml(lesson.title)}</h3>
                 </div>
                 <span class="status-pill ${lesson.status === 'Published' ? 'positive' : 'warning'}">${escapeHtml(lesson.status)}</span>
-                <button type="button" data-close-preview aria-label="Close preview">×</button>
-            </div>
-            <div class="mock-preview ${escapeHtml(lesson.type.toLowerCase())}">
-                <div class="mock-pdf">
-                    <small>VLACE · ${escapeHtml(lesson.level)}</small>
-                    <h2>${escapeHtml(lesson.title)}</h2>
-                    <p>Today we will learn useful English words and simple sentences.</p>
-                    <div>1. Listen &nbsp; 2. Repeat &nbsp; 3. Practice</div>
+                <button class="secondary-button" type="button" data-preview-toast="Download">Download PDF</button>
+            </header>
+            <main class="lesson-pdf-reader-stage ${escapeHtml(lesson.type.toLowerCase())}">
+                <div class="lesson-slide-canvas">
+                    <header>
+                        <span>VLACE ESL COMPANY</span>
+                        <b>${escapeHtml(lesson.level)} · ${escapeHtml(lesson.topic)}</b>
+                    </header>
+                    <section>
+                        <div>
+                            <small>${escapeHtml(lessonLibraryState.program)} · ${escapeHtml(lessonLibraryState.module)}</small>
+                            <h2>${escapeHtml(lesson.title)}</h2>
+                            <p>Speak, listen, and practice with your teacher.</p>
+                        </div>
+                        <aside>
+                            <strong>Today</strong>
+                            <ul>
+                                <li>Warm-up question</li>
+                                <li>Guided vocabulary</li>
+                                <li>Speaking practice</li>
+                            </ul>
+                        </aside>
+                    </section>
+                    <footer>
+                        <span>${escapeHtml(lesson.code)}</span>
+                        <b>Slide 1 / 12</b>
+                    </footer>
                 </div>
-                <div class="preview-controls">- Zoom <b>Page 1 of 12</b> Zoom +</div>
-            </div>
-            <div class="preview-meta">
+            </main>
+            <footer class="lesson-pdf-reader-foot">
+                <div class="preview-controls"><button type="button">‹</button><b>Slide 1 of 12</b><button type="button">›</button></div>
+                <div class="preview-meta">
                 <div><span>Lesson Code</span><strong>${escapeHtml(lesson.code)}</strong></div>
                 <div><span>Program</span><strong>${escapeHtml(lessonLibraryState.program)}</strong></div>
                 <div><span>Module</span><strong>${escapeHtml(lessonLibraryState.module)}</strong></div>
                 <div><span>Level</span><strong>${escapeHtml(lesson.level)}</strong></div>
                 <div><span>Duration</span><strong>${escapeHtml(lesson.duration)}</strong></div>
-                <div><span>File Type</span><strong>${escapeHtml(lesson.type)}</strong></div>
+                <div><span>Format</span><strong>Presentation</strong></div>
                 <div><span>File Size</span><strong>${escapeHtml(lesson.size)}</strong></div>
                 <div><span>Uploaded By</span><strong>${escapeHtml(lesson.by)}</strong></div>
                 <div><span>Last Updated</span><strong>${escapeHtml(lesson.updated)}</strong></div>
-            </div>
-            <div class="preview-footer">
-                <button class="secondary-button" type="button" data-preview-toast="Edit Lesson">Edit Lesson</button>
-                <button class="secondary-button" type="button" data-preview-toast="Assign Lesson">Assign Lesson</button>
-                <button class="secondary-button" type="button" data-preview-toast="Download">Download</button>
-                <button class="primary-button" type="button" data-close-preview>Close</button>
-            </div>
-        </aside>
+                </div>
+            </footer>
     `;
-    document.body.appendChild(overlay);
-    overlay.addEventListener('click', (event) => {
-        if (event.target === overlay || event.target.closest('[data-close-preview]')) overlay.remove();
+    document.body.appendChild(reader);
+    document.body.classList.add('lesson-preview-open');
+    const closePreview = () => {
+        if (document.fullscreenElement === reader) document.exitFullscreen?.().catch(() => {});
+        reader.remove();
+        document.body.classList.remove('lesson-preview-open');
+    };
+    reader.addEventListener('click', (event) => {
+        if (event.target.closest('[data-close-preview]')) closePreview();
         const toastButton = event.target.closest('[data-preview-toast]');
         if (toastButton) showSparkToast(`${toastButton.dataset.previewToast} prepared for ${lesson.title}.`);
     });
+    document.addEventListener('keydown', function closeLessonReaderOnEscape(event) {
+        if (event.key !== 'Escape' || !document.getElementById('lessonPdfReader')) return;
+        document.removeEventListener('keydown', closeLessonReaderOnEscape);
+        closePreview();
+    });
+    reader.requestFullscreen?.().catch(() => {});
 }
 
 function openLessonLibraryModal(type) {
@@ -3346,6 +3446,7 @@ function activateSection(section) {
         inbox: 'Unified Inbox',
         email: 'Email Inbox',
         chatbot: 'Chatbot',
+        slack: 'Slack',
         line: 'LINE',
         kakaotalk: 'KakaoTalk',
         reminders: 'Student Reminders',
@@ -3373,8 +3474,25 @@ function activateSection(section) {
 
     document.querySelectorAll('[data-section-target]').forEach((button) => {
         const target = button.dataset.sectionTarget;
-        button.classList.toggle('active', target === section || target === requestedSection || (section === 'marketing' && marketingSectionMap?.[target] === activeMarketingPage));
+        const isCommunicationItem = button.closest('#communicationMenu');
+        const isMarketingItem = button.closest('#marketingMenu');
+        const isActive = isCommunicationItem
+            ? target === requestedSection
+            : isMarketingItem
+                ? section === 'marketing' && marketingSectionMap?.[target] === activeMarketingPage
+                : target === section || target === requestedSection;
+        button.classList.toggle('active', isActive);
     });
+
+    const communicationMenu = document.getElementById('communicationMenu');
+    const communicationTrigger = document.querySelector('[data-group-toggle="communication"]');
+    if (communicationMenu && communicationTrigger) {
+        const communicationActive = section === 'inbox';
+        communicationMenu.hidden = !communicationActive;
+        communicationMenu.classList.toggle('open', communicationActive);
+        communicationTrigger.setAttribute('aria-expanded', communicationActive ? 'true' : 'false');
+        communicationTrigger.querySelector('.nav-chevron').textContent = communicationActive ? '⌄' : '›';
+    }
 
     if (section !== 'students') {
         document.getElementById('studentProfilePanel')?.setAttribute('hidden', '');
@@ -4445,6 +4563,15 @@ let chatbotSection = 'Overview';
 let chatbotEnabled = true;
 let selectedChatbotConversation = 'Rose Zhang';
 let chatbotConversationAssignments = {};
+let chatbotConversationSearch = '';
+let chatbotConversationStatus = 'All statuses';
+let selectedSlackChannel = 'operations';
+let slackChannels = [
+    { id: 'operations', name: '# operations', subtitle: 'Internal coordination', count: 4, unread: true, messages: [['Angela Reyes', 'Please confirm Grace Liu has the package options before 6 PM.', '8 min'], ['Nina Flores', 'I can take the follow-up after the trial lesson schedule is updated.', '5 min'], ['Van Acepcion', 'Thanks. Keep the student reminder template ready for the China group.', 'Just now']] },
+    { id: 'student-care', name: '# student-care', subtitle: 'Students and parent follow-ups', count: 2, unread: false, messages: [['Carlo Mendoza', 'Daniel Wong asked about Teacher Maria availability.', '18 min'], ['Angela Reyes', 'Please add this to tomorrow morning follow-up.', '12 min']] },
+    { id: 'teacher-updates', name: '# teacher-updates', subtitle: 'Teacher schedule changes', count: 1, unread: false, messages: [['Maria Santos', 'I updated my Tuesday and Thursday evening slots.', '24 min'], ['Van Acepcion', 'Received. Student reminders can use the updated schedule.', '20 min']] },
+    { id: 'billing-support', name: '# billing-support', subtitle: 'Payment and package questions', count: 1, unread: true, messages: [['Carlo Mendoza', 'Soo-jin Kim completed the payment for the 30-lesson package.', '35 min'], ['Van Acepcion', 'Please verify credits before sending confirmation.', '30 min']] },
+];
 let chatbotReplies = [
     { id: 1, topic: 'Lesson packages', triggers: 'price, package, lessons', answer: 'We offer 15, 30, and 45-lesson packages. May I know your country and the student age?', active: true },
     { id: 2, topic: 'Trial lesson', triggers: 'trial, demo, try', answer: 'Yes, a trial lesson can be arranged. Please share the student age, English level, and preferred schedule.', active: true },
@@ -4503,13 +4630,14 @@ function communicationStatus(value) {
 function renderCommunicationWorkspace() {
     const root = document.getElementById('communicationWorkspace');
     if (!root) return;
-    const communicationTabs = ['Unified Inbox', 'Email Inbox', 'Chatbot', 'Student Reminders'];
+    const communicationTabs = ['Unified Inbox', 'Email Inbox', 'Chatbot', 'Slack', 'Student Reminders'];
     if (!communicationTabs.includes(activeCommunicationTab)) {
         activeCommunicationTab = 'Unified Inbox';
     }
     root.classList.toggle('email-inbox-page', activeCommunicationTab === 'Email Inbox');
     root.classList.toggle('unified-inbox-page', activeCommunicationTab === 'Unified Inbox');
     root.classList.toggle('chatbot-page', activeCommunicationTab === 'Chatbot');
+    root.classList.toggle('slack-page', activeCommunicationTab === 'Slack');
     root.classList.toggle('student-reminders-page', activeCommunicationTab === 'Student Reminders');
     const unread = communicationConversations.reduce((sum, item) => sum + item.unread, 0);
     const title = document.getElementById('pageTitle');
@@ -4529,6 +4657,7 @@ function renderCommunicationWorkspace() {
             ${activeCommunicationTab === 'Unified Inbox' ? renderUnifiedInboxPanel() : ''}
             ${activeCommunicationTab === 'Email Inbox' ? renderEmailInboxPanel() : ''}
             ${activeCommunicationTab === 'Chatbot' ? renderChatbotPanel() : ''}
+            ${activeCommunicationTab === 'Slack' ? renderSlackPanel() : ''}
             ${activeCommunicationTab === 'Student Reminders' ? renderStudentRemindersPanel() : ''}
         </div>
     `;
@@ -4590,14 +4719,20 @@ function renderEmailInboxPanel() {
         ['Starred', communicationEmails.filter((email) => email.starred && !email.archived).length],
         ['Archived', communicationEmails.filter((email) => email.archived).length],
     ];
+    const workspaceLinks = [
+        ['Chatbot', 'Chatbot', 2],
+        ['Student Reminders', 'Student Reminders', 4],
+    ];
     const visible = communicationEmails.filter((email) => communicationEmailFolder === 'Inbox' ? !email.archived : communicationEmailFolder === 'Unread' ? email.unread && !email.archived : communicationEmailFolder === 'Starred' ? email.starred && !email.archived : email.archived);
     return `
         <div class="section-intro communication-section-intro email-reference-intro"><div><h2>Company Email</h2><p>Read, organize, assign, and reply to emails received by VLACE.</p></div></div>
         <div class="inbox-connection-note email-connection-note"><span class="communication-note-icon"><i data-lucide="mail"></i></span><div><strong>VLACE email account</strong><p>Connect your company mailbox to receive and send live email from this dashboard.</p></div><button class="secondary-button" type="button" data-communication-toast="Connect Email drawer prepared in prototype mode.">Connect Email</button></div>
         <section class="email-shell">
             <aside class="email-folders">
-                <button class="compose-email" type="button" data-compose-email>+ Compose</button>
+                <button class="compose-email" type="button" data-compose-email><span>+</span><strong>Compose</strong></button>
                 ${folders.map(([name, count]) => `<button type="button" class="${communicationEmailFolder === name ? 'active' : ''}" data-email-folder="${name}"><span>${name === 'Inbox' ? '✉' : name === 'Unread' ? '●' : name === 'Starred' ? '★' : '□'}</span>${name}<b>${count}</b></button>`).join('')}
+                <div class="email-folder-divider" aria-hidden="true"></div>
+                ${workspaceLinks.map(([name, target, count]) => `<button type="button" class="email-workspace-link" data-communication-shortcut="${target}"><span>${name === 'Chatbot' ? '✦' : '↗'}</span>${name}<b>${count}</b></button>`).join('')}
                 <div class="email-access-note"><strong>Private information</strong><p>Email access is controlled under User Management → Roles & Permissions.</p></div>
             </aside>
             <div class="email-list">
@@ -4616,6 +4751,89 @@ function renderEmailInboxPanel() {
     `;
 }
 
+function renderChatbotConversations(conversations, active) {
+    return `
+        <div class="chatbot-conversation-tools">
+            <label class="chatbot-conversation-search">
+                <span>⌕</span>
+                <input type="search" placeholder="Search chatbot conversations..." value="${escapeHtml(chatbotConversationSearch)}" data-chatbot-search>
+            </label>
+            <select aria-label="Filter chatbot conversations by status" data-chatbot-status-filter>
+                ${['All statuses', 'Needs staff', 'Resolved', 'Bot handling'].map((status) => `<option ${chatbotConversationStatus === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+        </div>
+        <section class="chatbot-conversation-grid">
+            <div class="chatbot-conversation-list">
+                <header>
+                    <h3>Conversations</h3>
+                    <span>${conversations.length} records</span>
+                </header>
+                <div class="chatbot-conversation-scroll">
+                    ${conversations.map((item) => `
+                        <button type="button" class="${active.name === item.name ? 'active' : ''}" data-chatbot-conversation="${escapeHtml(item.name)}">
+                            <span class="slack-avatar">${communicationInitials(item.name)}</span>
+                            <div>
+                                <strong>${escapeHtml(item.name)}</strong>
+                                <small>${escapeHtml(item.country)} · ${escapeHtml(item.status)}</small>
+                                <p>${escapeHtml(item.preview)}</p>
+                                ${chatbotConversationAssignments[item.name] ? `<em>Assigned to ${escapeHtml(chatbotConversationAssignments[item.name])}</em>` : ''}
+                            </div>
+                            <time>${escapeHtml(item.time)}</time>
+                        </button>
+                    `).join('') || '<div class="chatbot-empty-state">No chatbot conversations match this filter.</div>'}
+                </div>
+            </div>
+            <aside class="chatbot-conversation-detail">
+                <header>
+                    <div>
+                        <h3>${escapeHtml(active.name)}</h3>
+                        <p>${escapeHtml(active.country)} · Website Chat</p>
+                    </div>
+                    ${communicationStatus(active.status)}
+                </header>
+                <section class="chatbot-assignment-panel">
+                    <div class="chatbot-assignment-title">
+                        <strong>Assign to a specific employee</strong>
+                        <small>Filter employees by their assigned country or operation.</small>
+                    </div>
+                    <div class="chatbot-assignment-fields">
+                        <label>Employee country / operation
+                            <select data-chatbot-assignee-filter>
+                                <option ${active.country === 'China' ? 'selected' : ''}>China</option>
+                                <option ${active.country === 'Israel' ? 'selected' : ''}>Israel</option>
+                                <option ${active.country === 'UAE' ? 'selected' : ''}>UAE</option>
+                                <option>South Korea</option>
+                                <option>Operations</option>
+                            </select>
+                        </label>
+                        <label>Assign to employee
+                            <select data-chatbot-assignee>
+                                <option>Angela Reyes · ST-001 · Manager</option>
+                                <option>Carlo Mendoza · ST-002 · Staff</option>
+                                <option>Nina Flores · ST-003 · Staff</option>
+                                <option>Van Acepcion · ADM-001 · Administrator</option>
+                            </select>
+                        </label>
+                        <button class="primary-button" type="button" data-chatbot-assign>Assign</button>
+                    </div>
+                </section>
+                <div class="chatbot-transcript">
+                    ${active.messages.map((message) => `
+                        <article class="${message[0] === 'VLACE Chatbot' ? 'bot' : 'visitor'}">
+                            <small>${escapeHtml(message[0])}</small>
+                            <p>${escapeHtml(message[1])}</p>
+                        </article>
+                    `).join('')}
+                </div>
+                <footer>
+                    <button class="secondary-button" type="button" data-communication-toast="Conversation marked as resolved.">Resolve</button>
+                    <button class="primary-button" type="button" data-chatbot-assign>Assign & Take Over</button>
+                </footer>
+            </aside>
+        </section>
+    `;
+}
+
 function renderChatbotPanel() {
     const tabs = ['Overview', 'Conversations', 'Replies & Knowledge', 'Settings'];
     const conversations = [
@@ -4623,7 +4841,14 @@ function renderChatbotPanel() {
         { name: 'David Cohen', country: 'Israel', status: 'Resolved', preview: 'Thank you for the package details.', time: '18 min', messages: [['Visitor', 'What packages do you offer for teenagers?'], ['VLACE Chatbot', 'We offer 15, 30, and 45-lesson packages. I can connect you with our team for the current Israel pricing.'], ['Visitor', 'Thank you for the package details.']] },
         { name: 'Fatima Al Mansoori', country: 'UAE', status: 'Bot handling', preview: 'Are weekend lessons available?', time: '34 min', messages: [['Visitor', 'Are weekend lessons available?'], ['VLACE Chatbot', 'Weekend availability depends on the teacher schedule. What time would you prefer?']] },
     ];
-    const active = conversations.find((item) => item.name === selectedChatbotConversation) || conversations[0];
+    const normalizedSearch = chatbotConversationSearch.trim().toLowerCase();
+    const visibleConversations = conversations.filter((item) => {
+        const matchesSearch = !normalizedSearch || [item.name, item.country, item.status, item.preview].join(' ').toLowerCase().includes(normalizedSearch);
+        const matchesStatus = chatbotConversationStatus === 'All statuses' || item.status === chatbotConversationStatus;
+        return matchesSearch && matchesStatus;
+    });
+    const active = visibleConversations.find((item) => item.name === selectedChatbotConversation) || visibleConversations[0] || conversations[0];
+    selectedChatbotConversation = active.name;
     return `<div class="chatbot-workspace-page">
         <section class="chatbot-hero">
             <div class="chatbot-title"><span>✦</span><div><p>VLACE AUTOMATED SUPPORT</p><h2>Chatbot Control Center</h2><small>Edit chatbot behavior, monitor conversations, and review when staff assistance is needed.</small></div></div>
@@ -4631,7 +4856,7 @@ function renderChatbotPanel() {
         </section>
         <nav class="chatbot-tabs" aria-label="Chatbot sections">${tabs.map((tab) => `<button type="button" class="${chatbotSection === tab ? 'active' : ''}" data-chatbot-section="${tab}">${tab}${tab === 'Conversations' ? '<b>2</b>' : ''}</button>`).join('')}</nav>
         ${chatbotSection === 'Overview' ? `<section class="chatbot-metrics">${[['Conversations today','38','+12% from yesterday'],['Answered automatically','84%','32 conversations'],['Staff handoffs','6','2 awaiting response'],['Average response','4 sec','Within target']].map((item) => `<article><span>${item[0]}</span><strong>${item[1]}</strong><small>${item[2]}</small></article>`).join('')}</section><div class="chatbot-overview-grid"><article class="chatbot-card"><header><div><h3>Recent Chatbot Activity</h3><p>Live operational events and customer activity</p></div><button class="text-button" type="button" data-chatbot-section="Conversations">View all</button></header>${[['New inquiry','Rose Zhang asked about a trial lesson.','2 min'],['Staff handoff','Conversation transferred after an unanswered scheduling question.','9 min'],['Reply matched','Package information sent to David Cohen.','18 min'],['Conversation resolved','The visitor confirmed that the answer was helpful.','34 min']].map((item) => `<div class="chatbot-activity"><span>•</span><div><strong>${item[0]}</strong><p>${item[1]}</p></div><time>${item[2]}</time></div>`).join('')}</article><article class="chatbot-card"><header><div><h3>Attention Required</h3><p>Items that may affect chatbot accuracy</p></div></header><div class="chatbot-alert"><b>2</b><div><strong>Conversations need staff</strong><p>Visitors asked questions outside the current knowledge base.</p></div></div><div class="chatbot-alert"><b>3</b><div><strong>Replies need review</strong><p>Improve low-confidence answers before publishing.</p></div></div><button class="primary-button" type="button" data-chatbot-section="Replies & Knowledge">Review Knowledge</button></article></div>` : ''}
-        ${chatbotSection === 'Conversations' ? `<section class="chatbot-conversation-grid"><div class="chatbot-conversation-list"><header><h3>Conversations</h3><span>${conversations.length} records</span></header>${conversations.map((item) => `<button type="button" class="${active.name === item.name ? 'active' : ''}" data-chatbot-conversation="${item.name}"><span class="slack-avatar">${communicationInitials(item.name)}</span><div><strong>${item.name}</strong><small>${item.country} · ${item.status}</small><p>${item.preview}</p>${chatbotConversationAssignments[item.name] ? `<em>Assigned to ${escapeHtml(chatbotConversationAssignments[item.name])}</em>` : ''}</div><time>${item.time}</time></button>`).join('')}</div><aside class="chatbot-conversation-detail"><header><div><h3>${active.name}</h3><p>${active.country} · Website Chat</p></div>${communicationStatus(active.status)}</header><section class="chatbot-assignment-panel"><div class="chatbot-assignment-title"><strong>Assignment</strong><small>Choose the right team member for this conversation.</small></div><div class="chatbot-assignment-fields"><label>Filter by team<select data-chatbot-assignee-filter><option>All teams</option><option>China</option><option>South Korea</option><option>UAE</option><option>Operations</option></select></label><label>Assign to employee<select data-chatbot-assignee><option>Angela Reyes · ST-001 · Manager</option><option>Carlo Mendoza · ST-002 · Staff</option><option>Nina Flores · ST-003 · Staff</option><option>Van Acepcion · ADM-001 · Administrator</option></select></label><button class="primary-button" type="button" data-chatbot-assign>Assign</button></div></section><div class="chatbot-transcript">${active.messages.map((message) => `<article class="${message[0] === 'VLACE Chatbot' ? 'bot' : 'visitor'}"><small>${message[0]}</small><p>${message[1]}</p></article>`).join('')}</div><footer><button class="secondary-button" type="button" data-communication-toast="Conversation marked as resolved.">Resolve</button><button class="primary-button" type="button" data-chatbot-assign>Assign & Take Over</button></footer></aside></section>` : ''}
+        ${chatbotSection === 'Conversations' ? renderChatbotConversations(visibleConversations, active) : ''}
         ${chatbotSection === 'Replies & Knowledge' ? `<section class="chatbot-knowledge"><header><div><h3>Automated Replies & Knowledge</h3><p>Edit approved information used by the chatbot. Changes remain in draft until published.</p></div><button class="primary-button" type="button" data-add-chatbot-reply>+ Add Reply</button></header><div class="chatbot-reply-list">${chatbotReplies.map((reply, index) => `<article class="chatbot-reply-card reply-tone-${index % 4}"><div class="chatbot-reply-head"><div class="chatbot-reply-number"><span>Reply ${index + 1}</span><strong>${escapeHtml(reply.topic)}</strong></div><label><input type="checkbox" ${reply.active ? 'checked' : ''} data-chatbot-reply-active="${reply.id}"> Active</label><button type="button" data-remove-chatbot-reply="${reply.id}">Remove</button></div><div class="chatbot-reply-fields"><label>Topic<input value="${escapeHtml(reply.topic)}" data-chatbot-reply-topic="${reply.id}"></label><label>Trigger words<input value="${escapeHtml(reply.triggers)}" data-chatbot-reply-triggers="${reply.id}"></label><label class="full">Approved chatbot answer<textarea data-chatbot-reply-answer="${reply.id}">${escapeHtml(reply.answer)}</textarea></label></div></article>`).join('')}</div><div class="chatbot-publish"><span>Last published: Aug 4, 2026 · 3:30 PM by Van A.</span><button class="primary-button" type="button" data-communication-toast="Chatbot knowledge changes published.">Publish Changes</button></div></section>` : ''}
         ${chatbotSection === 'Settings' ? `<section class="chatbot-settings-grid"><article class="chatbot-card chatbot-settings-card chatbot-identity-card"><header><div><h3>Identity & Greeting</h3><p>Define how the chatbot introduces itself.</p></div></header><div class="chatbot-settings-body"><label>Chatbot name<input value="VLACE Assistant"></label><label>Welcome message<textarea>Hi! Welcome to VLACE. How can I help you with our English lessons today?</textarea></label><label>Response tone<select><option>Friendly and professional</option><option>Formal</option><option>Warm and simple</option></select></label></div></article><article class="chatbot-card chatbot-settings-card chatbot-handoff-card"><header><div><h3>Automation & Handoff</h3><p>Control when staff should take over.</p></div></header><div class="chatbot-settings-body"><label>Staff handoff rule<select><option>After 2 unanswered questions</option><option>After 1 unanswered question</option><option>Only when visitor requests staff</option></select></label><label>Operating hours<select><option>24 hours</option><option>Business hours only</option><option>Weekdays only</option></select></label><div class="chatbot-switch-list"><label class="chatbot-switch"><input type="checkbox" checked><span>Automatically create an inbox conversation</span></label><label class="chatbot-switch"><input type="checkbox" checked><span>Notify staff when confidence is low</span></label></div><div class="chatbot-settings-actions"><button class="primary-button" type="button" data-communication-toast="Chatbot settings saved.">Save Settings</button></div></div></article></section>` : ''}
     </div>`;
@@ -4689,6 +4914,39 @@ function renderStudentRemindersPanel() {
     </div>`;
 }
 
+function renderSlackPanel() {
+    const channels = slackChannels;
+    const active = channels.find((channel) => channel.id === selectedSlackChannel) || channels[0];
+    selectedSlackChannel = active.id;
+    return `<div class="slack-workspace-page">
+        <section class="slack-hero">
+            <div class="slack-title"><span>SL</span><div><p class="eyebrow">COMMUNICATION PLATFORM</p><h2>Slack Workspace</h2><small>Coordinate internal messages, student follow-ups, teacher updates, and billing support in one protected VLACE view.</small></div></div>
+            <div class="provider-connection"><span>● Integration ready</span><button class="secondary-button" type="button" data-communication-toast="Slack connection settings opened in prototype mode.">Settings</button></div>
+        </section>
+        <div class="slack-tabs-bar">
+            <nav class="slack-tabs" aria-label="Slack sections">
+                ${channels.map((channel) => `<button type="button" class="${channel.id === active.id ? 'active' : ''}" data-slack-channel="${channel.id}">${escapeHtml(channel.name)}<b>${channel.count}</b></button>`).join('')}
+            </nav>
+            <button class="secondary-button slack-edit-tabs-button" type="button" data-edit-slack-tabs>Edit Tabs</button>
+        </div>
+        <section class="slack-channel-workspace">
+            <div class="slack-list-card">
+                <header><div><h3>Channels</h3><p>${channels.length} active channels</p></div><small>Updated just now</small></header>
+                ${channels.map((channel) => `<button type="button" class="slack-list-row ${channel.id === active.id ? 'active' : ''}" data-slack-channel="${channel.id}"><span class="slack-avatar">${channel.name.slice(2, 4).toUpperCase()}</span><div><strong>${escapeHtml(channel.name)}</strong><p>${escapeHtml(channel.subtitle)}</p></div><span class="slack-row-meta"><small>${channel.unread ? 'Unread' : 'Read'}</small></span></button>`).join('')}
+            </div>
+            <aside class="slack-channel-detail">
+                <header><div class="slack-dm-person"><span class="slack-avatar">${active.name.slice(2, 4).toUpperCase()}</span><div><h3>${escapeHtml(active.name)}</h3><p>${escapeHtml(active.subtitle)} · <b>${active.count} updates</b></p></div></div><button class="secondary-button" type="button" data-communication-toast="${active.name} marked as read.">Mark as read</button></header>
+                <div class="slack-channel-summary"><span>Internal workspace</span><span>VLACE team only</span><span>Updated just now</span></div>
+                <div class="slack-message-stream">
+                    ${active.messages.map((message, index) => `<article class="${index === active.messages.length - 1 ? 'own-message' : ''}"><span class="slack-message-avatar">${communicationInitials(message[0])}</span><div><header><strong>${escapeHtml(message[0])}</strong><time>${escapeHtml(message[2])}</time></header><p>${escapeHtml(message[1])}</p></div></article>`).join('')}
+                </div>
+                <form class="slack-message-composer" data-slack-form><input placeholder="Message ${escapeHtml(active.name)}"><button class="primary-button" type="submit">Send</button></form>
+            </aside>
+        </section>
+        <footer class="slack-platform-foot"><span>Integration adapter: Slack</span><p>Prepared for future official Slack API connection. Credentials will never be displayed.</p></footer>
+    </div>`;
+}
+
 function renderRegionalMessengerPanel(provider) {
     const isLine = provider === 'LINE';
     const contacts = isLine
@@ -4704,9 +4962,93 @@ function renderRegionalMessengerPanel(provider) {
     </div>`;
 }
 
+function openSlackTabManager() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop slack-tabs-backdrop';
+    overlay.innerHTML = `<section class="modal slack-tabs-modal" role="dialog" aria-modal="true" aria-labelledby="slackTabsTitle">
+        <div class="modal-head">
+            <div><p>SLACK WORKSPACE</p><h3 id="slackTabsTitle">Edit Tabs</h3></div>
+            <button type="button" data-slack-tabs-close aria-label="Close">×</button>
+        </div>
+        <div class="slack-tab-manager-list">
+            ${slackChannels.map((channel) => `<article class="slack-tab-manager-row" data-slack-tab-row="${channel.id}">
+                <label>Tab name<input value="${escapeHtml(channel.name.replace(/^#\\s*/, ''))}" data-slack-tab-name="${channel.id}"></label>
+                <label>Description<input value="${escapeHtml(channel.subtitle)}" data-slack-tab-subtitle="${channel.id}"></label>
+                <label>Count<input type="number" min="0" value="${channel.count}" data-slack-tab-count="${channel.id}"></label>
+                <button class="danger-button" type="button" data-delete-slack-tab="${channel.id}" ${slackChannels.length <= 1 ? 'disabled' : ''}>Delete</button>
+            </article>`).join('')}
+        </div>
+        <section class="slack-tab-add-box">
+            <h4>Add New Tab</h4>
+            <div>
+                <label>Tab name<input placeholder="new-channel" data-new-slack-tab-name></label>
+                <label>Description<input placeholder="Channel description" data-new-slack-tab-subtitle></label>
+                <button class="secondary-button" type="button" data-add-slack-tab>Add Tab</button>
+            </div>
+        </section>
+        <div class="modal-actions">
+            <button class="secondary-button" type="button" data-slack-tabs-close>Cancel</button>
+            <button class="primary-button" type="button" data-save-slack-tabs>Save Changes</button>
+        </div>
+    </section>`;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    const saveRows = () => {
+        slackChannels = slackChannels.map((channel) => {
+            const name = overlay.querySelector(`[data-slack-tab-name="${channel.id}"]`)?.value.trim() || channel.name.replace(/^#\s*/, '');
+            const subtitle = overlay.querySelector(`[data-slack-tab-subtitle="${channel.id}"]`)?.value.trim() || channel.subtitle;
+            const count = Number(overlay.querySelector(`[data-slack-tab-count="${channel.id}"]`)?.value || channel.count);
+            return {
+                ...channel,
+                name: `# ${name.replace(/^#\s*/, '')}`,
+                subtitle,
+                count: Number.isFinite(count) && count >= 0 ? count : channel.count,
+            };
+        });
+    };
+
+    overlay.querySelectorAll('[data-slack-tabs-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelectorAll('[data-delete-slack-tab]').forEach((button) => button.addEventListener('click', () => {
+        if (slackChannels.length <= 1) return;
+        const id = button.dataset.deleteSlackTab;
+        slackChannels = slackChannels.filter((channel) => channel.id !== id);
+        if (selectedSlackChannel === id) selectedSlackChannel = slackChannels[0]?.id || '';
+        close();
+        renderCommunicationWorkspace();
+        openSlackTabManager();
+    }));
+    overlay.querySelector('[data-add-slack-tab]')?.addEventListener('click', () => {
+        saveRows();
+        const rawName = overlay.querySelector('[data-new-slack-tab-name]')?.value.trim();
+        if (!rawName) return;
+        const idBase = rawName.toLowerCase().replace(/^#\s*/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `tab-${Date.now()}`;
+        const id = slackChannels.some((channel) => channel.id === idBase) ? `${idBase}-${Date.now().toString().slice(-4)}` : idBase;
+        const subtitle = overlay.querySelector('[data-new-slack-tab-subtitle]')?.value.trim() || 'New Slack channel';
+        slackChannels = [...slackChannels, { id, name: `# ${rawName.replace(/^#\s*/, '')}`, subtitle, count: 0, unread: false, messages: [['Van Acepcion', 'New Slack tab added in prototype mode.', 'Just now']] }];
+        selectedSlackChannel = id;
+        close();
+        renderCommunicationWorkspace();
+        openSlackTabManager();
+    });
+    overlay.querySelector('[data-save-slack-tabs]')?.addEventListener('click', () => {
+        saveRows();
+        close();
+        renderCommunicationWorkspace();
+        showSparkToast('Slack tabs updated.');
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
 function bindCommunicationEvents(root) {
     root.querySelectorAll('[data-communication-tab]').forEach((button) => button.addEventListener('click', () => {
         activeCommunicationTab = button.dataset.communicationTab;
+        renderCommunicationWorkspace();
+    }));
+    root.querySelectorAll('[data-communication-shortcut]').forEach((button) => button.addEventListener('click', () => {
+        activeCommunicationTab = button.dataset.communicationShortcut;
         renderCommunicationWorkspace();
     }));
     root.querySelectorAll('[data-communication-channel]').forEach((button) => button.addEventListener('click', () => {
@@ -4819,6 +5161,28 @@ function bindCommunicationEvents(root) {
         selectedChatbotConversation = button.dataset.chatbotConversation;
         renderCommunicationWorkspace();
     }));
+    root.querySelectorAll('[data-slack-channel]').forEach((button) => button.addEventListener('click', () => {
+        selectedSlackChannel = button.dataset.slackChannel;
+        renderCommunicationWorkspace();
+    }));
+    root.querySelector('[data-edit-slack-tabs]')?.addEventListener('click', openSlackTabManager);
+    root.querySelector('[data-slack-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        showSparkToast('Slack message prepared in prototype mode.');
+    });
+    root.querySelector('[data-chatbot-search]')?.addEventListener('input', (event) => {
+        chatbotConversationSearch = event.target.value;
+        renderCommunicationWorkspace();
+        requestAnimationFrame(() => {
+            const search = document.querySelector('[data-chatbot-search]');
+            search?.focus();
+            search?.setSelectionRange(search.value.length, search.value.length);
+        });
+    });
+    root.querySelector('[data-chatbot-status-filter]')?.addEventListener('change', (event) => {
+        chatbotConversationStatus = event.target.value;
+        renderCommunicationWorkspace();
+    });
     root.querySelectorAll('[data-chatbot-assign]').forEach((button) => button.addEventListener('click', () => {
         const assignee = root.querySelector('[data-chatbot-assignee]')?.value.split(' · ')[0] || 'Angela Reyes';
         chatbotConversationAssignments[selectedChatbotConversation] = assignee;
@@ -10874,6 +11238,15 @@ function confirmSparkAction() {
 function toggleMenu(groupName) {
     if (groupName === 'communication') {
         activateSection('inbox');
+        const menu = document.getElementById('communicationMenu');
+        const trigger = document.querySelector('[data-group-toggle="communication"]');
+        menu?.removeAttribute('hidden');
+        menu?.classList.add('open');
+        trigger?.setAttribute('aria-expanded', 'true');
+        if (trigger?.querySelector('.nav-chevron')) {
+            trigger.querySelector('.nav-chevron').textContent = '⌄';
+        }
+        return;
     }
 
     if (groupName === 'marketing') {
