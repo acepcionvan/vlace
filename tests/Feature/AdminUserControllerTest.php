@@ -71,4 +71,25 @@ class AdminUserControllerTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('user.email', 'staff@example.com');
     }
+
+    public function test_owner_email_logs_in_as_admin_even_if_role_was_changed(): void
+    {
+        User::create([
+            'name' => 'Van Acepcion',
+            'email' => 'acepcionvan@gmail.com',
+            'password' => Hash::make('OwnerPass123!'),
+            'role' => 'teacher',
+        ]);
+
+        $this->postJson('/login', [
+            'email' => 'acepcionvan@gmail.com',
+            'password' => 'OwnerPass123!',
+        ])->assertOk()
+            ->assertJsonPath('user.role', 'admin');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'acepcionvan@gmail.com',
+            'role' => 'admin',
+        ]);
+    }
 }

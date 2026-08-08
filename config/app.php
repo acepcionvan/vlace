@@ -15,6 +15,11 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'owner_emails' => array_values(array_filter(array_map(
+        fn (string $email): string => strtolower(trim($email)),
+        explode(',', env('VLACE_OWNER_EMAILS', 'acepcionvan@gmail.com')),
+    ))),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

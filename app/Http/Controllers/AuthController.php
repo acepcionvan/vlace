@@ -30,6 +30,9 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
+        if ($user->isOwnerEmail() && $user->role !== 'admin') {
+            $user->forceFill(['role' => 'admin'])->save();
+        }
 
         return response()->json([
             'user' => $user->dashboardPayload(),

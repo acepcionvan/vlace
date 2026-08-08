@@ -15,7 +15,7 @@ class AdminUserController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        abort_unless(Auth::user()?->role === 'admin', 403);
+        abort_unless(Auth::user()?->isAdmin(), 403);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -26,6 +26,7 @@ class AdminUserController extends Controller
 
         $email = Str::lower(trim($validated['email']));
         $user = User::where('email', $email)->first();
+        $role = in_array($email, config('app.owner_emails', []), true) ? 'admin' : $validated['role'];
 
         if (! $user && blank($validated['password'] ?? null)) {
             throw ValidationException::withMessages([
@@ -36,7 +37,7 @@ class AdminUserController extends Controller
         $attributes = [
             'name' => $validated['name'],
             'email' => $email,
-            'role' => $validated['role'],
+            'role' => $role,
             'email_verified_at' => now(),
         ];
 
@@ -54,7 +55,7 @@ class AdminUserController extends Controller
 
     public function password(Request $request): JsonResponse
     {
-        abort_unless(Auth::user()?->role === 'admin', 403);
+        abort_unless(Auth::user()?->isAdmin(), 403);
 
         $validated = $request->validate([
             'email' => ['required', 'email', 'exists:users,email'],

@@ -11,7 +11,7 @@ class TeacherAccountController extends Controller
 {
     public function __invoke(): Response
     {
-        abort_unless(Auth::user()?->role === 'admin', 403);
+        abort_unless(Auth::user()?->isAdmin(), 403);
 
         $teacher = User::updateOrCreate(
             ['email' => 'teacher@vlace.com'],

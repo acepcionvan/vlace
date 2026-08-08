@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 #[Fillable(['name', 'email', 'password', 'role', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
@@ -38,7 +39,30 @@ class User extends Authenticatable
         return [
             'name' => $this->name,
             'email' => $this->email,
-            'role' => $this->role ?: 'admin',
+            'role' => $this->effectiveRole(),
         ];
+    }
+
+    public function effectiveRole(): string
+    {
+        if ($this->isOwnerEmail()) {
+            return 'admin';
+        }
+
+        $role = Str::lower(trim($this->role ?: 'staff'));
+
+        return in_array($role, ['admin', 'manager', 'teacher', 'staff'], true) ? $role : 'staff';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->effectiveRole() === 'admin';
+    }
+
+    public function isOwnerEmail(): bool
+    {
+        $ownerEmails = config('app.owner_emails', ['acepcionvan@gmail.com']);
+
+        return in_array(Str::lower(trim($this->email)), $ownerEmails, true);
     }
 }
