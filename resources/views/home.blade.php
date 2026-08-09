@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=manager-overview-blank-fix-20260810">
-    <script src="{{ asset('js/app.js') }}?v=manager-overview-blank-fix-20260810" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=admin-country-coverage-colors-20260810">
+    <script src="{{ asset('js/app.js') }}?v=admin-country-coverage-colors-20260810" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -237,6 +237,17 @@
                         <article class="metric-card exception-card"><div class="icon-box"><i data-lucide="user-x"></i></div><div><p>Absent Students</p><strong data-overview-stat="absentStudents">4</strong><span>Student no-shows today</span></div></article>
                         <article class="metric-card exception-card"><div class="icon-box"><i data-lucide="user-round-x"></i></div><div><p>Absent Teachers</p><strong data-overview-stat="absentTeachers">2</strong><span>Teacher absences today</span></div></article>
                     </div>
+                </section>
+
+                <section class="admin-country-coverage" aria-label="Country coverage by team">
+                    <div class="admin-country-coverage-head">
+                        <div>
+                            <span>COUNTRY COVERAGE</span>
+                            <h2>Country Team Coverage</h2>
+                            <p>Teachers, students, managers, and staff assigned across every service country.</p>
+                        </div>
+                    </div>
+                    <div class="admin-country-coverage-grid" id="adminCountryCoverageGrid"></div>
                 </section>
 
                 <section class="today-income" aria-label="Today’s calculated income">

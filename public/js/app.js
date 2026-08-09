@@ -413,7 +413,7 @@ const teachers = [
         students: 7,
         today: 2,
         rate: '₱245/hr',
-        status: 'Active',
+        status: 'On leave',
         loginStatus: 'Logged in',
         links: {
             voov: 'voov-9021-KR',
@@ -447,7 +447,7 @@ const teachers = [
         students: 5,
         today: 3,
         rate: '₱200/hr',
-        status: 'Active',
+        status: 'On leave',
         loginStatus: 'Logged in',
         links: {
             voov: 'voov-6722-KSA',
@@ -1290,6 +1290,7 @@ const teacherPortalScheduleCounts = {};
 const teacherPortalVideoUrls = {};
 const teacherPortalLessonStatuses = {};
 const managerLessonFeedbackReviews = {};
+const managerScheduleFollowups = {};
 const teacherPortalPolicyAcknowledgements = {};
 const teacherPortalProfilePictures = {
     'T1-001': '/images/teacher-profile-maria.svg',
@@ -2527,6 +2528,12 @@ function getManagerPendingLessons() {
     return getManagerTodayLessons().filter((row) => ['Pending', 'Reassigned to me'].includes(row.status));
 }
 
+function getManagerLessonById(rowId) {
+    return teachers
+        .flatMap((teacher) => getTeacherPortalStudentLessonRows(teacher))
+        .find((row) => row.id === rowId);
+}
+
 function getManagerOverviewStats() {
     const country = managerOverviewCountry;
     const filteredTeachers = getManagerAssignedTeachers(country);
@@ -2588,6 +2595,24 @@ function renderManagerOverviewAction(section, icon, title, detail, count, status
             ${marketingStatus(status)}
         </button>
     `;
+}
+
+function renderManagerCoverageTeacherRows(teacherRows, detailText, emptyTitle, emptyDetail) {
+    if (!teacherRows.length) {
+        return `
+            <span class="manager-coverage-teacher-row is-empty">
+                <span class="manager-coverage-empty-photo"><i data-lucide="minus"></i></span>
+                <span><b>${escapeHtml(emptyTitle)}</b><em>${escapeHtml(emptyDetail)}</em></span>
+            </span>
+        `;
+    }
+
+    return teacherRows.map((teacher) => `
+        <span class="manager-coverage-teacher-row">
+            <span class="${escapeHtml(getTeacherFaceClass(teacher))} manager-coverage-teacher-photo" role="img" aria-label="${escapeHtml(teacher.name)} mock profile photo"></span>
+            <span><b>${escapeHtml(teacher.name)}</b><em>${escapeHtml(detailText(teacher))}</em></span>
+        </span>
+    `).join('');
 }
 
 function renderManagerCountryCoverage() {
@@ -3046,8 +3071,8 @@ function renderManagerTeacherDocumentsTab(teacher) {
         <section class="teacher-tab-panel teacher-detail-records active">
             <article class="employee-records-module">
                 <div class="student-record-head directory-tools">
-                    <div><h3>Teacher Documents</h3><p>Contracts, identification, certificates, and required teacher files.</p></div>
-                    <button class="primary-button" type="button" data-manager-toast="Document upload opened for ${escapeHtml(teacher.name)}.">+ Upload Document</button>
+                    <div><h3>Teacher Documents</h3><p>Contracts, identification, certificates, and required teacher files. Managers can upload only; Admin controls edits and deletion.</p></div>
+                    <button class="primary-button" type="button" data-manager-document-upload="${escapeHtml(teacher.id)}">+ Upload Document</button>
                 </div>
                 <div class="table-wrap">
                     <table class="student-table employee-documents-table">
@@ -3069,6 +3094,16 @@ function renderManagerTeacherDocumentsTab(teacher) {
             </article>
         </section>
     `;
+}
+
+function openManagerTeacherDocumentUpload(teacherId) {
+    const teacher = teachers.find((item) => item.id === teacherId) || teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
+    const previousSelectedTeacherId = selectedTeacherId;
+    selectedTeacherId = teacher.id;
+    activeEmployeeDocumentUploadSource = 'manager';
+    activeEmployeeDocumentKind = 'teacher';
+    openEmployeeDocumentUpload('teacher');
+    selectedTeacherId = previousSelectedTeacherId;
 }
 
 function renderManagerTeacherFeedbackTab() {
@@ -3387,30 +3422,72 @@ function renderManagerOverview() {
 }
 
 function renderManagerSchedule() {
-    const rows = getManagerTodayLessons();
+    const stats = getManagerOverviewStats();
+    const countries = getManagerOverviewCountries();
+    const rows = stats.todayLessons.slice(0, 12);
+    const pendingScheduleRows = rows.filter((row) => ['Pending', 'Reassigned to me'].includes(row.status) && !managerScheduleFollowups[row.id]);
+    const teacherCount = new Set(rows.map((row) => getManagerLessonTeacherName(row))).size;
+    const activeClassrooms = new Set(rows.map((row) => row.platform)).size;
     return `
         ${renderManagerHero('Today’s Schedule', 'Monitor assigned classes, classroom links, completion status, and reassignment needs.')}
-        <article class="teacher-portal-panel">
-            <div class="teacher-panel-head"><div><h3>Class Operations</h3><p>Manager view is for monitoring and follow-up; teachers update lesson status from their portal.</p></div><button type="button" data-manager-toast="Schedule export prepared in prototype.">Export</button></div>
-            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
-                <table>
-                    <thead><tr><th>Date</th><th>Time</th><th>Student</th><th>Teacher</th><th>Topic</th><th>Classroom</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody>
-                        ${rows.map((row) => `<tr><td><strong>${escapeHtml(row.date)}</strong></td><td>${escapeHtml(inputTimeToRange(row.time))}</td><td>${escapeHtml(row.student.name)}<small>${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)}</small></td><td>${escapeHtml(getManagerLessonTeacherName(row))}</td><td>${escapeHtml(row.topic)}</td><td>${escapeHtml(row.platform)}</td><td>${marketingStatus(row.status)}</td><td><button type="button" data-manager-toast="Manager follow-up opened for ${escapeHtml(row.student.name)}.">Follow Up</button></td></tr>`).join('')}
-                    </tbody>
-                </table>
+        <section class="teacher-portal-panel manager-schedule-panel">
+            <div class="manager-schedule-head">
+                <div>
+                    <p class="eyebrow">LIVE CLASS OPERATIONS</p>
+                    <h3>Class Operations Board</h3>
+                    <small>Manager view for monitoring classroom readiness, attendance, and follow-up ownership.</small>
+                </div>
+                <div class="manager-schedule-tools">
+                    <label>Country
+                        <select id="managerOverviewCountry">
+                            ${countries.map((country) => `<option value="${escapeHtml(country)}" ${country === stats.country ? 'selected' : ''}>${escapeHtml(country)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <button class="secondary-button" type="button" data-manager-toast="Schedule export prepared in prototype."><i data-lucide="download"></i> Export</button>
+                </div>
             </div>
-        </article>`;
+
+            <div class="manager-schedule-metrics">
+                <article><span>Total Classes</span><strong>${rows.length}</strong><small>${escapeHtml(stats.country)} view</small></article>
+                <article><span>Pending Follow-up</span><strong>${pendingScheduleRows.length}</strong><small>Needs manager visibility</small></article>
+                <article><span>Teachers Assigned</span><strong>${teacherCount}</strong><small>With classes listed</small></article>
+                <article><span>Classroom Platforms</span><strong>${activeClassrooms}</strong><small>Voov, Meet, Teams, Zoom</small></article>
+            </div>
+
+            <div class="manager-schedule-list" aria-label="Class operations list">
+                ${rows.map((row) => {
+                    const followup = managerScheduleFollowups[row.id];
+                    return `
+                    <article class="manager-schedule-row ${followup ? 'has-followup' : ''}">
+                        <div class="manager-schedule-time">
+                            <strong>${escapeHtml(inputTimeToRange(row.time))}</strong>
+                            <small>${escapeHtml(row.date)} · ${escapeHtml(row.day || 'Scheduled')}</small>
+                        </div>
+                        <div class="manager-schedule-student">
+                            <span class="${escapeHtml(getStudentFaceClass(row.student))}" role="img" aria-label="${escapeHtml(row.student.name)} mock student photo"></span>
+                            <div><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)} · ${escapeHtml(row.duration || '30 minutes')}</small></div>
+                        </div>
+                        <div class="manager-schedule-lesson">
+                            <strong>${escapeHtml(row.topic)}</strong>
+                            <small>${escapeHtml(getManagerLessonTeacherName(row))} · Prepared lesson</small>
+                        </div>
+                        <span class="manager-classroom-chip"><i data-lucide="video"></i>${escapeHtml(row.platform)}</span>
+                        ${marketingStatus(followup ? 'Followed up' : row.status)}
+                        <button class="manager-followup-button ${followup ? 'is-updated' : ''}" type="button" data-manager-followup="${escapeHtml(row.id)}">${followup ? 'Update' : 'Follow Up'} <i data-lucide="arrow-right"></i></button>
+                    </article>
+                `;}).join('')}
+            </div>
+        </section>`;
 }
 
 function renderManagerTeachers() {
     const stats = getManagerOverviewStats();
     const countries = getManagerOverviewCountries();
-    const topTeacherLoads = [...stats.filteredTeachers].sort((first, second) => Number(second.today || 0) - Number(first.today || 0)).slice(0, 5);
-    const attentionTeachers = stats.filteredTeachers
-        .filter((teacher) => teacher.status !== 'Active' || !hasCompleteMeetingLinks(teacher) || teacher.loginStatus === 'Logged out')
-        .slice(0, 4);
-    const recentLessons = stats.todayLessons.slice(0, 5);
+    const activeTeachers = stats.filteredTeachers.filter((teacher) => teacher.status === 'Active');
+    const absentTeachers = stats.filteredTeachers
+        .filter((teacher) => teacher.loginStatus === 'Logged out' && teacher.status === 'Active')
+        .slice(0, Math.max(0, stats.teacherAbsentCount));
+    const onLeaveTeachers = stats.filteredTeachers.filter((teacher) => teacher.status === 'On leave');
     const currentPeriod = teacherPayrollPeriodNames[0];
     const payrollPreview = stats.payrollSummaries.slice(0, 4);
 
@@ -3419,8 +3496,8 @@ function renderManagerTeachers() {
         <section class="teacher-portal-panel manager-operations-overview manager-overview-dashboard">
             <div class="manager-operations-head">
                 <div>
-                    <p class="eyebrow">MANAGER OVERVIEW</p>
-                    <h3>${escapeHtml(stats.country)} Operations Snapshot</h3>
+                    <p class="eyebrow">OPERATIONS OVERVIEW</p>
+                    <h3>${escapeHtml(stats.country)} Manager View</h3>
                     <small>Refreshes every 30 minutes · Philippine Time</small>
                 </div>
                 <label>Filter by country
@@ -3430,44 +3507,51 @@ function renderManagerTeachers() {
                 </label>
             </div>
 
-            <section class="teacher-portal-kpis manager-kpis manager-overview-kpis">
-                <article><span>Assigned Teachers</span><strong>${stats.assignedTeacherCount}</strong><small>${stats.teacherPresentCount} present · ${stats.teacherOnLeaveCount} on leave</small></article>
-                <article><span>Teacher Absences</span><strong>${stats.teacherAbsentCount}</strong><small>Marked absent today</small></article>
-                <article><span>Classes Today</span><strong>${stats.classesToday}</strong><small>${stats.completedLessons.length} completed</small></article>
-                <article><span>Student No-shows</span><strong>${stats.studentAbsentLessons.length}</strong><small>Absent students today</small></article>
-                <article><span>Unread Emails</span><strong>${stats.unreadEmails.length}</strong><small>Unread, not archived</small></article>
-                <article><span>Pending Approvals</span><strong>${stats.pendingApprovalCount}</strong><small>Feedback and documents</small></article>
-            </section>
-
-            <section class="manager-overview-command-strip">
-                ${renderManagerOverviewAction('manager-overview', 'users-round', 'Teacher Directory', 'Review profiles, links, schedules', stats.assignedTeacherCount, 'Open')}
-                ${renderManagerOverviewAction('manager-schedule', 'calendar-days', 'Today’s Schedule', 'Classroom and lesson status', stats.todayLessons.length, 'Live')}
-                ${renderManagerOverviewAction('manager-feedback', 'message-square-text', 'Feedback Queue', 'Teacher feedback review', stats.pendingFeedback.length, 'For Review')}
-                ${renderManagerOverviewAction('manager-documents', 'folder-check', 'Document Queue', 'Expiring or pending files', stats.pendingDocuments.length, 'Needs Check')}
-                ${renderManagerOverviewAction('manager-communication', 'mail', 'Unread Emails', 'Customer and team inbox', stats.unreadEmails.length, 'Unread')}
-            </section>
+            <div class="manager-operations-grid manager-overview-reference-grid">
+                ${renderManagerOperationBox('Teachers Present', stats.teacherPresentCount, 'Active assigned teachers', 'user-check')}
+                ${renderManagerOperationBox('Teachers Absent', stats.teacherAbsentCount, 'Marked absent today', 'user-x')}
+                ${renderManagerOperationBox('Teachers On Leave', stats.teacherOnLeaveCount, 'Approved leave status', 'calendar-x')}
+                ${renderManagerOperationBox('Assigned Teachers', stats.assignedTeacherCount, 'Total teachers assigned to this manager', 'users-round')}
+                ${renderManagerOperationBox('Completed Lessons', stats.completedLessons.length, 'Completed by teachers today', 'calendar-check')}
+                ${renderManagerOperationBox('Cancelled Lessons', stats.cancelledLessons.length, 'Cancelled lessons today', 'ban')}
+                ${renderManagerOperationBox('Transferred Lessons', stats.transferredLessons.length, 'Reassigned classes today', 'shuffle')}
+                ${renderManagerOperationBox('Absent Students', stats.studentAbsentLessons.length, 'Student no-shows today', 'graduation-cap')}
+                ${renderManagerOperationBox('Unread Emails', stats.unreadEmails.length, 'Unread, not archived', 'mail')}
+                ${renderManagerOperationBox('Pending Approvals', stats.pendingApprovalCount, 'Feedback and document approvals', 'clipboard-check')}
+            </div>
         </section>
 
         <section class="manager-overview-main-grid">
-            <article class="teacher-portal-panel manager-overview-panel manager-day-panel">
-                <div class="teacher-panel-head">
-                    <div><h3>Today’s Lesson Health</h3><p>Fast read of completed, cancelled, transferred, and pending lessons.</p></div>
-                    <button type="button" data-manager-portal-target="manager-schedule">Open Schedule</button>
-                </div>
-                <div class="manager-day-summary">
-                    <div><strong>${stats.completedLessons.length}</strong><span>Completed</span></div>
-                    <div><strong>${stats.cancelledLessons.length}</strong><span>Cancelled</span></div>
-                    <div><strong>${stats.transferredLessons.length}</strong><span>Transferred</span></div>
-                    <div><strong>${stats.pendingLessons.length}</strong><span>Pending</span></div>
-                </div>
-                <div class="manager-lesson-timeline">
-                    ${recentLessons.length ? recentLessons.map((row) => `
-                        <article>
-                            <time>${escapeHtml(inputTimeToRange(row.time))}</time>
-                            <div><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.topic)} · ${escapeHtml(row.platform)} · ${escapeHtml(getManagerLessonTeacherName(row))}</small></div>
-                            ${marketingStatus(row.status)}
-                        </article>
-                    `).join('') : '<article><div><strong>No lesson rows yet</strong><small>Schedule activity will appear here.</small></div></article>'}
+            <article class="teacher-portal-panel manager-overview-panel manager-teacher-coverage-panel">
+                <div class="teacher-panel-head"><div><h3>Teacher Coverage</h3><p>Attendance status across assigned teachers.</p></div></div>
+                <div class="manager-teacher-coverage-grid">
+                    <button class="manager-teacher-coverage-card is-active" type="button" data-manager-portal-target="manager-overview">
+                        <span class="manager-coverage-icon"><i data-lucide="user-check"></i></span>
+                        <div>
+                            <small>Active Teachers</small>
+                            <div class="manager-coverage-teacher-list">
+                                ${renderManagerCoverageTeacherRows(activeTeachers, (teacher) => `${teacher.country} · ${teacher.today} classes`, 'No active teachers', 'Nothing to assign')}
+                            </div>
+                        </div>
+                    </button>
+                    <button class="manager-teacher-coverage-card is-absent" type="button" data-manager-portal-target="manager-overview">
+                        <span class="manager-coverage-icon"><i data-lucide="user-x"></i></span>
+                        <div>
+                            <small>Absent Teachers</small>
+                            <div class="manager-coverage-teacher-list">
+                                ${renderManagerCoverageTeacherRows(absentTeachers, (teacher) => `${teacher.country} · logged out`, 'No absent teachers', 'All active teachers reachable')}
+                            </div>
+                        </div>
+                    </button>
+                    <button class="manager-teacher-coverage-card is-leave" type="button" data-manager-portal-target="manager-overview">
+                        <span class="manager-coverage-icon"><i data-lucide="calendar-x"></i></span>
+                        <div>
+                            <small>On Leave Teachers</small>
+                            <div class="manager-coverage-teacher-list">
+                                ${renderManagerCoverageTeacherRows(onLeaveTeachers, (teacher) => `${teacher.country} · approved leave`, 'No teachers on leave', 'No approved leave today')}
+                            </div>
+                        </div>
+                    </button>
                 </div>
             </article>
 
@@ -3478,38 +3562,6 @@ function renderManagerTeachers() {
                     <button type="button" data-manager-portal-target="manager-documents"><div><span>Document approval</span><small>Pending review or expiring soon</small></div><strong>${stats.pendingDocuments.length}</strong>${marketingStatus('Pending')}</button>
                     <button type="button" data-manager-portal-target="manager-overview"><div><span>Missing meeting links</span><small>Teachers needing classroom URL / ID</small></div><strong>${stats.missingLinks.length}</strong>${marketingStatus(stats.missingLinks.length ? 'Needs review' : 'Complete')}</button>
                     <button type="button" data-manager-portal-target="manager-communication"><div><span>Unread email</span><small>Unread, not archived</small></div><strong>${stats.unreadEmails.length}</strong>${marketingStatus('Unread')}</button>
-                </div>
-            </article>
-
-            <article class="teacher-portal-panel manager-overview-panel">
-                <div class="teacher-panel-head"><div><h3>Teacher Coverage</h3><p>Highest workload and teacher readiness at a glance.</p></div></div>
-                <div class="manager-teacher-load-list">
-                    ${topTeacherLoads.map((teacher) => {
-                        const load = Math.min(100, Math.max(8, Number(teacher.today || 0) * 12));
-                        return `
-                            <button type="button" data-manager-teacher="${escapeHtml(teacher.id)}">
-                                <span class="${escapeHtml(getTeacherFaceClass(teacher))} user-photo-avatar"></span>
-                                <div><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.country)} · ${teacher.today} classes · ${teacher.loginStatus}</small><i style="--load:${load}%"></i></div>
-                                ${marketingStatus(teacher.status)}
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-            </article>
-
-            <article class="teacher-portal-panel manager-overview-panel">
-                <div class="teacher-panel-head"><div><h3>Teacher Follow-ups</h3><p>Items to resolve before classes or reviews are affected.</p></div></div>
-                <div class="manager-review-list manager-followup-list">
-                    ${attentionTeachers.length ? attentionTeachers.map((teacher) => `
-                        <button type="button" data-manager-teacher="${escapeHtml(teacher.id)}">
-                            <div><span>${escapeHtml(teacher.country)}</span><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml([
-                                teacher.status !== 'Active' ? teacher.status : '',
-                                !hasCompleteMeetingLinks(teacher) ? 'Needs meeting link' : '',
-                                teacher.loginStatus === 'Logged out' ? 'Logged out' : '',
-                            ].filter(Boolean).join(' · ') || 'Ready')}</small></div>
-                            ${marketingStatus(!hasCompleteMeetingLinks(teacher) ? 'Needs review' : teacher.status)}
-                        </button>
-                    `).join('') : '<button type="button"><div><span>All clear</span><strong>No urgent teacher follow-ups</strong><small>Teacher links, status, and login readiness look good.</small></div>' + marketingStatus('Complete') + '</button>'}
                 </div>
             </article>
 
@@ -3690,6 +3742,90 @@ function renderManagerProfile() {
         </section>`;
 }
 
+function openManagerScheduleFollowup(rowId) {
+    const row = getManagerLessonById(rowId);
+    if (!row) {
+        showSparkToast('Lesson follow-up row was not found.');
+        return;
+    }
+    const saved = managerScheduleFollowups[rowId] || {};
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop manager-followup-backdrop';
+    overlay.innerHTML = `
+        <section class="modal manager-followup-modal" role="dialog" aria-modal="true" aria-labelledby="managerFollowupTitle">
+            <div class="modal-head">
+                <div>
+                    <p>MANAGER FOLLOW-UP</p>
+                    <h3 id="managerFollowupTitle">${escapeHtml(row.student.name)}</h3>
+                </div>
+                <button type="button" data-manager-followup-close aria-label="Close">×</button>
+            </div>
+            <div class="manager-followup-body">
+                <div class="manager-followup-summary">
+                    <article><span>Schedule</span><strong>${escapeHtml(row.date)}</strong><small>${escapeHtml(inputTimeToRange(row.time))} · ${escapeHtml(row.duration || '30 minutes')}</small></article>
+                    <article><span>Teacher</span><strong>${escapeHtml(getManagerLessonTeacherName(row))}</strong><small>${escapeHtml(row.topic)} · ${escapeHtml(row.platform)}</small></article>
+                    <article><span>Status</span><strong>${escapeHtml(row.status)}</strong><small>${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)}</small></article>
+                </div>
+                <form class="manager-followup-form" data-manager-followup-form>
+                    <label>Follow-up type
+                        <select data-followup-type>
+                            ${['Class reminder', 'Attendance check', 'Classroom link check', 'Teacher escalation', 'Student support'].map((type) => `<option value="${escapeHtml(type)}" ${saved.type === type ? 'selected' : ''}>${escapeHtml(type)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Priority
+                        <select data-followup-priority>
+                            ${['Normal', 'High', 'Urgent'].map((priority) => `<option value="${escapeHtml(priority)}" ${saved.priority === priority ? 'selected' : ''}>${escapeHtml(priority)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Owner
+                        <select data-followup-owner>
+                            ${['Manager', 'Teacher', 'Support Staff', 'Admin'].map((owner) => `<option value="${escapeHtml(owner)}" ${saved.owner === owner ? 'selected' : ''}>${escapeHtml(owner)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Due time
+                        <input type="time" data-followup-due value="${escapeHtml(saved.due || row.time || '18:00')}">
+                    </label>
+                    <label class="full">Manager note
+                        <textarea data-followup-note placeholder="Example: Confirm classroom link with teacher and send reminder to student before class.">${escapeHtml(saved.note || '')}</textarea>
+                    </label>
+                    <div class="manager-followup-checklist">
+                        <label><input type="checkbox" data-followup-remind ${saved.remind ? 'checked' : ''}> Send reminder to student</label>
+                        <label><input type="checkbox" data-followup-teacher ${saved.teacherNotified ? 'checked' : ''}> Notify assigned teacher</label>
+                        <label><input type="checkbox" data-followup-log ${saved.logOnly ? 'checked' : ''}> Log as internal note only</label>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="secondary-button" type="button" data-manager-followup-close>Cancel</button>
+                        <button class="primary-button" type="submit">${saved.savedAt ? 'Update Follow-up' : 'Save Follow-up'}</button>
+                    </div>
+                </form>
+            </div>
+        </section>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-manager-followup-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('[data-manager-followup-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const note = overlay.querySelector('[data-followup-note]')?.value.trim() || '';
+        managerScheduleFollowups[rowId] = {
+            type: overlay.querySelector('[data-followup-type]')?.value || 'Class reminder',
+            priority: overlay.querySelector('[data-followup-priority]')?.value || 'Normal',
+            owner: overlay.querySelector('[data-followup-owner]')?.value || 'Manager',
+            due: overlay.querySelector('[data-followup-due]')?.value || '',
+            note,
+            remind: Boolean(overlay.querySelector('[data-followup-remind]')?.checked),
+            teacherNotified: Boolean(overlay.querySelector('[data-followup-teacher]')?.checked),
+            logOnly: Boolean(overlay.querySelector('[data-followup-log]')?.checked),
+            savedAt: new Date().toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true }),
+        };
+        close();
+        renderManagerPortal();
+        showSparkToast(`Follow-up saved for ${row.student.name}.`);
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
 function bindManagerPortalEvents(root) {
     root.querySelector('[data-manager-profile-back]')?.addEventListener('click', () => {
         activeManagerTeacherProfileId = '';
@@ -3752,6 +3888,9 @@ function bindManagerPortalEvents(root) {
     root.querySelectorAll('[data-manager-toast]').forEach((button) => {
         button.addEventListener('click', () => showSparkToast(button.dataset.managerToast));
     });
+    root.querySelectorAll('[data-manager-followup]').forEach((button) => {
+        button.addEventListener('click', () => openManagerScheduleFollowup(button.dataset.managerFollowup));
+    });
     root.querySelectorAll('[data-manager-teacher-policy]').forEach((button) => {
         button.addEventListener('click', () => openManagerTeacherPolicyModal(button.dataset.managerTeacherPolicy));
     });
@@ -3763,6 +3902,9 @@ function bindManagerPortalEvents(root) {
     });
     root.querySelectorAll('[data-manager-feedback-decision]').forEach((button) => {
         button.addEventListener('click', () => decideManagerLessonFeedback(button.dataset.managerFeedbackRow, button.dataset.managerFeedbackDecision || 'Approved'));
+    });
+    root.querySelectorAll('[data-manager-document-upload]').forEach((button) => {
+        button.addEventListener('click', () => openManagerTeacherDocumentUpload(button.dataset.managerDocumentUpload));
     });
     root.querySelectorAll('[data-manager-teacher]').forEach((button) => {
         const openManagerTeacher = () => {
@@ -4479,6 +4621,57 @@ function setAnalyticsMetric(metric) {
     }
 }
 
+function getAdminCountryCoverageCountries() {
+    return Object.keys(dashboardStats).filter((country) => country !== 'All Countries');
+}
+
+function staffMatchesCountry(staff, country) {
+    const market = String(staff.market || '').toLowerCase();
+    const normalizedCountry = String(country || '').toLowerCase();
+    if (!market || !normalizedCountry) return false;
+    if (market.includes(normalizedCountry)) return true;
+    if (country === 'China' && market.includes('greater china')) return true;
+    if (country === 'UAE' && market.includes('dubai')) return true;
+    if (country === 'Dubai' && market.includes('uae')) return true;
+    return false;
+}
+
+function getAdminCountryCoverage(country) {
+    const dashboardCountry = dashboardStats[country] || {};
+    const managerCount = managerAccount.countryScope === 'All country teams'
+        ? 1
+        : Number(staffMatchesCountry(managerAccount, country));
+    const staffCount = staffMembers.filter((staff) => !String(staff.role).toLowerCase().includes('manager') && staffMatchesCountry(staff, country)).length;
+
+    return {
+        country,
+        teachers: teachers.filter((teacher) => teacher.country === country).length,
+        students: Number(dashboardCountry.students || students.filter((student) => student.country === country).length),
+        managers: managerCount,
+        staff: staffCount,
+    };
+}
+
+function renderAdminCountryCoverage(selectedCountry = 'All Countries') {
+    const grid = document.getElementById('adminCountryCoverageGrid');
+    if (!grid) return;
+
+    grid.innerHTML = getAdminCountryCoverageCountries().map(getAdminCountryCoverage).map((row) => `
+        <article class="${selectedCountry === row.country ? 'is-selected' : ''}">
+            <header>
+                <span>${escapeHtml(row.country)}</span>
+                ${selectedCountry === row.country ? '<b>Selected</b>' : ''}
+            </header>
+            <div class="admin-country-counts">
+                <div><small>Teachers</small><strong>${row.teachers}</strong></div>
+                <div><small>Students</small><strong>${row.students}</strong></div>
+                <div><small>Managers</small><strong>${row.managers}</strong></div>
+                <div><small>Staff</small><strong>${row.staff}</strong></div>
+            </div>
+        </article>
+    `).join('');
+}
+
 function updateOverview() {
     const country = document.getElementById('dashboardCountry')?.value || 'All Countries';
     const phpPerUsdInput = document.getElementById('phpPerUsd');
@@ -4531,6 +4724,7 @@ function updateOverview() {
 
     renderCountryRates(country, phpPerUsd);
     renderCompletedLessons(lessons);
+    renderAdminCountryCoverage(country);
 }
 
 function renderCountryRates(country, phpPerUsd) {
@@ -9652,6 +9846,8 @@ function openEmployeeDocumentUpload(kind) {
     activeEmployeeDocumentUploadSource = activeEmployeeDocumentUploadSource || 'admin';
     activeEmployeeDocumentKind = kind;
     const isTeacherPortalUpload = activeEmployeeDocumentUploadSource === 'teacher-portal';
+    const isManagerUpload = activeEmployeeDocumentUploadSource === 'manager';
+    const isRestrictedUploader = isTeacherPortalUpload || isManagerUpload;
     const overlay = document.getElementById('teacherDocumentUploadOverlay');
     const statusField = document.getElementById('teacherDocumentStatus');
     const visibilityField = document.getElementById('teacherDocumentVisibility');
@@ -9663,14 +9859,24 @@ function openEmployeeDocumentUpload(kind) {
     );
     setText('#teacherDocumentUploadName', employee?.name || 'Maria Santos');
     const employeeMeta = document.querySelector('#teacherDocumentUploadName')?.nextElementSibling;
-    if (employeeMeta) employeeMeta.textContent = isTeacherPortalUpload ? 'Teacher · Submitted for Admin review' : `${getEmployeeKindLabel(kind)} · Employee record`;
     const uploadHead = document.querySelector('.upload-document-head');
     const uploadScope = uploadHead?.querySelector('span');
     const uploadDescription = uploadHead?.querySelector('p');
-    if (uploadScope) uploadScope.textContent = isTeacherPortalUpload ? 'TEACHER PORTAL · DOCUMENT UPLOAD' : 'ADMIN & MANAGER · DOCUMENT MANAGEMENT';
+    if (employeeMeta) employeeMeta.textContent = isTeacherPortalUpload
+        ? 'Teacher · Submitted for Admin review'
+        : isManagerUpload
+            ? 'Manager upload · Admin controls edit and deletion'
+            : `${getEmployeeKindLabel(kind)} · Employee record`;
+    if (uploadScope) uploadScope.textContent = isTeacherPortalUpload
+        ? 'TEACHER PORTAL · DOCUMENT UPLOAD'
+        : isManagerUpload
+            ? 'MANAGER PORTAL · DOCUMENT UPLOAD'
+            : 'ADMIN & MANAGER · DOCUMENT MANAGEMENT';
     if (uploadDescription) uploadDescription.textContent = isTeacherPortalUpload
         ? 'Upload a secure file for Admin review. After upload, teachers can view it but cannot edit or delete it.'
-        : 'Add a secure, view-only file to this employee record.';
+        : isManagerUpload
+            ? 'Upload a secure teacher file with details. Managers cannot edit or delete uploaded documents; Admin keeps final control.'
+            : 'Add a secure, view-only file to this employee record.';
     setFieldValue('#teacherDocumentTitle', '');
     setFieldValue('#teacherDocumentCategory', 'Contract');
     setFieldValue('#teacherDocumentStatus', 'Pending Review');
@@ -9684,10 +9890,11 @@ function openEmployeeDocumentUpload(kind) {
     document.getElementById('teacherDocumentDrop')?.classList.remove('has-file');
     document.getElementById('teacherDocumentNotify')?.classList.remove('on');
     document.getElementById('teacherDocumentNotify')?.setAttribute('aria-checked', 'false');
-    if (statusField) statusField.disabled = isTeacherPortalUpload;
-    if (visibilityField) visibilityField.disabled = isTeacherPortalUpload;
-    if (notesField) notesField.placeholder = isTeacherPortalUpload ? 'Optional note for Admin reviewer…' : 'Add a short note for authorized reviewers…';
-    overlay?.classList.toggle('teacher-submitted-upload', isTeacherPortalUpload);
+    if (statusField) statusField.disabled = isRestrictedUploader;
+    if (visibilityField) visibilityField.disabled = isRestrictedUploader;
+    if (notesField) notesField.placeholder = isRestrictedUploader ? 'Optional note for Admin reviewer…' : 'Add a short note for authorized reviewers…';
+    overlay?.classList.toggle('teacher-submitted-upload', isRestrictedUploader);
+    overlay?.classList.toggle('manager-submitted-upload', isManagerUpload);
     overlay?.removeAttribute('hidden');
     document.body.classList.add('drawer-open');
 }
@@ -9705,6 +9912,7 @@ function openTeacherPortalDocumentUpload() {
 function closeTeacherDocumentUpload() {
     document.getElementById('teacherDocumentUploadOverlay')?.setAttribute('hidden', '');
     document.getElementById('teacherDocumentUploadOverlay')?.classList.remove('teacher-submitted-upload');
+    document.getElementById('teacherDocumentUploadOverlay')?.classList.remove('manager-submitted-upload');
     const statusField = document.getElementById('teacherDocumentStatus');
     const visibilityField = document.getElementById('teacherDocumentVisibility');
     if (statusField) statusField.disabled = false;
@@ -9733,13 +9941,16 @@ function saveTeacherDocumentUpload() {
     if (!title) return;
 
     const isTeacherPortalUpload = activeEmployeeDocumentUploadSource === 'teacher-portal';
+    const isManagerUpload = activeEmployeeDocumentUploadSource === 'manager';
     const documents = getEmployeeDocuments(activeEmployeeDocumentKind);
     documents.unshift({
         title,
         category: document.getElementById('teacherDocumentCategory')?.value || 'Contract',
         type: 'PDF',
         updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        status: document.getElementById('teacherDocumentStatus')?.value || 'Pending Review',
+        status: isManagerUpload ? 'Pending Review' : document.getElementById('teacherDocumentStatus')?.value || 'Pending Review',
+        uploadedBy: isManagerUpload ? 'Manager' : isTeacherPortalUpload ? 'Teacher' : 'Admin',
+        lockedForManager: isManagerUpload,
     });
     if (activeEmployeeDocumentKind === 'staff') {
         renderStaffDocuments();
@@ -9749,11 +9960,16 @@ function saveTeacherDocumentUpload() {
         if (isTeacherPortalUpload || activeTeacherPortalSection === 'teacher-documents') {
             renderTeacherPortal();
         }
+        if (isManagerUpload) {
+            renderManagerPortal();
+        }
     }
     closeTeacherDocumentUpload();
     showSparkToast(isTeacherPortalUpload
         ? `${title} uploaded for Admin review.`
-        : `${title} was added as a view-only document.`);
+        : isManagerUpload
+            ? `${title} uploaded for Admin review. Manager view is upload-only.`
+            : `${title} was added as a view-only document.`);
 }
 
 function getFeedbackVisibilityLabel(visibility) {
