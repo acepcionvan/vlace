@@ -25,5 +25,15 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
+
+        User::updateOrCreate(
+            ['email' => env('VLACE_MANAGER_EMAIL', 'manager@vlace.com')],
+            [
+                'name' => env('VLACE_MANAGER_NAME', 'Angela Reyes'),
+                'password' => Hash::make(env('VLACE_MANAGER_PASSWORD', 'prototype')),
+                'role' => 'manager',
+                'email_verified_at' => now(),
+            ],
+        );
     }
 }

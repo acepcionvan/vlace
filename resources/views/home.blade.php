@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>VLACE Admin Dashboard</title>
+    <title>VLACE Dashboard</title>
 
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=mobile-dashboard-friendly-20260809">
-    <script src="{{ asset('js/app.js') }}?v=mobile-dashboard-friendly-20260809" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=manager-overview-blank-fix-20260810">
+    <script src="{{ asset('js/app.js') }}?v=manager-overview-blank-fix-20260810" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -186,6 +186,7 @@
 
                 <button class="admin-user dashboard-user-card" data-section-target="settings" aria-label="Open account settings">
                     <div class="dashboard-user-photo">
+                        <span class="dashboard-face staff-face staff-face-0" id="adminUserPhoto" role="img" aria-label="Van Lester Acepcion mock profile photo"></span>
                         <span class="dashboard-user-initials">VA</span>
                         <span class="dashboard-user-online"></span>
                     </div>
@@ -536,18 +537,12 @@
                 <article class="panel teacher-detail-panel student-profile-panel" id="teacherDetailPanel" hidden>
                     <header class="student-profile-header teacher-detail-header">
                         <div class="student-profile-identity">
-                            <span class="student-avatar teacher-profile-photo-avatar">
-                                <img id="teacherDetailPhoto" src="{{ asset('images/teacher-profile-maria.svg') }}" alt="Maria Santos profile picture">
-                                <b id="teacherDetailAvatar">MS</b>
-                            </span>
+                            <span class="student-avatar teacher-profile-photo-avatar teacher-face teacher-photo-0" id="teacherDetailPhoto" role="img" aria-label="Maria Santos mock profile photo"></span>
                             <div>
                                 <span>TEACHER PROFILE</span>
                                 <h3 id="teacherDetailName">Maria Santos</h3>
                                 <p id="teacherDetailMeta">T1-001 · China · Kids &amp; Adults</p>
                             </div>
-                        </div>
-                        <div class="student-profile-actions" data-teacher-profile-only-actions>
-                            <button class="primary-button" type="button" id="teacherDetailEditLinks"><i data-lucide="pencil"></i> Edit Meeting Links</button>
                         </div>
                     </header>
 
@@ -563,8 +558,13 @@
                     <div class="teacher-tab-panel active" data-teacher-tab-panel="profile">
                         <section class="teacher-profile-overview admin-teacher-profile-overview">
                             <article class="teacher-profile-info-card">
-                                <h4>Teacher Information</h4>
-                                <p>Individual employment record</p>
+                                <div class="teacher-links-card-head">
+                                    <div>
+                                        <h4>Teacher Information</h4>
+                                        <p>Individual employment record</p>
+                                    </div>
+                                    <button class="secondary-button" type="button" id="teacherInfoPanelEdit">Edit</button>
+                                </div>
                                 <dl>
                                     <div><dt>Teacher ID</dt><dd id="teacherDetailId">T1-001</dd></div>
                                     <div><dt>Teacher Name</dt><dd id="teacherProfileRecordName">Maria Santos</dd></div>
@@ -575,8 +575,13 @@
                             </article>
 
                             <article class="teacher-profile-info-card">
-                                <h4>Teaching Assignment</h4>
-                                <p>Current workload and payroll rate</p>
+                                <div class="teacher-links-card-head">
+                                    <div>
+                                        <h4>Teaching Assignment</h4>
+                                        <p>Current workload and payroll rate</p>
+                                    </div>
+                                    <button class="secondary-button" type="button" id="teacherAssignmentPanelEdit">Edit</button>
+                                </div>
                                 <dl>
                                     <div><dt>Assigned Students</dt><dd id="teacherDetailStudents">14</dd></div>
                                     <div><dt>Classes Today</dt><dd id="teacherDetailToday">6</dd></div>
@@ -584,9 +589,26 @@
                                 </dl>
                             </article>
 
+                            <article class="teacher-profile-info-card admin-teacher-links-card">
+                                <div class="teacher-links-card-head">
+                                    <div>
+                                        <h4>Meeting Links</h4>
+                                        <p>Classroom URLs and IDs used by assigned students</p>
+                                    </div>
+                                    <button class="secondary-button" type="button" id="teacherLinksPanelEdit">Edit</button>
+                                </div>
+                                <dl>
+                                    <div><dt>Voov</dt><dd id="teacherLinksPanelVoov">voov-8831-CHN</dd></div>
+                                    <div><dt>Google Meet</dt><dd id="teacherLinksPanelMeet">meet.google.com/ms-china</dd></div>
+                                    <div><dt>Microsoft Teams</dt><dd id="teacherLinksPanelTeams">teams.msantos.vlace</dd></div>
+                                    <div><dt>Zoom</dt><dd id="teacherLinksPanelZoom">zoom.us/j/88310022</dd></div>
+                                </dl>
+                            </article>
+
                             <article class="teacher-profile-info-card admin-teacher-supervisor-card">
+                                <button class="secondary-button admin-teacher-supervisor-edit" type="button" id="teacherSupervisorPanelEdit">Edit</button>
                                 <span>ASSIGNED SUPERVISOR</span>
-                                <img class="admin-teacher-supervisor-photo" id="teacherDetailSupervisorPhoto" src="{{ asset('images/supervisor-angela-reyes.svg') }}" width="64" height="64" alt="Angela Reyes supervisor picture">
+                                <span class="admin-teacher-supervisor-photo staff-face staff-face-1" id="teacherDetailSupervisorPhoto" role="img" aria-label="Angela Reyes mock profile photo"></span>
                                 <h4 id="teacherDetailSupervisorName">Angela Reyes</h4>
                                 <p id="teacherDetailSupervisorRole">Academic Supervisor</p>
                                 <small>Primary supervisor for teacher support, schedule coordination, and performance review.</small>
@@ -1116,7 +1138,7 @@
                 <article class="panel student-profile-panel" id="studentProfilePanel" hidden>
                     <header class="student-profile-header">
                         <div class="student-profile-identity">
-                            <span class="student-avatar" id="studentProfileAvatar">LC</span>
+                            <span class="student-avatar student-face student-face-0" id="studentProfileAvatar" role="img" aria-label="Liam Chen mock profile photo"></span>
                             <div>
                                 <span>STUDENT PROFILE</span>
                                 <h3 id="studentProfileName">Liam Chen</h3>
@@ -1810,7 +1832,7 @@
                 <article class="panel staff-detail-panel" id="staffDetailPanel" hidden>
                     <header class="staff-detail-hero">
                         <div class="staff-detail-identity">
-                            <span class="staff-detail-avatar" id="staffDetailAvatar">AR</span>
+                            <span class="staff-detail-avatar staff-face staff-face-1" id="staffDetailAvatar" role="img" aria-label="Angela Reyes mock profile photo"></span>
                             <div>
                                 <p class="eyebrow">NON-TEACHING STAFF PROFILE</p>
                                 <h3 id="staffDetailName">Angela Reyes</h3>
@@ -2449,6 +2471,7 @@
                 </div>
                 <button class="admin-user teacher-user-card" data-teacher-portal-target="teacher-profile" aria-label="Open teacher profile">
                     <div class="dashboard-user-photo">
+                        <span class="dashboard-face teacher-face teacher-photo-0" id="teacherPortalPhoto" role="img" aria-label="Maria Santos mock profile photo"></span>
                         <span class="dashboard-user-initials" id="teacherPortalInitials">MS</span>
                         <span class="dashboard-user-online"></span>
                     </div>
@@ -2462,6 +2485,63 @@
             </header>
 
             <section class="teacher-portal-content" id="teacherPortalContent"></section>
+        </main>
+    </div>
+
+    <div class="teacher-app-shell manager-app-shell" id="managerDashboardApp" hidden>
+        <aside class="teacher-sidebar manager-sidebar" id="managerSidebar">
+            <div class="brand teacher-brand">
+                <img class="brand-logo" src="{{ asset('images/vlace-logo.png') }}" alt="VLACE logo">
+                <div>
+                    <strong>VLACE</strong>
+                    <span>Manager Portal</span>
+                </div>
+            </div>
+
+            <nav aria-label="Manager navigation">
+                <button class="active" data-manager-portal-target="manager-teachers"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
+                <button data-manager-portal-target="manager-schedule"><i data-lucide="calendar-days"></i><span>Schedule</span></button>
+                <button data-manager-portal-target="manager-overview"><i data-lucide="users-round"></i><span>Teachers</span></button>
+                <button data-manager-portal-target="manager-students"><i data-lucide="graduation-cap"></i><span>Students</span></button>
+                <button data-manager-portal-target="manager-feedback"><i data-lucide="message-square-text"></i><span>Feedback</span></button>
+                <button data-manager-portal-target="manager-communication"><i data-lucide="inbox"></i><span>Communication</span></button>
+                <button data-manager-portal-target="manager-payroll"><i data-lucide="wallet"></i><span>Payroll Review</span></button>
+                <button data-manager-portal-target="manager-documents"><i data-lucide="folder-check"></i><span>Documents</span></button>
+                <button data-manager-portal-target="manager-policies"><i data-lucide="file-check-2"></i><span>Policies</span></button>
+                <button data-manager-portal-target="manager-profile"><i data-lucide="user-round"></i><span>Profile</span></button>
+            </nav>
+
+            <button class="sidebar-logout manager-logout-button" id="managerPortalLogoutButton">
+                <i data-lucide="log-out"></i>
+                <span>Log Out</span>
+            </button>
+        </aside>
+
+        <main class="teacher-main manager-main">
+            <header class="teacher-topbar manager-topbar">
+                <button class="mobile-menu" id="managerMobileMenu" aria-label="Open manager menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div>
+                    <p class="eyebrow">VLACE MANAGER PORTAL</p>
+                    <h1 id="managerPortalTitle">Manager Dashboard</h1>
+                </div>
+                <button class="admin-user teacher-user-card" data-manager-portal-target="manager-profile" aria-label="Open manager profile">
+                    <div class="dashboard-user-photo">
+                        <span class="dashboard-face staff-face staff-face-1" id="managerPortalPhoto" role="img" aria-label="Angela Reyes mock profile photo"></span>
+                        <span class="dashboard-user-initials" id="managerPortalInitials">AR</span>
+                        <span class="dashboard-user-online"></span>
+                    </div>
+                    <div class="dashboard-user-copy">
+                        <small>Welcome back!</small>
+                        <strong id="managerPortalName">Angela Reyes</strong>
+                        <span>Manager</span>
+                    </div>
+                    <span class="dashboard-user-chevron">›</span>
+                </button>
+            </header>
+
+            <section class="teacher-portal-content manager-portal-content" id="managerPortalContent"></section>
         </main>
     </div>
 
@@ -2873,7 +2953,7 @@
 
             <form class="student-edit-body" id="studentPaymentForm">
                 <div class="record-context">
-                    <div class="record-context-avatar" id="studentPaymentRecordAvatar">LC</div>
+                    <div class="record-context-avatar student-face student-face-0" id="studentPaymentRecordAvatar" role="img" aria-label="Liam Chen mock profile photo"></div>
                     <div>
                         <span>ADDING TO</span>
                         <strong id="studentPaymentRecordName">Liam Chen</strong>
@@ -3154,7 +3234,7 @@
 
             <form class="student-edit-body" id="staffScheduleForm">
                 <div class="schedule-staff-card">
-                    <span id="staffScheduleAvatar">AR</span>
+                    <span class="staff-face staff-face-1" id="staffScheduleAvatar" role="img" aria-label="Angela Reyes mock profile photo"></span>
                     <div>
                         <small>STAFF MEMBER</small>
                         <strong id="staffScheduleName">Angela Reyes</strong>
@@ -3285,7 +3365,7 @@
 
             <form class="student-edit-body" id="staffProfileForm">
                 <div class="feedback-recipient-card">
-                    <span id="staffProfileInitials">AR</span>
+                    <span class="staff-face staff-face-1" id="staffProfileInitials" role="img" aria-label="Angela Reyes mock profile photo"></span>
                     <div><small>STAFF MEMBER</small><strong id="staffProfileDrawerName">Angela Reyes</strong><p id="staffProfileDrawerMeta">ST-001 · Operations</p></div>
                 </div>
 
@@ -3344,7 +3424,7 @@
 
             <form class="student-edit-body" id="staffContactForm">
                 <div class="feedback-recipient-card">
-                    <span id="staffContactInitials">AR</span>
+                    <span class="staff-face staff-face-1" id="staffContactInitials" role="img" aria-label="Angela Reyes mock profile photo"></span>
                     <div><small>STAFF</small><strong id="staffContactName">Angela Reyes</strong><p>Work-related and emergency communication only</p></div>
                 </div>
                 <div class="drawer-info-banner contact-info-banner">
@@ -3455,7 +3535,7 @@
             </header>
             <form class="student-edit-body" id="teacherDocumentUploadForm">
                 <div class="feedback-recipient-card">
-                    <span id="teacherDocumentUploadInitials">MS</span>
+                    <span class="teacher-face teacher-photo-0" id="teacherDocumentUploadInitials" role="img" aria-label="Maria Santos mock profile photo"></span>
                     <div><small>Document for</small><strong id="teacherDocumentUploadName">Maria Santos</strong><p>Teacher · Employee record</p></div>
                 </div>
                 <section class="drawer-form-section">
@@ -3560,7 +3640,7 @@
             </header>
             <form class="student-edit-body" id="teacherAddFeedbackForm">
                 <div class="feedback-recipient-card">
-                    <span id="teacherAddFeedbackInitials">MS</span>
+                    <span class="teacher-face teacher-photo-0" id="teacherAddFeedbackInitials" role="img" aria-label="Maria Santos mock profile photo"></span>
                     <div><small>Feedback for</small><strong id="teacherAddFeedbackName">Maria Santos</strong><p>Teacher · Reviewed by Van A.</p></div>
                 </div>
                 <section class="drawer-form-section">

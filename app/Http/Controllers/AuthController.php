@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +20,8 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
         $credentials['email'] = Str::lower(trim($credentials['email']));
+
+        $this->ensurePrototypeRoleAccount($credentials['email'], $credentials['password']);
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
@@ -37,6 +40,28 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user->dashboardPayload(),
         ]);
+    }
+
+    private function ensurePrototypeRoleAccount(string $email, string $password): void
+    {
+        $prototypeAccounts = [
+            'manager@vlace.com' => ['name' => 'Angela Reyes', 'role' => 'manager'],
+            'teacher@vlace.com' => ['name' => 'Maria Santos', 'role' => 'teacher'],
+        ];
+
+        if ($password !== 'prototype' || ! isset($prototypeAccounts[$email])) {
+            return;
+        }
+
+        User::updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => $prototypeAccounts[$email]['name'],
+                'password' => Hash::make($password),
+                'role' => $prototypeAccounts[$email]['role'],
+                'email_verified_at' => now(),
+            ],
+        );
     }
 
     public function logout(Request $request): RedirectResponse|JsonResponse

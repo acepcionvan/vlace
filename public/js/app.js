@@ -1201,6 +1201,7 @@ let activeEmployeeFeedbackKind = 'teacher';
 let activeEmployeeNoteKind = 'staff';
 let activeStaffContactKind = 'staff';
 let teacherWeekOffset = 0;
+let activeManagerTeacherPayrollPeriod = 'January 1–15, 2026';
 const payrollReceiptUploads = {};
 
 const usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -1288,6 +1289,7 @@ const teacherPortalSlotOverrides = {};
 const teacherPortalScheduleCounts = {};
 const teacherPortalVideoUrls = {};
 const teacherPortalLessonStatuses = {};
+const managerLessonFeedbackReviews = {};
 const teacherPortalPolicyAcknowledgements = {};
 const teacherPortalProfilePictures = {
     'T1-001': '/images/teacher-profile-maria.svg',
@@ -1303,6 +1305,47 @@ let activeEmployeeDocumentUploadSource = 'admin';
 
 function getTeacherProfilePicture(teacher) {
     return teacherPortalProfilePictures[teacher?.id] || '/images/teacher-profile-default.svg';
+}
+
+function getSpriteIndex(items, id) {
+    return Math.max(0, items.findIndex((item) => item.id === id)) % 8;
+}
+
+function getStudentFaceClass(student) {
+    return `student-face student-face-${getSpriteIndex(students, student?.id)}`;
+}
+
+function getStaffFaceClass(staff) {
+    return `staff-face staff-face-${getSpriteIndex(staffMembers, staff?.id)}`;
+}
+
+function getTeacherFaceClass(teacher) {
+    return `teacher-face teacher-photo-${getSpriteIndex(teachers, teacher?.id)}`;
+}
+
+function getDashboardUserFaceClass(user) {
+    const email = String(user?.email || '').toLowerCase();
+    const name = String(user?.name || '');
+    const role = String(user?.role || '').toLowerCase();
+    if (role === 'teacher') {
+        const teacher = teachers.find((item) => name.includes(item.name.split(' ')[0]) || email.includes(item.name.split(' ')[0].toLowerCase())) || teachers[0];
+        return getTeacherFaceClass(teacher);
+    }
+    if (role === 'manager' || role === 'staff' || role === 'admin') {
+        const staff = staffMembers.find((item) => item.name === name || email.includes(item.name.split(' ')[0].toLowerCase())) || staffMembers[role === 'manager' ? 0 : 1] || staffMembers[0];
+        return getStaffFaceClass(staff);
+    }
+    const student = students.find((item) => name.includes(item.name.split(' ')[0]) || email.includes(item.name.split(' ')[0].toLowerCase())) || students[0];
+    return getStudentFaceClass(student);
+}
+
+function setFaceElement(selector, className, label) {
+    const node = document.querySelector(selector);
+    if (!node) return;
+    node.textContent = '';
+    node.className = className;
+    node.setAttribute('role', 'img');
+    node.setAttribute('aria-label', `${label} mock profile photo`);
 }
 
 function getTeacherSupervisor(teacher) {
@@ -1323,6 +1366,40 @@ const teacherPortalTitles = {
     'teacher-policies': 'Company Policies',
     'teacher-profile': 'My Profile',
 };
+
+const managerAccount = {
+    id: 'MG-001',
+    name: 'Angela Reyes',
+    email: 'manager@vlace.com',
+    role: 'Operations Manager',
+    department: 'Operations',
+    countryScope: 'All country teams',
+    supervisor: 'Van Lester Acepcion',
+    supervisorRole: 'Administrator',
+    supervisorPhoto: '/images/admin-profile-van.svg',
+    photo: '/images/supervisor-angela-reyes.svg',
+    status: 'Active',
+};
+
+const managerPortalTitles = {
+    'manager-overview': 'Teachers',
+    'manager-schedule': 'Schedule',
+    'manager-teachers': 'Overview',
+    'manager-students': 'Student Follow-up',
+    'manager-feedback': 'Feedback Review',
+    'manager-communication': 'Communication',
+    'manager-payroll': 'Payroll Review',
+    'manager-documents': 'Documents',
+    'manager-policies': 'Policies',
+    'manager-profile': 'Manager Profile',
+};
+
+let activeManagerPortalSection = 'manager-teachers';
+let managerOverviewCountry = 'All Countries';
+let managerTeacherDirectoryStatus = 'All Statuses';
+let managerTeacherDirectorySearch = '';
+let activeManagerTeacherProfileId = '';
+let activeManagerTeacherProfileTab = 'profile';
 
 function getTeacherPortalTeacher() {
     return teachers.find((teacher) => teacher.id === activeTeacherPortalTeacherId) || teachers[0];
@@ -1356,7 +1433,11 @@ function renderTeacherPortal() {
 
     setText('#teacherPortalTitle', teacherPortalTitles[activeTeacherPortalSection] || 'Teacher Dashboard');
     setText('#teacherPortalName', teacher.name);
-    setText('#teacherPortalInitials', getInitials(teacher.name));
+    const teacherPortalPhoto = document.getElementById('teacherPortalPhoto');
+    if (teacherPortalPhoto) {
+        teacherPortalPhoto.className = `dashboard-face ${getTeacherFaceClass(teacher)}`;
+        teacherPortalPhoto.setAttribute('aria-label', `${teacher.name} mock profile photo`);
+    }
 
     root.innerHTML = `
         ${activeTeacherPortalSection === 'teacher-overview' ? renderTeacherPortalOverview(teacher) : ''}
@@ -2264,14 +2345,14 @@ function renderTeacherPortalProfile(teacher) {
     const contact = teacherContacts[teacher.name] || {};
     const availability = teacherAvailability[teacher.name]?.slots || [];
     const meetingLinks = teacher.links || {};
-    const profilePicture = getTeacherProfilePicture(teacher);
     const supervisor = getTeacherSupervisor(teacher);
+    const supervisorStaff = staffMembers.find((staff) => staff.name === supervisor.name) || staffMembers[0];
     return `
         ${renderTeacherPortalHero(teacher, 'My Profile', 'View your teacher profile, contact details, teaching assignment, meeting setup, and payroll information.')}
         <section class="teacher-portal-profile-dashboard">
             <article class="teacher-profile-photo-card">
                 <div class="teacher-profile-photo-frame">
-                    <img src="${escapeHtml(profilePicture)}" alt="${escapeHtml(teacher.name)} profile picture">
+                    <span class="teacher-profile-photo-face ${escapeHtml(getTeacherFaceClass(teacher))}" role="img" aria-label="${escapeHtml(teacher.name)} mock profile photo"></span>
                 </div>
                 <div class="teacher-profile-photo-copy">
                     <span>PROFILE PICTURE</span>
@@ -2285,7 +2366,7 @@ function renderTeacherPortalProfile(teacher) {
                 </div>
                 <aside class="teacher-supervisor-card">
                     <span>SUPERVISOR</span>
-                    <img src="${escapeHtml(supervisor.photo)}" alt="${escapeHtml(supervisor.name)} supervisor picture">
+                    <span class="teacher-supervisor-face ${escapeHtml(getStaffFaceClass(supervisorStaff))}" role="img" aria-label="${escapeHtml(supervisor.name)} mock profile photo"></span>
                     <strong>${escapeHtml(supervisor.name)}</strong>
                     <small>${escapeHtml(supervisor.role)}</small>
                 </aside>
@@ -2376,6 +2457,1341 @@ function renderTeacherPortalProfile(teacher) {
                 <article><div><strong>Login email</strong><small>Teacher account created by Admin</small></div><span>vanacepcion@gmail.com</span>${marketingStatus('Verified')}</article>
             </div>
         </article>`;
+}
+
+function showManagerDashboard(user = {}) {
+    activeManagerPortalSection = 'manager-teachers';
+    document.getElementById('loginPage')?.setAttribute('hidden', '');
+    document.getElementById('dashboardApp')?.setAttribute('hidden', '');
+    document.getElementById('teacherDashboardApp')?.setAttribute('hidden', '');
+    document.getElementById('managerDashboardApp')?.removeAttribute('hidden');
+    window.vlaceLoginMotion?.stop();
+    managerAccount.name = user.name || managerAccount.name;
+    managerAccount.email = user.email || managerAccount.email;
+    renderManagerPortal();
+    refreshIcons();
+}
+
+function activateManagerPortal(section) {
+    activeManagerPortalSection = section;
+    if (section !== 'manager-overview') activeManagerTeacherProfileId = '';
+    document.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.managerPortalTarget === section);
+    });
+    document.getElementById('managerSidebar')?.classList.remove('open');
+    renderManagerPortal();
+}
+
+function renderManagerPortal() {
+    const root = document.getElementById('managerPortalContent');
+    if (!root) return;
+
+    setText('#managerPortalTitle', managerPortalTitles[activeManagerPortalSection] || 'Manager Dashboard');
+    setText('#managerPortalName', managerAccount.name);
+    setText('#managerPortalInitials', getInitials(managerAccount.name));
+    const managerPhoto = document.getElementById('managerPortalPhoto');
+    if (managerPhoto) {
+        const managerStaff = staffMembers.find((staff) => staff.email === managerAccount.email || staff.name === managerAccount.name) || staffMembers[0];
+        managerPhoto.className = `dashboard-face ${getStaffFaceClass(managerStaff)}`;
+        managerPhoto.setAttribute('aria-label', `${managerAccount.name} mock profile photo`);
+    }
+    document.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.managerPortalTarget === activeManagerPortalSection);
+    });
+
+    root.innerHTML = `
+        ${activeManagerPortalSection === 'manager-overview' ? renderManagerOverview() : ''}
+        ${activeManagerPortalSection === 'manager-schedule' ? renderManagerSchedule() : ''}
+        ${activeManagerPortalSection === 'manager-teachers' ? renderManagerTeachers() : ''}
+        ${activeManagerPortalSection === 'manager-students' ? renderManagerStudents() : ''}
+        ${activeManagerPortalSection === 'manager-feedback' ? renderManagerFeedback() : ''}
+        ${activeManagerPortalSection === 'manager-communication' ? renderManagerCommunication() : ''}
+        ${activeManagerPortalSection === 'manager-payroll' ? renderManagerPayroll() : ''}
+        ${activeManagerPortalSection === 'manager-documents' ? renderManagerDocuments() : ''}
+        ${activeManagerPortalSection === 'manager-policies' ? renderManagerPolicies() : ''}
+        ${activeManagerPortalSection === 'manager-profile' ? renderManagerProfile() : ''}
+    `;
+    bindManagerPortalEvents(root);
+    refreshIcons();
+}
+
+function renderManagerHero(title, subtitle) {
+    return `<section class="teacher-portal-hero manager-portal-hero"><div><span>MANAGER WORKSPACE</span><h2>${escapeHtml(title)}</h2><small>${escapeHtml(subtitle)}</small></div><span class="status-pill positive">Active</span></section>`;
+}
+
+function getManagerTodayLessons() {
+    return getTeacherPortalStudentLessonRows(teachers[0]).slice(0, 10);
+}
+
+function getManagerPendingLessons() {
+    return getManagerTodayLessons().filter((row) => ['Pending', 'Reassigned to me'].includes(row.status));
+}
+
+function getManagerOverviewStats() {
+    const country = managerOverviewCountry;
+    const filteredTeachers = getManagerAssignedTeachers(country);
+    const filteredTeacherNames = new Set(filteredTeachers.map((teacher) => teacher.name));
+    const filteredStudents = students.filter((student) => country === 'All Countries' || student.country === country || filteredTeacherNames.has(student.teacher));
+    const todayLessons = filteredTeachers.flatMap((teacher) => getTeacherPortalStudentLessonRows(teacher).slice(0, Math.max(1, Number(teacher.today || 1))));
+    const pendingLessons = getManagerPendingLessons();
+    const missingLinks = teachers.filter((teacher) => !hasCompleteMeetingLinks(teacher));
+    const period = teacherPayrollPeriodNames[0];
+    const payrollSummaries = filteredTeachers.map((teacher) => ({ teacher, summary: getTeacherPayrollSummary(teacher, period) }));
+    const unreadEmails = communicationEmails.filter((email) => email.unread && !email.archived && (country === 'All Countries' || email.country === country));
+    const pendingDocuments = teacherDocuments.filter((item) => ['Pending Review', 'Expiring Soon'].includes(item.status));
+    const expiringDocuments = teacherDocuments.filter((item) => item.status === 'Expiring Soon');
+    const pendingFeedback = teacherFeedbackRecords.filter((record) => !record.acknowledged);
+    const completedLessons = todayLessons.filter((row) => ['Completed', 'Student is late'].includes(row.status));
+    const cancelledLessons = todayLessons.filter((row) => row.status === 'Cancelled');
+    const transferredLessons = todayLessons.filter((row) => ['Reassigned to me', 'Reassigned from me'].includes(row.status));
+    const studentAbsentLessons = todayLessons.filter((row) => String(row.status).toLowerCase().includes('student') && String(row.status).toLowerCase().includes('absent'));
+    const payrollTotal = payrollSummaries.reduce((sum, item) => sum + item.summary.net, 0);
+    const dashboardCountryStats = dashboardStats[country] || dashboardStats['All Countries'];
+    const teacherAbsentCount = country === 'All Countries'
+        ? Number(dashboardStats['All Countries']?.absentTeachers || 0)
+        : Number(dashboardCountryStats?.absentTeachers || 0);
+    const teacherOnLeaveCount = filteredTeachers.filter((teacher) => teacher.status === 'On leave').length;
+
+    return {
+        country,
+        filteredTeachers,
+        filteredStudents,
+        todayLessons,
+        pendingLessons,
+        missingLinks: missingLinks.filter((teacher) => country === 'All Countries' || teacher.country === country),
+        period,
+        payrollSummaries,
+        unreadEmails,
+        pendingDocuments,
+        expiringDocuments,
+        pendingFeedback,
+        completedLessons,
+        cancelledLessons,
+        transferredLessons,
+        studentAbsentLessons,
+        payrollTotal,
+        teacherPresentCount: filteredTeachers.filter((teacher) => teacher.status === 'Active').length,
+        teacherAbsentCount,
+        teacherOnLeaveCount,
+        assignedTeacherCount: filteredTeachers.length,
+        classesToday: filteredTeachers.reduce((sum, teacher) => sum + Number(teacher.today || 0), 0),
+        pendingApprovalCount: pendingFeedback.length + pendingDocuments.length,
+    };
+}
+
+function renderManagerOverviewAction(section, icon, title, detail, count, status = 'Open') {
+    return `
+        <button class="manager-overview-action" type="button" data-manager-portal-target="${escapeHtml(section)}">
+            <span class="manager-action-icon"><i data-lucide="${escapeHtml(icon)}"></i></span>
+            <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
+            <b>${escapeHtml(String(count))}</b>
+            ${marketingStatus(status)}
+        </button>
+    `;
+}
+
+function renderManagerCountryCoverage() {
+    const countries = [...new Set(students.map((student) => student.country))];
+    return countries.map((country) => {
+        const countryStudents = students.filter((student) => student.country === country);
+        const countryTeachers = teachers.filter((teacher) => teacher.country === country);
+        const today = countryTeachers.reduce((sum, teacher) => sum + Number(teacher.today || 0), 0);
+        return `
+            <article>
+                <div><strong>${escapeHtml(country)}</strong><small>${countryStudents.length} students · ${countryTeachers.length || 1} teacher${countryTeachers.length === 1 ? '' : 's'}</small></div>
+                <span>${today || Math.max(1, Math.ceil(countryStudents.length / 4))} classes</span>
+            </article>
+        `;
+    }).join('');
+}
+
+function getManagerLessonTeacherName(lesson) {
+    return lesson.teacher?.name || lesson.student?.teacher || teachers[0]?.name || 'Assigned teacher';
+}
+
+function getManagerOverviewCountries() {
+    return ['All Countries', ...Object.keys(dashboardStats).filter((country) => country !== 'All Countries')];
+}
+
+function getManagerAssignedTeachers(country = managerOverviewCountry) {
+    return country === 'All Countries' ? teachers : teachers.filter((teacher) => teacher.country === country);
+}
+
+function getManagerTeacherStudents(teacher) {
+    return students.filter((student) => student.teacher === teacher.name);
+}
+
+function getManagerDirectoryTeachers() {
+    const search = managerTeacherDirectorySearch.trim().toLowerCase();
+    return getManagerAssignedTeachers(managerOverviewCountry).filter((teacher) => {
+        const matchesStatus = managerTeacherDirectoryStatus === 'All Statuses' || teacher.status === managerTeacherDirectoryStatus;
+        const matchesSearch = !search || `${teacher.name} ${teacher.id} ${teacher.country} ${teacher.type}`.toLowerCase().includes(search);
+        return matchesStatus && matchesSearch;
+    });
+}
+
+function renderManagerOperationBox(label, value, note, icon = 'activity') {
+    return `
+        <article class="manager-operation-box">
+            <span><i data-lucide="${escapeHtml(icon)}"></i></span>
+            <div>
+                <p>${escapeHtml(label)}</p>
+                <strong>${escapeHtml(String(value))}</strong>
+                <small>${escapeHtml(note)}</small>
+            </div>
+        </article>
+    `;
+}
+
+function getManagerTeacherAvatarClass(teacher) {
+    return `teacher-photo-${getSpriteIndex(teachers, teacher?.id)}`;
+}
+
+function getManagerTeacherPolicyAcknowledgements(teacher) {
+    try {
+        return JSON.parse(localStorage.getItem(getTeacherPolicyStorageKey(teacher)) || '{}');
+    } catch {
+        return {};
+    }
+}
+
+function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payroll, supervisor) {
+    return `
+        <div class="teacher-tab-panel active">
+            <section class="teacher-profile-overview admin-teacher-profile-overview manager-admin-profile-overview">
+                <article class="teacher-profile-info-card">
+                    <div class="teacher-links-card-head">
+                        <div>
+                            <h4>Teacher Information</h4>
+                            <p>Individual employment record</p>
+                        </div>
+                    </div>
+                    <dl>
+                        <div><dt>Teacher ID</dt><dd>${escapeHtml(teacher.id)}</dd></div>
+                        <div><dt>Teacher Name</dt><dd>${escapeHtml(teacher.name)}</dd></div>
+                        <div><dt>Assigned Country</dt><dd>${escapeHtml(teacher.country)}</dd></div>
+                        <div><dt>Student Type</dt><dd>${escapeHtml(teacher.type)}</dd></div>
+                        <div><dt>Account Status</dt><dd>${marketingStatus(teacher.status)}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card">
+                    <div class="teacher-links-card-head">
+                        <div>
+                            <h4>Teaching Assignment</h4>
+                            <p>Current workload and payroll rate</p>
+                        </div>
+                    </div>
+                    <dl>
+                        <div><dt>Assigned Students</dt><dd>${assignedStudents.length || teacher.students}</dd></div>
+                        <div><dt>Classes Today</dt><dd>${teacher.today}</dd></div>
+                        <div><dt>Hourly Rate</dt><dd>${escapeHtml(teacher.rate)}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card admin-teacher-links-card manager-profile-links-card">
+                    <div class="teacher-links-card-head">
+                        <div>
+                            <h4>Meeting Links</h4>
+                            <p>Classroom URLs and IDs used by assigned students</p>
+                        </div>
+                        <button class="secondary-button" type="button" data-manager-toast="Meeting link edit request opened for ${escapeHtml(teacher.name)}.">Edit</button>
+                    </div>
+                    <dl>
+                        <div><dt>Voov</dt><dd>${escapeHtml(teacher.links.voov || 'Missing')}</dd></div>
+                        <div><dt>Google Meet</dt><dd>${escapeHtml(teacher.links.meet || 'Missing')}</dd></div>
+                        <div><dt>Microsoft Teams</dt><dd>${escapeHtml(teacher.links.teams || 'Missing')}</dd></div>
+                        <div><dt>Zoom</dt><dd>${escapeHtml(teacher.links.zoom || 'Missing')}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card admin-teacher-supervisor-card">
+                    <span>ASSIGNED SUPERVISOR</span>
+                    <img class="admin-teacher-supervisor-photo" src="${escapeHtml(supervisor.photo)}" width="64" height="64" alt="${escapeHtml(supervisor.name)} supervisor picture">
+                    <h4>${escapeHtml(supervisor.name)}</h4>
+                    <p>${escapeHtml(supervisor.role)}</p>
+                    <small>Primary supervisor for teacher support, schedule coordination, and performance review.</small>
+                </article>
+            </section>
+
+            <section class="teacher-contact-card">
+                <div class="student-sensitive-head teacher-contact-head">
+                    <div class="student-sensitive-title">
+                        <span class="student-sensitive-icon teacher-contact-icon"><i data-lucide="shield-check"></i></span>
+                        <div>
+                            <span>CONTACT INFORMATION</span>
+                            <h4>Teacher Contact Details</h4>
+                            <p>Standard employment contact information available to authorized dashboard users.</p>
+                        </div>
+                    </div>
+                    <b>Not Sensitive</b>
+                </div>
+                <dl class="student-sensitive-list teacher-contact-list">
+                    <div><dt>Primary Phone Number</dt><dd>${escapeHtml(contact.primary || 'Not provided')}</dd></div>
+                    <div><dt>Secondary Phone Number</dt><dd>${escapeHtml(contact.secondary || 'Not provided')}</dd></div>
+                    <div><dt>Email Address</dt><dd>${escapeHtml(contact.email || 'Not provided')}</dd></div>
+                    <div><dt>Emergency Contact Name</dt><dd>${escapeHtml(contact.emergencyName || 'Not provided')}</dd></div>
+                    <div><dt>Emergency Contact Number</dt><dd>${escapeHtml(contact.emergencyPhone || 'Not provided')}</dd></div>
+                </dl>
+                <footer>
+                    <span>Used for work-related and emergency communication only.</span>
+                    <button class="secondary-button" type="button" data-manager-toast="Contact detail edit request opened for ${escapeHtml(teacher.name)}.">Edit Contact Details</button>
+                </footer>
+            </section>
+
+            <section class="student-activity-card teacher-activity-card">
+                <div class="student-activity-head">
+                    <div class="student-activity-title">
+                        <span class="student-activity-icon"><i data-lucide="clipboard-list"></i></span>
+                        <div>
+                            <span>INTERNAL · NON-SENSITIVE</span>
+                            <h4>Profile Activity & Notes</h4>
+                            <p>Track profile changes and internal notes. Payroll, passwords, and private account credentials are never shown here.</p>
+                        </div>
+                    </div>
+                    <div class="student-activity-actions">
+                        <b>Internal use only</b>
+                        <button class="primary-button" type="button" data-manager-toast="Manager note draft opened for ${escapeHtml(teacher.name)}.">+ Add Note</button>
+                    </div>
+                </div>
+                <ul>
+                    <li>
+                        <span></span>
+                        <div><strong>Meeting link verified</strong><p>Voov and Google Meet links were checked for classroom access.</p></div>
+                        <div><strong>Van A.</strong><small>Admin</small></div>
+                        <div><strong>Aug 2, 2026</strong><small>9:42 PM PHT</small></div>
+                    </li>
+                    <li>
+                        <span></span>
+                        <div><strong>Weekly availability updated</strong><p>Preferred teaching blocks were updated for this teacher.</p></div>
+                        <div><strong>Ana Cruz</strong><small>Manager</small></div>
+                        <div><strong>Aug 1, 2026</strong><small>6:15 PM PHT</small></div>
+                    </li>
+                </ul>
+                <footer>
+                    <span>Visibility controlled by: User Management -> Roles & Permissions -> Teacher Profile Activity & Notes</span>
+                    <b>Newest activity shown first</b>
+                </footer>
+            </section>
+        </div>
+    `;
+}
+
+function renderManagerTeacherWeekDayCards(availability) {
+    const dayMap = getTeacherWeeklyDayMap(availability);
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+        const times = dayMap[day] || [];
+        return `<article class="${times.length ? 'active' : ''}"><strong>${escapeHtml(day.slice(0, 3))}</strong><span>${times.length ? times.map(inputTimeToDisplay).map(escapeHtml).join(' · ') : 'No slots'}</span></article>`;
+    }).join('');
+}
+
+function renderManagerTeacherTodayRows(teacher) {
+    const rows = getTeacherPortalStudentLessonRows(teacher).slice(0, Math.max(1, Math.min(Number(teacher.today || 0), 6)));
+    if (!rows.length) {
+        return '<tr><td colspan="11" class="empty-row">No classes are scheduled for this teacher today.</td></tr>';
+    }
+
+    seedManagerFeedbackApprovalMock(rows);
+
+    return rows.map((row) => {
+        const savedVideoUrl = getTeacherPortalVideoUrl(row);
+        const feedbackReview = managerLessonFeedbackReviews[row.id] || {};
+        const hasSubmittedFeedback = Boolean(feedbackReview.submitted) || ['Completed', 'Student is late'].includes(row.status);
+        const feedbackLabel = feedbackReview.submitted ? 'View' : 'Add';
+        const approvalContent = feedbackReview.decision
+            ? `<span class="feedback-decision-note ${feedbackReview.decision === 'Approved' ? 'approved' : 'rejected'}">${escapeHtml(feedbackReview.decision)} by Manager<small>${escapeHtml(feedbackReview.manager || managerAccount.id)}</small></span>`
+            : hasSubmittedFeedback
+                ? `<div class="feedback-approval-actions"><button class="reject-feedback" type="button" data-manager-feedback-decision="Rejected" data-manager-feedback-row="${escapeHtml(row.id)}">Reject</button><button class="approve-feedback" type="button" data-manager-feedback-decision="Approved" data-manager-feedback-row="${escapeHtml(row.id)}">Approve</button></div>`
+                : '<span class="feedback-decision-note">Awaiting teacher feedback</span>';
+        const classroomButton = row.hasClassroom
+            ? `<button class="enter-classroom-button" type="button" data-manager-toast="Opening ${escapeHtml(row.student.name)} classroom for ${escapeHtml(teacher.name)}.">Enter Classroom</button>`
+            : '<span class="lesson-link-unavailable">Not ready</span>';
+        return `
+            <tr data-manager-feedback-row="${escapeHtml(row.id)}">
+                <td>${escapeHtml(row.date)}</td>
+                <td><button class="lesson-pdf-link" type="button" data-manager-toast="${escapeHtml(row.topic)} material opened."><span>PDF</span>${escapeHtml(row.topic)}</button></td>
+                <td><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.id)} · ${escapeHtml(row.student.country)}</small></td>
+                <td>${escapeHtml(row.duration)}</td>
+                <td>${marketingStatus(row.status)}</td>
+                <td>${classroomButton}</td>
+                <td>${row.status === 'Completed' ? `<button class="feedback-button recording-view-button" type="button" data-manager-toast="Recording opened for ${escapeHtml(row.topic)}.">View Recording</button>` : '<span class="lesson-link-unavailable">Not available</span>'}</td>
+                <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-manager-feedback-view="${escapeHtml(row.id)}">${feedbackReview.submitted ? 'View' : 'Preview'}</button><button class="feedback-button add-feedback-button" type="button" data-manager-feedback-submit="${escapeHtml(row.id)}">${feedbackLabel}</button></div></td>
+                <td>${savedVideoUrl ? `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="${escapeHtml(savedVideoUrl)}">View Video</button>` : '<span class="lesson-link-unavailable">No URL yet</span>'}</td>
+                <td><button class="feedback-button meeting-link-button" type="button" data-manager-toast="Lesson action opened for ${escapeHtml(row.topic)}.">Action</button></td>
+                <td>${approvalContent}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function seedManagerFeedbackApprovalMock(rows) {
+    const hasVisibleMock = rows.some((row) => managerLessonFeedbackReviews[row.id]?.submitted);
+    const target = rows[0];
+    if (hasVisibleMock || !target) return;
+
+    managerLessonFeedbackReviews[target.id] = {
+        submitted: true,
+        submittedAt: 'Submitted today · Pending manager approval',
+        corrections: 'Teacher submitted lesson feedback for manager approval.',
+        strengths: `${target.student.name} answered clearly and joined the guided practice.`,
+        improvement: 'Continue reviewing the target vocabulary before the next class.',
+        note: 'Mock feedback approval item. Manager can approve or reject this row.',
+    };
+}
+
+function getManagerLessonFeedbackRow(rowId) {
+    const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
+    return getTeacherPortalStudentLessonRows(teacher).find((row) => row.id === rowId);
+}
+
+function submitManagerLessonFeedback(rowId) {
+    const row = getManagerLessonFeedbackRow(rowId);
+    if (!row) return;
+
+    managerLessonFeedbackReviews[rowId] = {
+        ...managerLessonFeedbackReviews[rowId],
+        submitted: true,
+        submittedAt: 'Submitted today · Pending manager approval',
+        corrections: managerLessonFeedbackReviews[rowId]?.corrections || 'Teacher feedback submitted for manager review.',
+        strengths: managerLessonFeedbackReviews[rowId]?.strengths || `${row.student.name} participated and followed the lesson prompts.`,
+        improvement: managerLessonFeedbackReviews[rowId]?.improvement || 'Continue practice before the next class.',
+        note: managerLessonFeedbackReviews[rowId]?.note || 'Ready for manager approval.',
+    };
+    renderManagerPortal();
+    showSparkToast(`Feedback for ${row.student.name} is ready for manager approval.`);
+}
+
+function reviewManagerLessonFeedback(rowId) {
+    const row = getManagerLessonFeedbackRow(rowId);
+    const review = managerLessonFeedbackReviews[rowId];
+    if (!row) return;
+    if (!review?.submitted) {
+        showSparkToast(`No teacher feedback submitted yet for ${row.student.name}.`);
+        return;
+    }
+
+    showSparkToast(`${row.student.name} feedback: ${review.note || 'Ready for manager approval.'}`);
+}
+
+function decideManagerLessonFeedback(rowId, decision) {
+    const row = getManagerLessonFeedbackRow(rowId);
+    if (!row) return;
+
+    managerLessonFeedbackReviews[rowId] = {
+        ...managerLessonFeedbackReviews[rowId],
+        submitted: true,
+        decision,
+        manager: managerAccount.id,
+        decidedAt: 'Today · Manager review',
+    };
+    renderManagerPortal();
+    showSparkToast(`Teacher feedback ${decision.toLowerCase()} by Manager for ${row.student.name}.`);
+}
+
+function renderManagerTeacherWeeklyTab(teacher, availability) {
+    const dayMap = getTeacherWeeklyDayMap(availability);
+    const activeDays = Object.keys(dayMap);
+    const slotCount = activeDays.reduce((total, day) => total + dayMap[day].length, 0);
+    const [meetingPlatform] = getTeacherMeetingSource(teacher);
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active">
+            <article>
+                <div class="student-record-head">
+                    <div>
+                        <h3>Weekly Schedule</h3>
+                        <p>Availability, assigned classes, and meeting links used when scheduling students.</p>
+                    </div>
+                </div>
+                <section class="teacher-weekly-status-grid">
+                    <article><span>Teaching Days</span><strong>${activeDays.length}</strong><small>Days available this week</small></article>
+                    <article><span>Available Slots</span><strong>${slotCount}</strong><small>Open lesson start times</small></article>
+                    <article><span>Classes Today</span><strong>${teacher.today}</strong><small>Assigned to this teacher</small></article>
+                    <article><span>Meeting Source</span><strong>${meetingPlatform === 'Missing' ? 'Missing link' : 'Teacher profile'}</strong><small>Used by Enter Classroom</small></article>
+                </section>
+                <section class="teacher-week-card">
+                    <div class="schedule-week-head">
+                        <div><span>WEEKLY AVAILABILITY</span><h4>Teaching Pattern</h4></div>
+                        <b>Asia/Manila · PHT</b>
+                    </div>
+                    <div class="teacher-week-grid">${renderManagerTeacherWeekDayCards(availability)}</div>
+                </section>
+                <div class="teacher-schedule-grid">
+                    <section>
+                        <div class="profile-card-head"><i data-lucide="calendar-clock"></i><div><h4>Available Teaching Blocks</h4><p>Reference for Add Class teacher filtering</p></div></div>
+                        <ul class="teacher-detail-availability">
+                            ${availability.length ? availability.map((slot) => `<li><strong>${escapeHtml(slot.days.join(', '))}</strong><span>${slot.times.map(inputTimeToDisplay).map(escapeHtml).join(' · ')} PHT</span></li>`).join('') : '<li><strong>No weekly slots saved</strong><span>Add teacher availability later.</span></li>'}
+                        </ul>
+                    </section>
+                    <section>
+                        <div class="profile-card-head"><i data-lucide="video"></i><div><h4>Meeting Link / ID Source</h4><p>Auto-used by student Enter Classroom</p></div></div>
+                        <dl class="teacher-weekly-links">
+                            <div><dt>Voov</dt><dd>${escapeHtml(teacher.links.voov || 'Missing')}</dd></div>
+                            <div><dt>Google Meet</dt><dd>${escapeHtml(teacher.links.meet || 'Missing')}</dd></div>
+                            <div><dt>Teams</dt><dd>${escapeHtml(teacher.links.teams || 'Missing')}</dd></div>
+                            <div><dt>Zoom</dt><dd>${escapeHtml(teacher.links.zoom || 'Missing')}</dd></div>
+                        </dl>
+                    </section>
+                </div>
+                <section class="teacher-today-card">
+                    <div class="lesson-access-banner teacher-lesson-access-banner">
+                        <div class="lesson-access-icon"><i data-lucide="video"></i></div>
+                        <div><strong>Secure lesson access</strong><span>Lesson rows are created automatically when a class is scheduled. Teacher profile meeting IDs will populate the classroom link.</span></div>
+                        <span class="status-pill positive">Manager view</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="student-lessons-table teacher-today-lessons-table">
+                            <thead>
+                                <tr><th>Date</th><th>Topic</th><th>Student</th><th>Duration</th><th>Lesson Status</th><th>Student Classroom</th><th>Class Recording</th><th>Teacher Feedback</th><th>Video URL</th><th>Action</th><th>Feedback Approval</th></tr>
+                            </thead>
+                            <tbody>${renderManagerTeacherTodayRows(teacher)}</tbody>
+                        </table>
+                    </div>
+                    <footer class="payment-history-foot">Lesson records are generated automatically when a scheduled class is created. Student-facing feedback requires Admin or Manager approval before publishing.</footer>
+                </section>
+                <section class="teacher-weekly-calendar-card">
+                    <div class="teacher-weekly-calendar-head">
+                        <div><h3>Teacher Weekly Schedule</h3><p>Admin, Manager, and Staff can click any slot to manage its availability.</p></div>
+                        <div class="teacher-week-range">
+                            <button type="button" aria-label="Previous week" data-manager-toast="Previous week opened."><i data-lucide="chevron-left"></i></button>
+                            <strong>July 27 - August 2</strong>
+                            <button type="button" aria-label="Next week" data-manager-toast="Next week opened."><i data-lucide="chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="teacher-schedule-control-note"><strong>Admin · Manager · Staff Controls</strong><span>Click a schedule slot to manage its class and availability.</span></div>
+                    <div class="teacher-open-slots-bar">
+                        <div><strong>${slotCount} open time slot${slotCount === 1 ? '' : 's'}</strong><span>30-minute increments · 6:00 AM to 12:00 midnight</span></div>
+                        <button type="button" data-manager-toast="Close all slots requested for ${escapeHtml(teacher.name)}.">Close All</button>
+                    </div>
+                    <div class="teacher-weekly-calendar-wrap">
+                        <table class="teacher-weekly-calendar">${renderTeacherPortalWeeklyCalendar(teacher)}</table>
+                    </div>
+                </section>
+            </article>
+        </section>
+    `;
+}
+
+function renderManagerTeacherPayrollTab(teacher) {
+    const period = teacherPayrollPeriodNames.includes(activeManagerTeacherPayrollPeriod) ? activeManagerTeacherPayrollPeriod : teacherPayrollPeriodNames[0];
+    const summary = getTeacherPayrollSummary(teacher, period);
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active">
+            <article class="teacher-payroll-workspace">
+                <div class="student-record-head payroll-toolbar">
+                    <div>
+                        <span class="detail-kicker">PAYROLL HISTORY</span>
+                        <h3>Teacher Payroll</h3>
+                        <p>Select any payroll period to view its complete daily calculation.</p>
+                    </div>
+                    <label class="payroll-period-picker">
+                        <span>Payroll period</span>
+                        <select data-manager-teacher-payroll-period aria-label="Select payroll period">
+                            ${teacherPayrollPeriodNames.map((name) => `<option value="${escapeHtml(name)}" ${name === period ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
+                        </select>
+                    </label>
+                </div>
+                <div class="table-wrap payroll-history-wrap">
+                    <table class="student-table payroll-history-table">
+                        <thead><tr><th>Payroll Period</th><th>Lessons</th><th>Hours</th><th>Gross Pay</th><th>Deductions</th><th>Net Payroll</th><th>Status</th><th>Payslip</th><th>Upload Receipt</th><th>View Receipt</th></tr></thead>
+                        <tbody>${renderTeacherPortalPayrollHistoryRows(teacher, period)}</tbody>
+                    </table>
+                </div>
+                <div class="payroll-policy">
+                    <i data-lucide="banknote"></i>
+                    <div><strong>Automatic pay rules</strong><p>25-minute class = 30 minutes of pay · 50-minute class = 1 hour of pay · The 31st carries over to the next 1st-15th payroll.</p></div>
+                </div>
+                <div class="payroll-summary payroll-summary-five">
+                    <article><span>Hourly Rate</span><strong>${formatPeso(summary.rate)}</strong><small>Allowed range: ₱150-₱250</small></article>
+                    <article><span>Completed Lessons</span><strong>${summary.records.length}</strong><small>${summary.hours} payable hours</small></article>
+                    <article><span>Gross Lesson Pay</span><strong>${formatPeso(summary.gross)}</strong><small>Before deductions</small></article>
+                    <article class="deduction-summary-card"><span>Deductions</span><strong>- ${formatPeso(summary.deductionTotal)}</strong><small>${summary.appliedDeductions.length || 'No'} recorded adjustment${summary.appliedDeductions.length === 1 ? '' : 's'}</small></article>
+                    <article class="total-card"><span>Net Payroll</span><strong>${formatPeso(summary.net)}</strong><small>Gross pay minus deductions</small></article>
+                </div>
+                <article class="payroll-table-panel">
+                    <div class="directory-tools">
+                        <div><span class="detail-kicker">SELECTED PAYROLL PERIOD</span><h3>Detailed Calculation</h3><p>Each class is converted to payable hours and multiplied by the teacher hourly rate.</p></div>
+                        <button type="button" class="secondary-button" data-manager-toast="Payroll download prepared for ${escapeHtml(teacher.name)}.">Download Payroll</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="student-table payroll-table payroll-table-with-deductions">
+                            <thead><tr><th>Date</th><th>Student</th><th>Lesson / Reason</th><th>Actual Class</th><th>Payable Time</th><th>Rate</th><th>Calculation</th><th>Gross Amount</th><th>Deduction</th><th>Net</th></tr></thead>
+                            <tbody>${renderTeacherPortalPayrollDetailRows(teacher, summary)}</tbody>
+                            <tfoot><tr><td colspan="4">Payroll Period Total</td><td>${summary.hours} ${summary.hours === 1 ? 'hour' : 'hours'}</td><td colspan="2">${summary.records.length} completed lesson${summary.records.length === 1 ? '' : 's'}</td><td>${formatPeso(summary.gross)}</td><td>- ${formatPeso(summary.deductionTotal)}</td><td>${formatPeso(summary.net)}</td></tr></tfoot>
+                        </table>
+                    </div>
+                </article>
+                <article class="payroll-deductions-panel">
+                    <div class="directory-tools">
+                        <div><span class="detail-kicker">AUTOMATIC · APPROVAL CONTROLLED</span><h3>Deductions</h3><p>Absence deductions are created automatically. Managers can request a correction or waiver, and Admin approval keeps the audit trail clean.</p></div>
+                        <button type="button" class="primary-button" data-manager-toast="Manual adjustment request opened for ${escapeHtml(teacher.name)}.">+ Manual Adjustment</button>
+                    </div>
+                    <div class="deduction-workflow-note"><strong>Nothing is deleted.</strong><span>Approved waivers remain visible for auditing, but are excluded from the net payroll calculation.</span></div>
+                    <div class="table-wrap">
+                        <table class="student-table payroll-deductions-table">
+                            <thead><tr><th>Date Added</th><th>Reason</th><th>Explanation</th><th>Related Date</th><th>Source</th><th>Amount</th><th>Status & Approval</th></tr></thead>
+                            <tbody>${renderTeacherPortalPayrollDeductions(summary)}</tbody>
+                            <tfoot><tr><td colspan="5">Net Payroll Calculation</td><td colspan="2">${formatPeso(summary.gross)} - ${formatPeso(summary.deductionTotal)} = ${formatPeso(summary.net)}</td></tr></tfoot>
+                        </table>
+                    </div>
+                </article>
+            </article>
+        </section>
+    `;
+}
+
+function renderManagerTeacherDocumentsTab(teacher) {
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active">
+            <article class="employee-records-module">
+                <div class="student-record-head directory-tools">
+                    <div><h3>Teacher Documents</h3><p>Contracts, identification, certificates, and required teacher files.</p></div>
+                    <button class="primary-button" type="button" data-manager-toast="Document upload opened for ${escapeHtml(teacher.name)}.">+ Upload Document</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="student-table employee-documents-table">
+                        <thead><tr><th>Document</th><th>Category</th><th>File Type</th><th>Updated</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            ${teacherDocuments.map((documentRecord, index) => `
+                                <tr>
+                                    <td class="strong">${escapeHtml(documentRecord.title)}</td>
+                                    <td>${escapeHtml(documentRecord.category)}</td>
+                                    <td><span class="document-file-badge">${escapeHtml(documentRecord.type)}</span></td>
+                                    <td>${escapeHtml(documentRecord.updated)}</td>
+                                    <td><span class="status-pill ${documentRecord.status === 'Expiring Soon' ? 'warning' : 'positive'}">${escapeHtml(documentRecord.status)}</span></td>
+                                    <td><div class="employee-record-actions"><button type="button" data-teacher-portal-document-view="${index}">View</button></div></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    `;
+}
+
+function renderManagerTeacherFeedbackTab() {
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active">
+            <article class="employee-records-module">
+                <div class="student-record-head directory-tools">
+                    <div><h3>Teacher Feedback</h3><p>Performance reviews, coaching records, and feedback history for this teacher.</p></div>
+                    <button class="primary-button" type="button" data-manager-toast="Feedback form opened in manager review mode.">+ Add Feedback</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="student-table employee-feedback-table">
+                        <thead><tr><th>Period</th><th>Feedback Type</th><th>Reviewed By</th><th>Result</th><th>Visibility</th><th>Acknowledgment</th><th>Action</th></tr></thead>
+                        <tbody>
+                            ${teacherFeedbackRecords.map((record, index) => `
+                                <tr>
+                                    <td>${escapeHtml(record.period)}</td>
+                                    <td><button class="feedback-type-link" type="button" data-teacher-portal-feedback-view="${index}" aria-label="View ${escapeHtml(record.type)} feedback">${escapeHtml(record.type)}</button></td>
+                                    <td>${escapeHtml(record.reviewedBy)}</td>
+                                    <td>${escapeHtml(record.result)}</td>
+                                    <td><span class="status-pill ${record.visibility === 'Private' || record.visibility === 'Management Only' ? 'neutral' : 'positive'}">${escapeHtml(getFeedbackVisibilityLabel(record.visibility))}</span></td>
+                                    <td><span class="acknowledgment-status ${record.acknowledged ? 'is-acknowledged' : 'is-pending'}">${record.acknowledged ? 'Acknowledged' : 'Pending'}</span></td>
+                                    <td><div class="employee-record-actions"><button type="button" data-teacher-portal-feedback-view="${index}">View</button></div></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    `;
+}
+
+function renderManagerTeacherPolicyTab(teacher) {
+    const acknowledgements = getManagerTeacherPolicyAcknowledgements(teacher);
+    const acknowledgedCount = Object.keys(acknowledgements).filter((id) => employeePolicyLibrary.some((policy) => policy.id === id)).length;
+    const total = employeePolicyLibrary.length;
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active">
+            <section class="employee-policy-library">
+                <section class="employee-policy-heading panel">
+                    <div>
+                        <p>EMPLOYEE COMPLIANCE</p>
+                        <h2>Company Policy Manual</h2>
+                        <span>Review and acknowledge every published VLACE policy individually.</span>
+                    </div>
+                    <div class="employee-policy-progress" aria-label="Policy acknowledgement progress">
+                        <div><strong>${acknowledgedCount} of ${total}</strong><span>Acknowledged</span></div>
+                        <div class="employee-policy-progress-track"><i style="width: ${total ? (acknowledgedCount / total) * 100 : 0}%"></i></div>
+                        <small>${total - acknowledgedCount} policies require review</small>
+                    </div>
+                </section>
+                <article class="panel directory-panel employee-policy-table-panel">
+                    <div class="directory-tools">
+                        <div><h3>Policy Library</h3><p>Teacher record · ${escapeHtml(teacher.name)} · ${escapeHtml(teacher.id)}</p></div>
+                        <div class="directory-filters">
+                            <label class="country-filter"><span>Category</span><select><option>All categories</option>${[...new Set(employeePolicyLibrary.map((policy) => policy.category))].map((category) => `<option>${escapeHtml(category)}</option>`).join('')}</select></label>
+                            <label class="search"><span>⌕</span><input placeholder="Search policies..."></label>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="student-table employee-policy-table">
+                            <thead><tr><th>Policy</th><th>Category</th><th>Effective Date</th><th>Acknowledgment</th><th>Confirmed On</th><th>Action</th></tr></thead>
+                            <tbody>
+                                ${employeePolicyLibrary.map((policy) => {
+                                    const date = acknowledgements[policy.id];
+                                    return `
+                                        <tr>
+                                            <td><button class="policy-title-link" type="button" data-manager-teacher-policy="${escapeHtml(policy.id)}"><span>▤</span><div><strong>${escapeHtml(policy.title)}</strong><small>${escapeHtml(policy.id)}</small></div></button></td>
+                                            <td>${escapeHtml(policy.category)}</td>
+                                            <td>${escapeHtml(policy.effective)}</td>
+                                            <td><span class="acknowledgment-status ${date ? 'is-acknowledged' : 'is-pending'}">${date ? 'Acknowledged' : 'Pending'}</span></td>
+                                            <td>${date ? `<span class="policy-ack-date">${escapeHtml(date)}</span>` : '<span class="policy-not-yet">-</span>'}</td>
+                                            <td><button class="row-action" type="button" data-manager-teacher-policy="${escapeHtml(policy.id)}">${date ? 'View' : 'Review & Acknowledge'}</button></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <footer class="employee-policy-lock-note"><span>Lock</span><p><strong>Acknowledgements are permanent.</strong> Once submitted, an acknowledgement cannot be reversed or removed. Every record is tied to the employee ID, policy version, date, and time.</p></footer>
+                </article>
+            </section>
+        </section>
+    `;
+}
+
+function openManagerTeacherPolicyModal(policyId) {
+    const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || getSelectedTeacher() || teachers[0];
+    const policy = employeePolicyLibrary.find((item) => item.id === policyId) || employeePolicyLibrary[0];
+    if (!policy || !teacher) return;
+
+    const acknowledgements = getManagerTeacherPolicyAcknowledgements(teacher);
+    const date = acknowledgements[policy.id];
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop';
+    overlay.dataset.managerPolicyModal = 'true';
+    overlay.innerHTML = `
+        <section class="modal employee-policy-modal" role="dialog" aria-modal="true" aria-labelledby="managerPolicyModalTitle">
+            <div class="modal-head">
+                <div>
+                    <p>${escapeHtml(policy.id)} · VERSION ${escapeHtml(policy.version)}</p>
+                    <h3 id="managerPolicyModalTitle">${escapeHtml(policy.title)}</h3>
+                </div>
+                <button type="button" data-manager-policy-close aria-label="Close policy">×</button>
+            </div>
+            <div class="employee-policy-modal-meta">
+                <div><span>Category</span><strong>${escapeHtml(policy.category)}</strong></div>
+                <div><span>Effective date</span><strong>${escapeHtml(policy.effective)}</strong></div>
+                <div><span>Applies to</span><strong>All VLACE employees</strong></div>
+            </div>
+            <section><h4>Purpose and scope</h4><p>${escapeHtml(policy.summary)}</p></section>
+            <section><h4>Policy requirements</h4><ol>${policy.requirements.map((requirement, index) => `<li><span>${index + 1}</span><p>${escapeHtml(requirement)}</p></li>`).join('')}</ol></section>
+            <div>
+                ${date
+                    ? `<div class="employee-policy-complete"><span>✓</span><div><strong>Permanently acknowledged</strong><p>${escapeHtml(teacher.name)} · ${escapeHtml(teacher.id)} · ${escapeHtml(date)}</p></div></div>`
+                    : `<label class="employee-policy-confirm"><input type="checkbox" data-manager-policy-confirm><span><strong>I acknowledge this policy</strong><small>I confirm that I have received, read, and understood this policy. I understand that this acknowledgement is permanent and cannot be reversed.</small></span></label>`}
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-manager-policy-close>Close</button>
+                <button class="primary-button" type="button" data-manager-policy-submit ${date ? 'hidden' : 'disabled'}>Submit Permanent Acknowledgement</button>
+            </div>
+        </section>
+    `;
+
+    const close = () => {
+        overlay.remove();
+        document.body.classList.remove('drawer-open');
+    };
+    overlay.querySelectorAll('[data-manager-policy-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('[data-manager-policy-confirm]')?.addEventListener('change', (event) => {
+        const submit = overlay.querySelector('[data-manager-policy-submit]');
+        if (submit) submit.disabled = !event.target.checked;
+    });
+    overlay.querySelector('[data-manager-policy-submit]')?.addEventListener('click', () => {
+        if (!overlay.querySelector('[data-manager-policy-confirm]')?.checked) return;
+        acknowledgements[policy.id] = 'August 4, 2026 · 4:40 PM PHT';
+        try {
+            localStorage.setItem(getTeacherPolicyStorageKey(teacher), JSON.stringify(acknowledgements));
+        } catch {
+            // The prototype remains usable if local storage is unavailable.
+        }
+        close();
+        renderManagerPortal();
+        showSparkToast(`${policy.title} was permanently acknowledged for ${teacher.name}.`);
+    });
+
+    document.body.appendChild(overlay);
+    document.body.classList.add('drawer-open');
+    refreshIcons();
+}
+
+function renderManagerTeacherActiveTab(teacher, assignedStudents, contact, availability, payroll, supervisor) {
+    if (activeManagerTeacherProfileTab === 'weekly') return renderManagerTeacherWeeklyTab(teacher, availability);
+    if (activeManagerTeacherProfileTab === 'payroll') return renderManagerTeacherPayrollTab(teacher);
+    if (activeManagerTeacherProfileTab === 'documents') return renderManagerTeacherDocumentsTab(teacher);
+    if (activeManagerTeacherProfileTab === 'feedback') return renderManagerTeacherFeedbackTab(teacher);
+    if (activeManagerTeacherProfileTab === 'policy') return renderManagerTeacherPolicyTab(teacher);
+    return renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payroll, supervisor);
+}
+
+function renderManagerTeacherDirectory(countries) {
+    const rows = getManagerDirectoryTeachers();
+    return `
+        <section class="teacher-workspace manager-teacher-directory-workspace">
+            <article class="panel teacher-directory-panel manager-teacher-directory-panel">
+                <div class="student-directory-head">
+                    <div>
+                        <span>DIRECTORY</span>
+                        <h3>Teacher Directory</h3>
+                        <p><b>${rows.length}</b> visible teacher${rows.length === 1 ? '' : 's'} · Filter by country and availability</p>
+                    </div>
+                    <div class="student-filters">
+                        <label>Country
+                            <select id="managerTeacherCountry">
+                                ${countries.map((country) => `<option value="${escapeHtml(country)}" ${country === managerOverviewCountry ? 'selected' : ''}>${escapeHtml(country)}</option>`).join('')}
+                            </select>
+                        </label>
+                        <label>Status
+                            <select id="managerTeacherStatus">
+                                ${['All Statuses', 'Active', 'On leave'].map((status) => `<option value="${escapeHtml(status)}" ${status === managerTeacherDirectoryStatus ? 'selected' : ''}>${escapeHtml(status)}</option>`).join('')}
+                            </select>
+                        </label>
+                        <label class="student-search"><i data-lucide="search"></i><input id="managerTeacherSearch" type="search" placeholder="Search teachers..." value="${escapeHtml(managerTeacherDirectorySearch)}"></label>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="student-table teacher-table manager-teacher-directory-table">
+                        <thead>
+                            <tr>
+                                <th>Teacher</th>
+                                <th>Country</th>
+                                <th>Student Type</th>
+                                <th>Students</th>
+                                <th>Classes Today</th>
+                                <th>Rate</th>
+                                <th>Status</th>
+                                <th>Meeting Link / ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.length ? rows.map((teacher) => `
+                                <tr class="${teacher.id === selectedTeacherId ? 'selected' : ''}" data-manager-teacher="${escapeHtml(teacher.id)}" tabindex="0" aria-label="Open ${escapeHtml(teacher.name)} teacher profile">
+                                    <td>
+                                        <button class="student-person teacher-person" type="button" tabindex="-1">
+                                            <span class="${escapeHtml(getTeacherFaceClass(teacher))}"><i class="employee-login-dot ${teacher.loginStatus === 'Logged in' ? 'is-online' : 'is-offline'}"></i></span>
+                                            <div><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></div>
+                                        </button>
+                                    </td>
+                                    <td><span class="country-badge">${escapeHtml(teacher.country)}</span></td>
+                                    <td>${escapeHtml(teacher.type)}</td>
+                                    <td>${teacher.students}</td>
+                                    <td>${teacher.today}</td>
+                                    <td>${escapeHtml(teacher.rate)}</td>
+                                    <td>${marketingStatus(teacher.status)}</td>
+                                    <td>${marketingStatus(hasCompleteMeetingLinks(teacher) ? 'Complete' : 'Needs review')}</td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="8" class="empty-row">No teachers match the selected filters.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    `;
+}
+
+function renderManagerTeacherProfile(teacher) {
+    const assignedStudents = getManagerTeacherStudents(teacher);
+    const contact = teacherContacts[teacher.name] || {};
+    const availability = teacherAvailability[teacher.name]?.slots || [];
+    const payroll = getTeacherPayrollSummary(teacher, teacherPayrollPeriodNames[0]);
+    const supervisor = getTeacherSupervisor(teacher);
+    const tabs = [
+        ['profile', 'Profile'],
+        ['weekly', 'Weekly Schedule'],
+        ['payroll', 'Payroll'],
+        ['documents', 'Documents'],
+        ['feedback', 'Feedback'],
+        ['policy', 'Company Policy Manual'],
+    ];
+
+    return `
+        <section class="teacher-portal-panel manager-teacher-profile-view manager-admin-copy-profile">
+            <div class="manager-profile-toolbar manager-admin-copy-toolbar">
+                <button type="button" class="manager-back-button" data-manager-profile-back><i data-lucide="arrow-left"></i> Back to Teachers</button>
+                <span>Manager review mode · View-only profile</span>
+            </div>
+
+            <article class="panel teacher-detail-panel student-profile-panel manager-admin-copy-detail">
+                <header class="student-profile-header teacher-detail-header">
+                    <div class="student-profile-identity">
+                        <span class="student-avatar teacher-profile-photo-avatar manager-admin-copy-avatar">
+                            <span class="manager-teacher-photo ${escapeHtml(getManagerTeacherAvatarClass(teacher))}" role="img" aria-label="${escapeHtml(teacher.name)} mock profile photo"></span>
+                            <b>${escapeHtml(getInitials(teacher.name))}</b>
+                        </span>
+                        <div>
+                            <span>TEACHER PROFILE</span>
+                            <h3>${escapeHtml(teacher.name)}</h3>
+                            <p>${escapeHtml(teacher.id)} · ${escapeHtml(teacher.country)} · ${escapeHtml(teacher.type)}</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="student-profile-tabs teacher-profile-tabs manager-admin-copy-tabs" role="tablist">
+                    ${tabs.map(([id, label]) => `<button class="${activeManagerTeacherProfileTab === id ? 'active' : ''}" type="button" data-manager-teacher-tab="${escapeHtml(id)}">${escapeHtml(label)}</button>`).join('')}
+                </div>
+
+                ${renderManagerTeacherActiveTab(teacher, assignedStudents, contact, availability, payroll, supervisor)}
+            </article>
+        </section>
+    `;
+}
+
+function renderManagerOverview() {
+    const stats = getManagerOverviewStats();
+    const countries = getManagerOverviewCountries();
+    const activeProfileTeacher = teachers.find((teacher) => teacher.id === activeManagerTeacherProfileId);
+    if (activeProfileTeacher) {
+        return renderManagerTeacherProfile(activeProfileTeacher);
+    }
+
+    return `
+        ${renderManagerHero('Operations Overview', 'Country-filtered manager view of teacher attendance, lesson outcomes, email workload, approvals, and assigned teachers.')}
+        <section class="teacher-portal-panel manager-operations-overview">
+            <div class="manager-operations-head">
+                <div>
+                    <p class="eyebrow">OPERATIONS OVERVIEW</p>
+                    <h3>${escapeHtml(stats.country)} Manager View</h3>
+                    <small>Refreshes every 30 minutes · Philippine Time</small>
+                </div>
+                <label>Filter by country
+                    <select id="managerOverviewCountry">
+                        ${countries.map((country) => `<option value="${escapeHtml(country)}" ${country === stats.country ? 'selected' : ''}>${escapeHtml(country)}</option>`).join('')}
+                    </select>
+                </label>
+            </div>
+            <div class="manager-operations-grid">
+                ${renderManagerOperationBox('Teachers Present', stats.teacherPresentCount, 'Active assigned teachers', 'user-check')}
+                ${renderManagerOperationBox('Teachers Absent', stats.teacherAbsentCount, 'Marked absent today', 'user-x')}
+                ${renderManagerOperationBox('Teachers On Leave', stats.teacherOnLeaveCount, 'Approved leave status', 'calendar-x')}
+                ${renderManagerOperationBox('Assigned Teachers', stats.assignedTeacherCount, 'Total teachers assigned to this manager', 'users-round')}
+                ${renderManagerOperationBox('Completed Lessons', stats.completedLessons.length, 'Completed by teachers today', 'calendar-check')}
+                ${renderManagerOperationBox('Cancelled Lessons', stats.cancelledLessons.length, 'Cancelled lessons today', 'ban')}
+                ${renderManagerOperationBox('Transferred Lessons', stats.transferredLessons.length, 'Reassigned classes today', 'shuffle')}
+                ${renderManagerOperationBox('Absent Students', stats.studentAbsentLessons.length, 'Student no-shows today', 'graduation-cap')}
+                ${renderManagerOperationBox('Unread Emails', stats.unreadEmails.length, 'Unread, not archived', 'mail')}
+                ${renderManagerOperationBox('Pending Approvals', stats.pendingApprovalCount, 'Feedback and document approvals', 'clipboard-check')}
+            </div>
+        </section>
+
+        ${renderManagerTeacherDirectory(countries)}`;
+}
+
+function renderManagerSchedule() {
+    const rows = getManagerTodayLessons();
+    return `
+        ${renderManagerHero('Today’s Schedule', 'Monitor assigned classes, classroom links, completion status, and reassignment needs.')}
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Class Operations</h3><p>Manager view is for monitoring and follow-up; teachers update lesson status from their portal.</p></div><button type="button" data-manager-toast="Schedule export prepared in prototype.">Export</button></div>
+            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
+                <table>
+                    <thead><tr><th>Date</th><th>Time</th><th>Student</th><th>Teacher</th><th>Topic</th><th>Classroom</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        ${rows.map((row) => `<tr><td><strong>${escapeHtml(row.date)}</strong></td><td>${escapeHtml(inputTimeToRange(row.time))}</td><td>${escapeHtml(row.student.name)}<small>${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)}</small></td><td>${escapeHtml(getManagerLessonTeacherName(row))}</td><td>${escapeHtml(row.topic)}</td><td>${escapeHtml(row.platform)}</td><td>${marketingStatus(row.status)}</td><td><button type="button" data-manager-toast="Manager follow-up opened for ${escapeHtml(row.student.name)}.">Follow Up</button></td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </article>`;
+}
+
+function renderManagerTeachers() {
+    const stats = getManagerOverviewStats();
+    const countries = getManagerOverviewCountries();
+    const topTeacherLoads = [...stats.filteredTeachers].sort((first, second) => Number(second.today || 0) - Number(first.today || 0)).slice(0, 5);
+    const attentionTeachers = stats.filteredTeachers
+        .filter((teacher) => teacher.status !== 'Active' || !hasCompleteMeetingLinks(teacher) || teacher.loginStatus === 'Logged out')
+        .slice(0, 4);
+    const recentLessons = stats.todayLessons.slice(0, 5);
+    const currentPeriod = teacherPayrollPeriodNames[0];
+    const payrollPreview = stats.payrollSummaries.slice(0, 4);
+
+    return `
+        ${renderManagerHero('Overview', 'One-scan manager command center for attendance, lessons, approvals, messages, and teacher readiness.')}
+        <section class="teacher-portal-panel manager-operations-overview manager-overview-dashboard">
+            <div class="manager-operations-head">
+                <div>
+                    <p class="eyebrow">MANAGER OVERVIEW</p>
+                    <h3>${escapeHtml(stats.country)} Operations Snapshot</h3>
+                    <small>Refreshes every 30 minutes · Philippine Time</small>
+                </div>
+                <label>Filter by country
+                    <select id="managerOverviewCountry">
+                        ${countries.map((country) => `<option value="${escapeHtml(country)}" ${country === stats.country ? 'selected' : ''}>${escapeHtml(country)}</option>`).join('')}
+                    </select>
+                </label>
+            </div>
+
+            <section class="teacher-portal-kpis manager-kpis manager-overview-kpis">
+                <article><span>Assigned Teachers</span><strong>${stats.assignedTeacherCount}</strong><small>${stats.teacherPresentCount} present · ${stats.teacherOnLeaveCount} on leave</small></article>
+                <article><span>Teacher Absences</span><strong>${stats.teacherAbsentCount}</strong><small>Marked absent today</small></article>
+                <article><span>Classes Today</span><strong>${stats.classesToday}</strong><small>${stats.completedLessons.length} completed</small></article>
+                <article><span>Student No-shows</span><strong>${stats.studentAbsentLessons.length}</strong><small>Absent students today</small></article>
+                <article><span>Unread Emails</span><strong>${stats.unreadEmails.length}</strong><small>Unread, not archived</small></article>
+                <article><span>Pending Approvals</span><strong>${stats.pendingApprovalCount}</strong><small>Feedback and documents</small></article>
+            </section>
+
+            <section class="manager-overview-command-strip">
+                ${renderManagerOverviewAction('manager-overview', 'users-round', 'Teacher Directory', 'Review profiles, links, schedules', stats.assignedTeacherCount, 'Open')}
+                ${renderManagerOverviewAction('manager-schedule', 'calendar-days', 'Today’s Schedule', 'Classroom and lesson status', stats.todayLessons.length, 'Live')}
+                ${renderManagerOverviewAction('manager-feedback', 'message-square-text', 'Feedback Queue', 'Teacher feedback review', stats.pendingFeedback.length, 'For Review')}
+                ${renderManagerOverviewAction('manager-documents', 'folder-check', 'Document Queue', 'Expiring or pending files', stats.pendingDocuments.length, 'Needs Check')}
+                ${renderManagerOverviewAction('manager-communication', 'mail', 'Unread Emails', 'Customer and team inbox', stats.unreadEmails.length, 'Unread')}
+            </section>
+        </section>
+
+        <section class="manager-overview-main-grid">
+            <article class="teacher-portal-panel manager-overview-panel manager-day-panel">
+                <div class="teacher-panel-head">
+                    <div><h3>Today’s Lesson Health</h3><p>Fast read of completed, cancelled, transferred, and pending lessons.</p></div>
+                    <button type="button" data-manager-portal-target="manager-schedule">Open Schedule</button>
+                </div>
+                <div class="manager-day-summary">
+                    <div><strong>${stats.completedLessons.length}</strong><span>Completed</span></div>
+                    <div><strong>${stats.cancelledLessons.length}</strong><span>Cancelled</span></div>
+                    <div><strong>${stats.transferredLessons.length}</strong><span>Transferred</span></div>
+                    <div><strong>${stats.pendingLessons.length}</strong><span>Pending</span></div>
+                </div>
+                <div class="manager-lesson-timeline">
+                    ${recentLessons.length ? recentLessons.map((row) => `
+                        <article>
+                            <time>${escapeHtml(inputTimeToRange(row.time))}</time>
+                            <div><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.topic)} · ${escapeHtml(row.platform)} · ${escapeHtml(getManagerLessonTeacherName(row))}</small></div>
+                            ${marketingStatus(row.status)}
+                        </article>
+                    `).join('') : '<article><div><strong>No lesson rows yet</strong><small>Schedule activity will appear here.</small></div></article>'}
+                </div>
+            </article>
+
+            <article class="teacher-portal-panel manager-overview-panel">
+                <div class="teacher-panel-head"><div><h3>Needs Manager Attention</h3><p>Approvals, links, attendance, and inbox items most likely to slow operations.</p></div></div>
+                <div class="manager-review-list">
+                    <button type="button" data-manager-portal-target="manager-feedback"><div><span>Feedback approval</span><small>Teacher feedback awaiting manager review</small></div><strong>${stats.pendingFeedback.length}</strong>${marketingStatus('For Review')}</button>
+                    <button type="button" data-manager-portal-target="manager-documents"><div><span>Document approval</span><small>Pending review or expiring soon</small></div><strong>${stats.pendingDocuments.length}</strong>${marketingStatus('Pending')}</button>
+                    <button type="button" data-manager-portal-target="manager-overview"><div><span>Missing meeting links</span><small>Teachers needing classroom URL / ID</small></div><strong>${stats.missingLinks.length}</strong>${marketingStatus(stats.missingLinks.length ? 'Needs review' : 'Complete')}</button>
+                    <button type="button" data-manager-portal-target="manager-communication"><div><span>Unread email</span><small>Unread, not archived</small></div><strong>${stats.unreadEmails.length}</strong>${marketingStatus('Unread')}</button>
+                </div>
+            </article>
+
+            <article class="teacher-portal-panel manager-overview-panel">
+                <div class="teacher-panel-head"><div><h3>Teacher Coverage</h3><p>Highest workload and teacher readiness at a glance.</p></div></div>
+                <div class="manager-teacher-load-list">
+                    ${topTeacherLoads.map((teacher) => {
+                        const load = Math.min(100, Math.max(8, Number(teacher.today || 0) * 12));
+                        return `
+                            <button type="button" data-manager-teacher="${escapeHtml(teacher.id)}">
+                                <span class="${escapeHtml(getTeacherFaceClass(teacher))} user-photo-avatar"></span>
+                                <div><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.country)} · ${teacher.today} classes · ${teacher.loginStatus}</small><i style="--load:${load}%"></i></div>
+                                ${marketingStatus(teacher.status)}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </article>
+
+            <article class="teacher-portal-panel manager-overview-panel">
+                <div class="teacher-panel-head"><div><h3>Teacher Follow-ups</h3><p>Items to resolve before classes or reviews are affected.</p></div></div>
+                <div class="manager-review-list manager-followup-list">
+                    ${attentionTeachers.length ? attentionTeachers.map((teacher) => `
+                        <button type="button" data-manager-teacher="${escapeHtml(teacher.id)}">
+                            <div><span>${escapeHtml(teacher.country)}</span><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml([
+                                teacher.status !== 'Active' ? teacher.status : '',
+                                !hasCompleteMeetingLinks(teacher) ? 'Needs meeting link' : '',
+                                teacher.loginStatus === 'Logged out' ? 'Logged out' : '',
+                            ].filter(Boolean).join(' · ') || 'Ready')}</small></div>
+                            ${marketingStatus(!hasCompleteMeetingLinks(teacher) ? 'Needs review' : teacher.status)}
+                        </button>
+                    `).join('') : '<button type="button"><div><span>All clear</span><strong>No urgent teacher follow-ups</strong><small>Teacher links, status, and login readiness look good.</small></div>' + marketingStatus('Complete') + '</button>'}
+                </div>
+            </article>
+
+            <article class="teacher-portal-panel manager-overview-panel">
+                <div class="teacher-panel-head"><div><h3>Country Coverage</h3><p>Teacher and student workload by service country.</p></div></div>
+                <div class="manager-country-list">${renderManagerCountryCoverage()}</div>
+            </article>
+
+            <article class="teacher-portal-panel manager-overview-panel">
+                <div class="teacher-panel-head"><div><h3>Payroll Preview</h3><p>${escapeHtml(currentPeriod)} review totals before Admin final approval.</p></div></div>
+                <div class="manager-payroll-total"><span>Manager review total</span><strong>${formatPeso(stats.payrollTotal)}</strong></div>
+                <div class="manager-payroll-list">
+                    ${payrollPreview.map(({ teacher, summary }) => `<article><div><strong>${escapeHtml(teacher.name)}</strong><small>${summary.records.length} lessons · ${summary.hours} payable hours</small></div><span>${formatPeso(summary.net)}</span></article>`).join('')}
+                </div>
+            </article>
+        </section>`;
+}
+
+function renderManagerStudents() {
+    return `
+        ${renderManagerHero('Student Follow-up', 'See assignment, package progress, and operational status without private payment/contact credentials.')}
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Student Operations</h3><p>Contact details and payment credentials stay hidden from manager view unless Admin grants access.</p></div></div>
+            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
+                <table>
+                    <thead><tr><th>Student</th><th>Country</th><th>Level</th><th>Teacher</th><th>Lessons</th><th>Preferred Time</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        ${students.map((student) => `<tr><td><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.id)} · ${escapeHtml(student.type)}</small></td><td>${escapeHtml(student.country)}</td><td>${escapeHtml(student.level)}</td><td>${escapeHtml(student.teacher)}</td><td>${escapeHtml(student.lessons)}</td><td>${escapeHtml(student.preferredDay)} · ${escapeHtml(student.preferredTime)}</td><td>${marketingStatus(student.status)}</td><td><button type="button" data-manager-toast="Student follow-up opened for ${escapeHtml(student.name)}.">Review</button></td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </article>`;
+}
+
+function renderManagerFeedback() {
+    return `
+        ${renderManagerHero('Feedback Review', 'Review teacher performance feedback and student lesson feedback before escalation or acknowledgment.')}
+        <section class="teacher-portal-kpis manager-kpis">
+            <article><span>Feedback Records</span><strong>${teacherFeedbackRecords.length}</strong><small>Teacher review history</small></article>
+            <article><span>Pending Acknowledgment</span><strong>${teacherFeedbackRecords.filter((record) => !record.acknowledged).length}</strong><small>Needs teacher confirmation</small></article>
+            <article><span>Published</span><strong>${teacherFeedbackRecords.filter((record) => record.visibility === 'Published').length}</strong><small>Visible to teacher</small></article>
+        </section>
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Teacher Feedback</h3><p>Same feedback records as Admin, limited to manager review and coaching follow-up.</p></div><button type="button" data-manager-toast="Manager feedback draft opened in prototype.">Add Coaching Note</button></div>
+            <div class="teacher-policy-list">
+                ${teacherFeedbackRecords.map((record, index) => `<article><div><strong>${escapeHtml(record.type)}</strong><small>${escapeHtml(record.period)} · Reviewed by ${escapeHtml(record.reviewedBy)} · ${escapeHtml(record.result)}</small><p>${escapeHtml(record.summary)}</p></div>${marketingStatus(record.acknowledged ? 'Acknowledged' : 'For Review')}<button type="button" data-teacher-portal-feedback-view="${index}">View</button></article>`).join('')}
+            </div>
+        </article>`;
+}
+
+function renderManagerCommunication() {
+    const unreadCount = communicationConversations.reduce((sum, item) => sum + Number(item.unread || 0), 0);
+    return `
+        ${renderManagerHero('Communication', 'Manage assigned customer and team conversations without admin-only integration settings.')}
+        <section class="teacher-portal-kpis manager-kpis">
+            <article><span>Unread Messages</span><strong>${unreadCount}</strong><small>Across protected inbox channels</small></article>
+            <article><span>Email Follow-ups</span><strong>${communicationEmails.filter((email) => email.unread && !email.archived).length}</strong><small>Company inbox</small></article>
+            <article><span>Reminder Queue</span><strong>4</strong><small>Student reminders due today</small></article>
+        </section>
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Customer Conversations</h3><p>Assigned threads from unified inbox, email, chat, and regional messaging.</p></div><button type="button" data-manager-toast="Conversation assignment queue opened.">Assign Thread</button></div>
+            <div class="teacher-lesson-list">
+                ${communicationConversations.slice(0, 5).map((thread) => `<article><div><strong>${escapeHtml(thread.name)}</strong><small>${escapeHtml(thread.channel)} · Assigned to ${escapeHtml(thread.assignedTo)}</small></div><span>${escapeHtml(thread.preview)}</span>${thread.unread ? `<b class="nav-count">${thread.unread}</b>` : marketingStatus('Read')}<button type="button" data-manager-toast="Opening ${escapeHtml(thread.name)} conversation.">Open</button></article>`).join('')}
+            </div>
+        </article>`;
+}
+
+function renderManagerPayroll() {
+    const period = teacherPayrollPeriodNames[0];
+    const summaries = teachers.map((teacher) => ({ teacher, summary: getTeacherPayrollSummary(teacher, period) }));
+    const total = summaries.reduce((sum, item) => sum + item.summary.net, 0);
+    const lessons = summaries.reduce((sum, item) => sum + item.summary.records.length, 0);
+    const hours = summaries.reduce((sum, item) => sum + item.summary.hours, 0);
+
+    return `
+        ${renderManagerHero('Payroll Review', 'Review teacher payroll calculations prepared from completed lessons. Final payroll controls stay with Admin.')}
+        <section class="teacher-portal-kpis teacher-pay-kpis manager-kpis">
+            <article><span>Payroll Period</span><strong>${escapeHtml(period)}</strong><small>Current review window</small></article>
+            <article><span>Completed Lessons</span><strong>${lessons}</strong><small>${hours} payable hours</small></article>
+            <article><span>Net Payroll</span><strong>${formatPeso(total)}</strong><small>Manager review total</small></article>
+        </section>
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Teacher Payroll Summary</h3><p>Managers can review, flag, and prepare notes. Admin approves final adjustments.</p></div><button type="button" data-manager-toast="Payroll review note prepared.">Flag Adjustment</button></div>
+            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
+                <table>
+                    <thead><tr><th>Teacher</th><th>Country</th><th>Lessons</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Deductions</th><th>Net Payroll</th><th>Status</th></tr></thead>
+                    <tbody>
+                        ${summaries.map(({ teacher, summary }) => `<tr><td><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></td><td>${escapeHtml(teacher.country)}</td><td>${summary.records.length}</td><td>${summary.hours}</td><td>${formatPeso(summary.rate)}/hr</td><td>${formatPeso(summary.gross)}</td><td class="${summary.deductionTotal ? 'deduction-amount' : ''}">${summary.deductionTotal ? `− ${formatPeso(summary.deductionTotal)}` : '—'}</td><td class="pay-amount">${formatPeso(summary.net)}</td><td>${marketingStatus('For Review')}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </article>`;
+}
+
+function renderManagerDocuments() {
+    return `
+        ${renderManagerHero('Teacher Documents', 'Review teacher documents and upload requests. Teachers can upload; only Admin can delete records.')}
+        <section class="teacher-portal-kpis manager-kpis">
+            <article><span>Total Documents</span><strong>${teacherDocuments.length}</strong><small>Maria Santos teacher file</small></article>
+            <article><span>Approved / Verified</span><strong>${teacherDocuments.filter((item) => ['Approved', 'Verified'].includes(item.status)).length}</strong><small>Ready for compliance</small></article>
+            <article><span>Needs Attention</span><strong>${teacherDocuments.filter((item) => item.status === 'Expiring Soon').length}</strong><small>Expiring soon</small></article>
+        </section>
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Document Review</h3><p>Manager can view and request updates; deletion remains Admin-only.</p></div><button type="button" data-manager-toast="Document upload request opened.">Request Upload</button></div>
+            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
+                <table>
+                    <thead><tr><th>Document</th><th>Teacher</th><th>Category</th><th>File Type</th><th>Updated</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        ${teacherDocuments.map((item, index) => `<tr><td><strong>${escapeHtml(item.title)}</strong><small>Teacher record file</small></td><td>Maria Santos</td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.type)}</td><td>${escapeHtml(item.updated)}</td><td>${marketingStatus(item.status)}</td><td><button type="button" data-teacher-portal-document-view="${index}">View</button></td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </article>`;
+}
+
+function renderManagerPolicies() {
+    return `
+        ${renderManagerHero('Company Policies', 'Read published policies and monitor acknowledgment readiness for assigned teams.')}
+        <article class="teacher-portal-panel">
+            <div class="teacher-panel-head"><div><h3>Policy Library</h3><p>Manager view mirrors the published policy library without edit controls.</p></div><button type="button" data-manager-toast="Policy acknowledgment report prepared.">Acknowledgment Report</button></div>
+            <div class="teacher-policy-list">
+                ${employeePolicyLibrary.map((policy) => `<article><div><strong>${escapeHtml(policy.title)}</strong><small>${escapeHtml(policy.id)} · Version ${escapeHtml(policy.version)} · Effective ${escapeHtml(policy.effective)}</small><p>${escapeHtml(policy.summary)}</p></div>${marketingStatus('Published')}<button type="button" data-manager-toast="${escapeHtml(policy.title)} opened in manager read-only view.">Open</button></article>`).join('')}
+            </div>
+        </article>`;
+}
+
+function renderManagerProfile() {
+    const contact = staffContacts['Angela Reyes'] || {};
+    const managerStaff = staffMembers.find((staff) => staff.name === managerAccount.name) || staffMembers[0];
+    const supervisorStaff = staffMembers.find((staff) => staff.name === managerAccount.supervisor) || staffMembers[0];
+    return `
+        ${renderManagerHero('Manager Profile', 'Your manager profile, team assignment, supervisor, and operational access.')}
+        <section class="teacher-profile-photo-card manager-profile-photo-card">
+            <div class="teacher-profile-photo-avatar ${escapeHtml(getStaffFaceClass(managerStaff))}" role="img" aria-label="${escapeHtml(managerAccount.name)} mock profile photo"></div>
+            <div>
+                <span>MANAGER PROFILE</span>
+                <h3>${escapeHtml(managerAccount.name)}</h3>
+                <p>${escapeHtml(managerAccount.id)} · ${escapeHtml(managerAccount.department)} · ${escapeHtml(managerAccount.countryScope)}</p>
+            </div>
+        </section>
+        <section class="teacher-profile-overview">
+            <article class="teacher-profile-info-card">
+                <h4>Manager Information</h4>
+                <p>Operational employee record</p>
+                <dl>
+                    <div><dt>Manager ID</dt><dd>${escapeHtml(managerAccount.id)}</dd></div>
+                    <div><dt>Name</dt><dd>${escapeHtml(managerAccount.name)}</dd></div>
+                    <div><dt>Department</dt><dd>${escapeHtml(managerAccount.department)}</dd></div>
+                    <div><dt>Access Scope</dt><dd>${escapeHtml(managerAccount.countryScope)}</dd></div>
+                    <div><dt>Status</dt><dd>${marketingStatus(managerAccount.status)}</dd></div>
+                </dl>
+            </article>
+            <article class="teacher-profile-info-card manager-supervisor-card">
+                <h4>Assigned Supervisor</h4>
+                <p>Primary approval and escalation contact</p>
+                <div class="manager-supervisor-row">
+                    <span class="user-photo-avatar ${escapeHtml(getStaffFaceClass(supervisorStaff))}" role="img" aria-label="${escapeHtml(managerAccount.supervisor)} mock profile photo"></span>
+                    <div><strong>${escapeHtml(managerAccount.supervisor)}</strong><small>${escapeHtml(managerAccount.supervisorRole)}</small></div>
+                </div>
+                <dl>
+                    <div><dt>Manager Role</dt><dd>Operations supervision and approvals</dd></div>
+                    <div><dt>Admin-only items</dt><dd>User creation, company settings, final payroll approval</dd></div>
+                </dl>
+            </article>
+        </section>
+        <section class="student-sensitive-card teacher-contact-card">
+            <div class="student-sensitive-head">
+                <span class="student-sensitive-icon"><i data-lucide="shield-check"></i></span>
+                <div><span>CONTACT INFORMATION</span><h4>Manager Contact Details</h4><p>Visible to authorized Admin and Manager roles.</p></div>
+            </div>
+            <dl class="student-sensitive-list teacher-contact-list">
+                <div><dt>Primary Phone Number</dt><dd>${escapeHtml(contact.primary || 'Not provided')}</dd></div>
+                <div><dt>Secondary Phone Number</dt><dd>${escapeHtml(contact.secondary || 'Not provided')}</dd></div>
+                <div><dt>Email Address</dt><dd>${escapeHtml(contact.email || managerAccount.email)}</dd></div>
+                <div><dt>Emergency Contact Name</dt><dd>${escapeHtml(contact.emergencyName || 'Not provided')}</dd></div>
+                <div><dt>Emergency Contact Number</dt><dd>${escapeHtml(contact.emergencyPhone || 'Not provided')}</dd></div>
+            </dl>
+        </section>`;
+}
+
+function bindManagerPortalEvents(root) {
+    root.querySelector('[data-manager-profile-back]')?.addEventListener('click', () => {
+        activeManagerTeacherProfileId = '';
+        activeManagerTeacherProfileTab = 'profile';
+        renderManagerPortal();
+    });
+    root.querySelectorAll('[data-manager-teacher-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeManagerTeacherProfileTab = button.dataset.managerTeacherTab || 'profile';
+            renderManagerPortal();
+        });
+    });
+    root.querySelectorAll('[data-manager-teacher-payroll-period]').forEach((select) => {
+        select.addEventListener('change', () => {
+            activeManagerTeacherPayrollPeriod = select.value;
+            renderManagerPortal();
+        });
+    });
+    root.querySelectorAll('.payroll-period-link[data-teacher-payroll-period-index]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeManagerTeacherPayrollPeriod = teacherPayrollPeriodNames[Number(button.dataset.teacherPayrollPeriodIndex)] || activeManagerTeacherPayrollPeriod;
+            renderManagerPortal();
+        });
+    });
+    root.querySelectorAll('[data-teacher-payroll-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || getSelectedTeacher();
+            const period = teacherPayrollPeriodNames[Number(button.dataset.teacherPayrollPeriodIndex)] || activeManagerTeacherPayrollPeriod;
+            const action = button.dataset.teacherPayrollAction;
+            if (action === 'payslip') openTeacherPayslip(teacher, period);
+            if (action === 'upload-receipt') openPayrollReceiptUpload(teacher, period);
+            if (action === 'view-receipt') openPayrollReceiptView(teacher, period);
+        });
+    });
+    root.querySelector('#managerOverviewCountry')?.addEventListener('change', (event) => {
+        managerOverviewCountry = event.target.value;
+        activeManagerTeacherProfileId = '';
+        renderManagerPortal();
+    });
+    root.querySelector('#managerTeacherCountry')?.addEventListener('change', (event) => {
+        managerOverviewCountry = event.target.value;
+        activeManagerTeacherProfileId = '';
+        renderManagerPortal();
+    });
+    root.querySelector('#managerTeacherStatus')?.addEventListener('change', (event) => {
+        managerTeacherDirectoryStatus = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelector('#managerTeacherSearch')?.addEventListener('input', (event) => {
+        const cursor = event.target.selectionStart || 0;
+        managerTeacherDirectorySearch = event.target.value;
+        renderManagerPortal();
+        const searchInput = document.getElementById('managerTeacherSearch');
+        searchInput?.focus();
+        searchInput?.setSelectionRange(cursor, cursor);
+    });
+    root.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
+        button.addEventListener('click', () => activateManagerPortal(button.dataset.managerPortalTarget));
+    });
+    root.querySelectorAll('[data-manager-toast]').forEach((button) => {
+        button.addEventListener('click', () => showSparkToast(button.dataset.managerToast));
+    });
+    root.querySelectorAll('[data-manager-teacher-policy]').forEach((button) => {
+        button.addEventListener('click', () => openManagerTeacherPolicyModal(button.dataset.managerTeacherPolicy));
+    });
+    root.querySelectorAll('[data-manager-feedback-submit]').forEach((button) => {
+        button.addEventListener('click', () => submitManagerLessonFeedback(button.dataset.managerFeedbackSubmit));
+    });
+    root.querySelectorAll('[data-manager-feedback-view]').forEach((button) => {
+        button.addEventListener('click', () => reviewManagerLessonFeedback(button.dataset.managerFeedbackView));
+    });
+    root.querySelectorAll('[data-manager-feedback-decision]').forEach((button) => {
+        button.addEventListener('click', () => decideManagerLessonFeedback(button.dataset.managerFeedbackRow, button.dataset.managerFeedbackDecision || 'Approved'));
+    });
+    root.querySelectorAll('[data-manager-teacher]').forEach((button) => {
+        const openManagerTeacher = () => {
+            selectedTeacherId = button.dataset.managerTeacher;
+            activeManagerTeacherProfileId = selectedTeacherId;
+            activeManagerTeacherProfileTab = 'profile';
+            activeManagerPortalSection = 'manager-overview';
+            renderManagerPortal();
+        };
+        button.addEventListener('click', openManagerTeacher);
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openManagerTeacher();
+            }
+        });
+    });
+    root.querySelectorAll('[data-teacher-portal-feedback-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
+            openTeacherFeedbackDetails(Number(button.dataset.teacherPortalFeedbackView), teacher);
+        });
+    });
+    root.querySelectorAll('[data-teacher-portal-document-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
+            openTeacherDocumentViewer(Number(button.dataset.teacherPortalDocumentView), teacher);
+        });
+    });
 }
 
 function renderTeacherPortalLessonList(lessons, feedback = false) {
@@ -4089,6 +5505,7 @@ function showDashboard() {
     document.getElementById('loginPage')?.setAttribute('hidden', '');
     document.getElementById('dashboardApp')?.removeAttribute('hidden');
     document.getElementById('teacherDashboardApp')?.setAttribute('hidden', '');
+    document.getElementById('managerDashboardApp')?.setAttribute('hidden', '');
     window.vlaceLoginMotion?.stop();
     refreshIcons();
 }
@@ -4098,6 +5515,11 @@ function showAuthenticatedDashboard(user) {
 
     if (user?.role === 'teacher') {
         showTeacherDashboard(user.email || user.name || '');
+        return;
+    }
+
+    if (user?.role === 'manager') {
+        showManagerDashboard(user);
         return;
     }
 
@@ -4112,6 +5534,7 @@ function showTeacherDashboard(email = '') {
     document.getElementById('loginPage')?.setAttribute('hidden', '');
     document.getElementById('dashboardApp')?.setAttribute('hidden', '');
     document.getElementById('teacherDashboardApp')?.removeAttribute('hidden');
+    document.getElementById('managerDashboardApp')?.setAttribute('hidden', '');
     window.vlaceLoginMotion?.stop();
     renderTeacherPortal();
     refreshIcons();
@@ -4120,6 +5543,7 @@ function showTeacherDashboard(email = '') {
 function showLogin() {
     document.getElementById('dashboardApp')?.setAttribute('hidden', '');
     document.getElementById('teacherDashboardApp')?.setAttribute('hidden', '');
+    document.getElementById('managerDashboardApp')?.setAttribute('hidden', '');
     document.getElementById('logoutConfirmModal')?.setAttribute('hidden', '');
     document.getElementById('loginPage')?.removeAttribute('hidden');
     document.body.classList.remove('modal-open');
@@ -5347,6 +6771,18 @@ function communicationInitials(name) {
     return name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 }
 
+function getCommunicationFaceClass(name = '', country = '') {
+    const normalizedName = String(name).toLowerCase();
+    const matched = students.find((student) => normalizedName.includes(student.name.split(' ')[0].toLowerCase()))
+        || students.find((student) => country && student.country === country)
+        || students[0];
+    return getStudentFaceClass(matched);
+}
+
+function communicationFace(name = '', country = '', className = 'conversation-avatar') {
+    return `<span class="${escapeHtml(`${className} ${getCommunicationFaceClass(name, country)}`)}" role="img" aria-label="${escapeHtml(name)} mock profile photo"></span>`;
+}
+
 function communicationStatus(value) {
     return `<span class="status status-${String(value).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(value)}</span>`;
 }
@@ -5407,7 +6843,7 @@ function renderUnifiedInboxPanel() {
                 <div class="conversation-scroll">
                     ${visibleConversations.map((item) => `
                         <button type="button" class="${selected.id === item.id ? 'selected' : ''}" data-conversation-select="${item.id}">
-                            <span class="conversation-avatar">${communicationInitials(item.name)}</span>
+                            ${communicationFace(item.name, item.country)}
                             <span class="conversation-copy"><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.time)}</small></span><em>${escapeHtml(item.channel)} · Assigned to ${escapeHtml(item.assignedTo)}</em><p>${escapeHtml(item.preview)}</p></span>
                             ${item.unread ? `<b class="message-count blue-count">${item.unread}</b>` : ''}
                         </button>
@@ -5416,7 +6852,7 @@ function renderUnifiedInboxPanel() {
             </aside>
             <article class="chat-panel">
                 <header class="chat-head">
-                    <span class="conversation-avatar">${communicationInitials(selected.name)}</span>
+                    ${communicationFace(selected.name, selected.country)}
                     <div><strong>${escapeHtml(selected.name)}</strong><span>${escapeHtml(selected.channel)} · ${escapeHtml(selected.country)}</span></div>
                     <button class="assignment-button" type="button" data-assign-conversation><span>Assigned to</span><strong>${escapeHtml(selected.assignedTo)}</strong><small>${escapeHtml(selected.assignedRole)} · Change assignment</small></button>
                     <button class="${selected.status === 'Resolved' ? 'reopen-button' : 'resolve-button'}" type="button" data-resolve-conversation>${selected.status === 'Resolved' ? 'Reopen' : '✓ Resolve'}</button>
@@ -5463,11 +6899,11 @@ function renderEmailInboxPanel() {
                 <label class="email-search"><span>⌕</span><input placeholder="Search mail"></label>
                 <div class="email-list-head"><strong>${escapeHtml(communicationEmailFolder)}</strong><span>${visible.length} emails</span></div>
                 <div class="email-scroll">
-                    ${visible.map((email) => `<button type="button" class="${selected.id === email.id ? 'selected' : ''} ${email.unread ? 'unread' : ''}" data-email-select="${email.id}"><span class="email-avatar">${communicationInitials(email.sender)}</span><span class="email-copy"><span><strong>${escapeHtml(email.sender)}</strong><small>${escapeHtml(email.date)}</small></span><em>${escapeHtml(email.subject)}</em><p>${escapeHtml(email.preview)}</p><small class="email-assignee">Assigned to ${escapeHtml(email.assignedTo)}</small></span>${email.starred ? '<b class="email-star">★</b>' : ''}</button>`).join('')}
+                    ${visible.map((email) => `<button type="button" class="${selected.id === email.id ? 'selected' : ''} ${email.unread ? 'unread' : ''}" data-email-select="${email.id}">${communicationFace(email.sender, email.country, 'email-avatar')}<span class="email-copy"><span><strong>${escapeHtml(email.sender)}</strong><small>${escapeHtml(email.date)}</small></span><em>${escapeHtml(email.subject)}</em><p>${escapeHtml(email.preview)}</p><small class="email-assignee">Assigned to ${escapeHtml(email.assignedTo)}</small></span>${email.starred ? '<b class="email-star">★</b>' : ''}</button>`).join('')}
                 </div>
             </div>
             <article class="email-reader">
-                <header><div class="email-reader-actions"><button class="email-assignment-button" type="button" data-assign-email><span>Assigned to</span><strong>${escapeHtml(selected.assignedTo)}</strong><small>${escapeHtml(selected.assignedRole)} · Change</small></button><button type="button" data-toggle-email-star>${selected.starred ? '★ Starred' : '☆ Star'}</button><button class="${selected.unread ? 'email-read-toggle unread' : 'email-read-toggle'}" type="button" data-toggle-email-read>${selected.unread ? 'Mark Read' : 'Mark Unread'}</button><button type="button" data-toggle-email-archive>${selected.archived ? 'Move to Inbox' : 'Archive'}</button></div><h3>${escapeHtml(selected.subject)}</h3><div class="email-sender"><span class="email-avatar">${communicationInitials(selected.sender)}</span><div><strong>${escapeHtml(selected.sender)}</strong><span>${escapeHtml(selected.address)} · ${escapeHtml(selected.country)}</span></div><small>${escapeHtml(selected.date)}</small></div></header>
+                <header><div class="email-reader-actions"><button class="email-assignment-button" type="button" data-assign-email><span>Assigned to</span><strong>${escapeHtml(selected.assignedTo)}</strong><small>${escapeHtml(selected.assignedRole)} · Change</small></button><button type="button" data-toggle-email-star>${selected.starred ? '★ Starred' : '☆ Star'}</button><button class="${selected.unread ? 'email-read-toggle unread' : 'email-read-toggle'}" type="button" data-toggle-email-read>${selected.unread ? 'Mark Read' : 'Mark Unread'}</button><button type="button" data-toggle-email-archive>${selected.archived ? 'Move to Inbox' : 'Archive'}</button></div><h3>${escapeHtml(selected.subject)}</h3><div class="email-sender">${communicationFace(selected.sender, selected.country, 'email-avatar')}<div><strong>${escapeHtml(selected.sender)}</strong><span>${escapeHtml(selected.address)} · ${escapeHtml(selected.country)}</span></div><small>${escapeHtml(selected.date)}</small></div></header>
                 <div class="email-body">${selected.body.split('\n').map((line) => `<p>${escapeHtml(line || ' ')}</p>`).join('')}</div>
                 <footer class="email-reply"><div><strong>Reply to ${escapeHtml(selected.sender)}</strong><span>Handled by <b>${escapeHtml(selected.assignedTo)}</b></span></div><textarea aria-label="Email reply" placeholder="Write your reply..." data-email-reply></textarea><button class="primary-button" type="button" data-send-email-reply>Send Email</button></footer>
             </article>
@@ -5495,7 +6931,7 @@ function renderChatbotConversations(conversations, active) {
                 <div class="chatbot-conversation-scroll">
                     ${conversations.map((item) => `
                         <button type="button" class="${active.name === item.name ? 'active' : ''}" data-chatbot-conversation="${escapeHtml(item.name)}">
-                            <span class="slack-avatar">${communicationInitials(item.name)}</span>
+                            ${communicationFace(item.name, item.country, 'slack-avatar')}
                             <div>
                                 <strong>${escapeHtml(item.name)}</strong>
                                 <small>${escapeHtml(item.country)} · ${escapeHtml(item.status)}</small>
@@ -5662,7 +7098,7 @@ function renderSlackPanel() {
                 <header><div class="slack-dm-person"><span class="slack-avatar">${active.name.slice(2, 4).toUpperCase()}</span><div><h3>${escapeHtml(active.name)}</h3><p>${escapeHtml(active.subtitle)} · <b>${active.count} updates</b></p></div></div><button class="secondary-button" type="button" data-communication-toast="${active.name} marked as read.">Mark as read</button></header>
                 <div class="slack-channel-summary"><span>Internal workspace</span><span>VLACE team only</span><span>Updated just now</span></div>
                 <div class="slack-message-stream">
-                    ${active.messages.map((message, index) => `<article class="${index === active.messages.length - 1 ? 'own-message' : ''}"><span class="slack-message-avatar">${communicationInitials(message[0])}</span><div><header><strong>${escapeHtml(message[0])}</strong><time>${escapeHtml(message[2])}</time></header><p>${escapeHtml(message[1])}</p></div></article>`).join('')}
+                    ${active.messages.map((message, index) => `<article class="${index === active.messages.length - 1 ? 'own-message' : ''}">${communicationFace(message[0], active.country, 'slack-message-avatar')}<div><header><strong>${escapeHtml(message[0])}</strong><time>${escapeHtml(message[2])}</time></header><p>${escapeHtml(message[1])}</p></div></article>`).join('')}
                 </div>
                 <form class="slack-message-composer" data-slack-form><input placeholder="Message ${escapeHtml(active.name)}"><button class="primary-button" type="submit">Send</button></form>
             </aside>
@@ -5681,7 +7117,7 @@ function renderRegionalMessengerPanel(provider) {
     return `<div class="provider-workspace ${isLine ? 'provider-line' : 'provider-kakao'}">
         <section class="provider-hero"><div class="provider-title"><span class="provider-logo">${isLine ? 'LINE' : 'TALK'}</span><div><p>COMMUNICATION PLATFORM</p><h2>${provider} Workspace</h2><small>${isLine ? 'Japan-focused student and parent communication' : 'South Korea-focused student and parent communication'} in one protected VLACE view.</small></div></div><div class="provider-connection"><span>● Integration ready</span><button type="button" data-communication-toast="${provider} connection settings opened in prototype mode.">Settings</button></div></section>
         <div class="provider-toolbar"><label><span>⌕</span><input placeholder="Search ${provider} conversations..."></label><button class="primary-button" type="button" data-communication-toast="New ${provider} conversation opened in prototype mode.">+ New Message</button></div>
-        <section class="slack-channel-workspace provider-conversation-workspace"><div class="slack-list-card"><header><div><h3>Conversations</h3><p>${contacts.length} active conversations</p></div><small>Updated just now</small></header>${contacts.map((item) => `<button type="button" class="slack-list-row ${active[1] === item[1] ? 'active' : ''}" data-regional-conversation="${provider}:${item[1]}"><span class="slack-avatar">${item[0]}<i class="online"></i></span><div><strong>${item[1]}</strong><p>${item[3]}</p></div><span class="slack-row-meta"><small>${item[4]}</small></span></button>`).join('')}</div><aside class="slack-channel-detail"><header><div class="slack-dm-person"><span class="slack-avatar">${active[0]}<i class="online"></i></span><div><h3>${active[1]}</h3><p>${active[2]} · <b>Available</b></p></div></div><button type="button" data-communication-toast="Conversation with ${active[1]} marked as read.">Mark as read</button></header><div class="slack-channel-summary"><span>${provider} conversation</span><span>Secure workspace</span><span>Updated ${active[4]} ago</span></div><div class="slack-message-stream"><article><span class="slack-message-avatar">${active[0]}</span><div><header><strong>${active[1]}</strong><time>${active[4]} ago</time></header><p>${active[3]}</p></div></article><article class="own-message"><span class="slack-message-avatar">VA</span><div><header><strong>You</strong><time>Just now</time></header><p>Thank you. I will update the VLACE record and follow up if anything changes.</p></div></article></div><form class="slack-message-composer" data-regional-form><input placeholder="Message ${active[1]}"><button>Send</button></form></aside></section>
+        <section class="slack-channel-workspace provider-conversation-workspace"><div class="slack-list-card"><header><div><h3>Conversations</h3><p>${contacts.length} active conversations</p></div><small>Updated just now</small></header>${contacts.map((item) => `<button type="button" class="slack-list-row ${active[1] === item[1] ? 'active' : ''}" data-regional-conversation="${provider}:${item[1]}">${communicationFace(item[1], isLine ? "Japan" : "South Korea", "slack-avatar")}<div><strong>${item[1]}</strong><p>${item[3]}</p></div><span class="slack-row-meta"><small>${item[4]}</small></span></button>`).join('')}</div><aside class="slack-channel-detail"><header><div class="slack-dm-person">${communicationFace(active[1], isLine ? "Japan" : "South Korea", "slack-avatar")}<div><h3>${active[1]}</h3><p>${active[2]} · <b>Available</b></p></div></div><button type="button" data-communication-toast="Conversation with ${active[1]} marked as read.">Mark as read</button></header><div class="slack-channel-summary"><span>${provider} conversation</span><span>Secure workspace</span><span>Updated ${active[4]} ago</span></div><div class="slack-message-stream"><article>${communicationFace(active[1], isLine ? "Japan" : "South Korea", "slack-message-avatar")}<div><header><strong>${active[1]}</strong><time>${active[4]} ago</time></header><p>${active[3]}</p></div></article><article class="own-message"><span class="slack-message-avatar user-photo-avatar staff-face staff-face-0" role="img" aria-label="Van Lester Acepcion mock profile photo"></span><div><header><strong>You</strong><time>Just now</time></header><p>Thank you. I will update the VLACE record and follow up if anything changes.</p></div></article></div><form class="slack-message-composer" data-regional-form><input placeholder="Message ${active[1]}"><button>Send</button></form></aside></section>
         <footer class="slack-platform-foot"><span>Integration adapter: ${provider}</span><p>Prepared for future official messaging API connection. Credentials will never be displayed.</p></footer>
     </div>`;
 }
@@ -6988,7 +8424,7 @@ function renderAdminSecuritySettings() {
                     </div>
                     <div class="admin-settings-body">
                         <div class="admin-account-summary">
-                            <span class="avatar">VA</span>
+                            <span class="avatar user-photo-avatar staff-face staff-face-0" role="img" aria-label="Van Lester Acepcion mock profile photo"></span>
                             <div><strong>Van A.</strong><small>van@vlace.com · Administrator</small></div>
                             ${adminSettingsStatus('Admin Only')}
                         </div>
@@ -7408,7 +8844,7 @@ function renderSystemUsers() {
                             <tr>
                                 <td>
                                     <div class="person">
-                                        <span>${escapeHtml(getInitials(user.name))}</span>
+                                        <span class="${escapeHtml(getDashboardUserFaceClass(user))}" role="img" aria-label="${escapeHtml(user.name)} mock profile photo"></span>
                                         <div>
                                             <strong>${escapeHtml(user.name)}</strong>
                                             <small>${escapeHtml(user.email)} · ${escapeHtml(user.id)}</small>
@@ -7799,7 +9235,7 @@ function openUserLoginSettings(userId) {
             </div>
             <div class="student-edit-body">
                 <div class="login-user-summary">
-                    <span>${escapeHtml(getInitials(user.name))}</span>
+                    <span class="${escapeHtml(getDashboardUserFaceClass(user))}" role="img" aria-label="${escapeHtml(user.name)} mock profile photo"></span>
                     <div>
                         <strong>${escapeHtml(user.name)}</strong>
                         <small>${escapeHtml(user.email)} · ${escapeHtml(user.role)}</small>
@@ -7934,7 +9370,7 @@ function renderTeacherTable() {
         <tr class="${teacher.id === selectedTeacherId ? 'selected' : ''}" data-teacher-row="${teacher.id}" tabindex="0" aria-label="Open ${teacher.name} teacher profile">
             <td>
                 <button class="student-person teacher-person" type="button" data-teacher-id="${teacher.id}">
-                    <span>${getInitials(teacher.name)}<i class="employee-login-dot ${teacher.loginStatus === 'Logged in' ? 'is-online' : 'is-offline'}"></i></span>
+                    <span class="${escapeHtml(getTeacherFaceClass(teacher))}"><i class="employee-login-dot ${teacher.loginStatus === 'Logged in' ? 'is-online' : 'is-offline'}"></i></span>
                     <div><strong>${teacher.name}</strong><small>${teacher.id}</small></div>
                 </button>
             </td>
@@ -7964,7 +9400,7 @@ function openTeacherProfile(teacherId) {
     if (!teacher) return;
 
     selectedTeacherId = teacher.id;
-    setText('#teacherProfileAvatar', getInitials(teacher.name));
+    setFaceElement('#teacherProfileAvatar', `student-avatar ${getTeacherFaceClass(teacher)}`, teacher.name);
     setText('#teacherProfileName', teacher.name);
     setText('#teacherProfileMeta', `${teacher.id} · ${teacher.country} · ${teacher.type}`);
     setText('#teacherProfileStudents', String(teacher.students));
@@ -7974,7 +9410,6 @@ function openTeacherProfile(teacherId) {
     setText('#teacherProfileMeet', teacher.links.meet || 'Missing');
     setText('#teacherProfileTeams', teacher.links.teams || 'Missing');
     setText('#teacherProfileZoom', teacher.links.zoom || 'Missing');
-    setText('#teacherDetailAvatar', getInitials(teacher.name));
     setText('#teacherDetailName', teacher.name);
     setText('#teacherDetailMeta', `${teacher.id} · ${teacher.country} · ${teacher.type}`);
     setText('#teacherDetailStudents', String(teacher.students));
@@ -8001,14 +9436,15 @@ function openTeacherProfile(teacherId) {
     setText('#teacherLinksPanelZoom', teacher.links.zoom || 'Missing');
     const teacherDetailPhoto = document.getElementById('teacherDetailPhoto');
     if (teacherDetailPhoto) {
-        teacherDetailPhoto.src = getTeacherProfilePicture(teacher);
-        teacherDetailPhoto.alt = `${teacher.name} profile picture`;
+        teacherDetailPhoto.className = `student-avatar teacher-profile-photo-avatar ${getTeacherFaceClass(teacher)}`;
+        teacherDetailPhoto.setAttribute('aria-label', `${teacher.name} mock profile photo`);
     }
     const teacherDetailSupervisor = getTeacherSupervisor(teacher);
     const teacherDetailSupervisorPhoto = document.getElementById('teacherDetailSupervisorPhoto');
     if (teacherDetailSupervisorPhoto) {
-        teacherDetailSupervisorPhoto.src = teacherDetailSupervisor.photo;
-        teacherDetailSupervisorPhoto.alt = `${teacherDetailSupervisor.name} supervisor picture`;
+        const supervisorStaff = staffMembers.find((staff) => staff.name === teacherDetailSupervisor.name) || staffMembers[0];
+        teacherDetailSupervisorPhoto.className = `admin-teacher-supervisor-photo ${getStaffFaceClass(supervisorStaff)}`;
+        teacherDetailSupervisorPhoto.setAttribute('aria-label', `${teacherDetailSupervisor.name} mock profile photo`);
     }
     setText('#teacherDetailSupervisorName', teacherDetailSupervisor.name);
     setText('#teacherDetailSupervisorRole', teacherDetailSupervisor.role);
@@ -8220,7 +9656,11 @@ function openEmployeeDocumentUpload(kind) {
     const statusField = document.getElementById('teacherDocumentStatus');
     const visibilityField = document.getElementById('teacherDocumentVisibility');
     const notesField = document.getElementById('teacherDocumentNotes');
-    setText('#teacherDocumentUploadInitials', getInitials(employee?.name || 'Maria Santos'));
+    setFaceElement(
+        '#teacherDocumentUploadInitials',
+        `record-context-avatar ${kind === 'staff' ? getStaffFaceClass(employee) : getTeacherFaceClass(employee || getSelectedTeacher())}`,
+        employee?.name || 'Maria Santos',
+    );
     setText('#teacherDocumentUploadName', employee?.name || 'Maria Santos');
     const employeeMeta = document.querySelector('#teacherDocumentUploadName')?.nextElementSibling;
     if (employeeMeta) employeeMeta.textContent = isTeacherPortalUpload ? 'Teacher · Submitted for Admin review' : `${getEmployeeKindLabel(kind)} · Employee record`;
@@ -8508,7 +9948,11 @@ function openEmployeeAddFeedback(kind) {
     const employee = getEmployeeFeedbackOwner(kind);
     activeEmployeeFeedbackKind = kind;
     teacherFeedbackDraftItems = getEmployeeDefaultFeedbackItems(kind);
-    setText('#teacherAddFeedbackInitials', getInitials(employee?.name || 'Maria Santos'));
+    setFaceElement(
+        '#teacherAddFeedbackInitials',
+        `record-context-avatar ${kind === 'staff' ? getStaffFaceClass(employee) : getTeacherFaceClass(employee || getSelectedTeacher())}`,
+        employee?.name || 'Maria Santos',
+    );
     setText('#teacherAddFeedbackName', employee?.name || 'Maria Santos');
     const meta = document.querySelector('#teacherAddFeedbackName')?.nextElementSibling;
     if (meta) meta.textContent = `${getEmployeeKindLabel(kind)} · Reviewed by Van A.`;
@@ -9702,6 +11146,104 @@ function saveTeacherMeetingLinks() {
     showSparkToast(note ? 'Teacher meeting links saved with admin note.' : 'Teacher meeting links saved in prototype mode.');
 }
 
+function promptTeacherField(label, currentValue) {
+    const value = window.prompt(label, currentValue ?? '');
+    if (value === null) return null;
+    return value.trim();
+}
+
+function refreshTeacherDetailAfterEdit(teacher) {
+    selectedTeacherId = teacher.id;
+    openTeacherProfile(teacher.id);
+    renderTeacherTable();
+    refreshIcons();
+}
+
+function editTeacherInformation() {
+    const teacher = getSelectedTeacher();
+    if (!teacher) return;
+
+    const previousId = teacher.id;
+    const previousName = teacher.name;
+    const nextId = promptTeacherField('Teacher ID', teacher.id);
+    if (!nextId) return;
+    const nextName = promptTeacherField('Teacher name', teacher.name);
+    if (!nextName) return;
+    const nextCountry = promptTeacherField('Assigned country', teacher.country);
+    if (!nextCountry) return;
+    const nextType = promptTeacherField('Student type', teacher.type);
+    if (!nextType) return;
+    const nextStatus = promptTeacherField('Account status', teacher.status);
+    if (!nextStatus) return;
+
+    teacher.id = nextId;
+    teacher.name = nextName;
+    teacher.country = nextCountry;
+    teacher.type = nextType;
+    teacher.status = nextStatus;
+
+    if (previousId !== nextId && teacherPortalSupervisors[previousId]) {
+        teacherPortalSupervisors[nextId] = teacherPortalSupervisors[previousId];
+        delete teacherPortalSupervisors[previousId];
+    }
+    if (previousId !== nextId && teacherPortalProfilePictures[previousId]) {
+        teacherPortalProfilePictures[nextId] = teacherPortalProfilePictures[previousId];
+        delete teacherPortalProfilePictures[previousId];
+    }
+    if (previousName !== nextName && teacherContacts[previousName]) {
+        teacherContacts[nextName] = teacherContacts[previousName];
+        delete teacherContacts[previousName];
+    }
+    students.forEach((student) => {
+        if (student.teacher === previousName) student.teacher = nextName;
+    });
+    completedLessonsToday.forEach((lesson) => {
+        if (lesson.teacher === previousName) lesson.teacher = nextName;
+    });
+
+    refreshTeacherDetailAfterEdit(teacher);
+    showSparkToast('Teacher information updated.');
+}
+
+function editTeacherAssignment() {
+    const teacher = getSelectedTeacher();
+    if (!teacher) return;
+
+    const nextStudents = promptTeacherField('Assigned students', String(teacher.students));
+    if (nextStudents === null || nextStudents === '') return;
+    const nextToday = promptTeacherField('Classes today', String(teacher.today));
+    if (nextToday === null || nextToday === '') return;
+    const nextRate = promptTeacherField('Hourly rate', teacher.rate);
+    if (!nextRate) return;
+
+    teacher.students = Math.max(0, Number.parseInt(nextStudents, 10) || 0);
+    teacher.today = Math.max(0, Number.parseInt(nextToday, 10) || 0);
+    teacher.rate = nextRate;
+
+    refreshTeacherDetailAfterEdit(teacher);
+    showSparkToast('Teaching assignment updated.');
+}
+
+function editTeacherSupervisor() {
+    const teacher = getSelectedTeacher();
+    if (!teacher) return;
+
+    const currentSupervisor = getTeacherSupervisor(teacher);
+    const nextName = promptTeacherField('Assigned supervisor name', currentSupervisor.name);
+    if (!nextName) return;
+    const nextRole = promptTeacherField('Supervisor role', currentSupervisor.role);
+    if (!nextRole) return;
+
+    teacherPortalSupervisors[teacher.id] = {
+        ...currentSupervisor,
+        name: nextName,
+        role: nextRole,
+    };
+
+    refreshTeacherDetailAfterEdit(teacher);
+    showSparkToast('Assigned supervisor updated.');
+}
+
 function openTeacherDetail(teacherId) {
     const teacher = teachers.find((item) => item.id === teacherId) || teachers[0];
     openTeacherProfile(teacherId);
@@ -9829,7 +11371,7 @@ function renderStaffTable() {
         <tr class="${staff.id === selectedStaffId ? 'selected' : ''}" data-staff-row="${staff.id}" tabindex="0" aria-label="Open ${escapeHtml(staff.name)} staff profile">
             <td>
                 <button class="student-person teacher-person" type="button" data-staff-id="${escapeHtml(staff.id)}">
-                    <span>${getInitials(staff.name)}<i class="employee-login-dot ${staff.loginStatus === 'Logged in' ? 'is-online' : 'is-away'}"></i></span>
+                    <span class="${escapeHtml(getStaffFaceClass(staff))}"><i class="employee-login-dot ${staff.loginStatus === 'Logged in' ? 'is-online' : 'is-away'}"></i></span>
                     <div><strong>${escapeHtml(staff.name)}</strong><small>${escapeHtml(staff.id)}</small></div>
                 </button>
             </td>
@@ -9882,7 +11424,12 @@ function openStaffProfile(staffId) {
     selectedStaffId = staff.id;
     const contact = staffContacts[staff.name] || {};
 
-    setText('#staffDetailAvatar', getInitials(staff.name));
+    const staffAvatar = document.getElementById('staffDetailAvatar');
+    if (staffAvatar) {
+        staffAvatar.textContent = '';
+        staffAvatar.className = `staff-detail-avatar ${getStaffFaceClass(staff)}`;
+        staffAvatar.setAttribute('aria-label', `${staff.name} mock profile photo`);
+    }
     setText('#staffDetailName', staff.name);
     setText('#staffDetailMeta', `${staff.id} · ${staff.role}`);
     setText('#staffHeroStatus', staff.status);
@@ -10135,7 +11682,17 @@ function openStaffProfileDrawer(mode = 'edit') {
     setText('#staffProfileDrawerKicker', mode === 'add' ? 'ADMIN & MANAGER · NEW STAFF RECORD' : 'ADMIN & MANAGER · STAFF DIRECTORY');
     setText('#staffProfileDrawerTitle', mode === 'add' ? 'Add Staff Member' : 'Edit Staff Profile');
     setText('#staffProfileDrawerSubtitle', mode === 'add' ? 'Create a non-teaching staff profile.' : `Update ${staff.name}'s employment assignment details.`);
-    setText('#staffProfileInitials', staff ? getInitials(staff.name) : 'NS');
+    if (staff) {
+        setFaceElement('#staffProfileInitials', `record-context-avatar ${getStaffFaceClass(staff)}`, staff.name);
+    } else {
+        const node = document.querySelector('#staffProfileInitials');
+        if (node) {
+            node.className = 'record-context-avatar';
+            node.textContent = 'NS';
+            node.removeAttribute('role');
+            node.removeAttribute('aria-label');
+        }
+    }
     setText('#staffProfileDrawerName', staff?.name || 'New Staff Member');
     setText('#staffProfileDrawerMeta', staff ? `${staff.id} · ${staff.department}` : `${nextId} · Staff directory`);
     setFieldValue('#staffProfileId', staff?.id || nextId);
@@ -10217,7 +11774,7 @@ function openStaffContactDrawer() {
     document.getElementById('staffContactOverlay').dataset.kind = 'staff';
     setText('#staffContactDrawerSubtitle', `${staff.name} · ${staff.id}`);
     setText('#staffContactDrawerTitle', 'Edit Contact Details');
-    setText('#staffContactInitials', getInitials(staff.name));
+    setFaceElement('#staffContactInitials', `record-context-avatar ${getStaffFaceClass(staff)}`, staff.name);
     setText('#staffContactName', staff.name);
     setFieldValue('#staffContactPrimary', contact.primary || '');
     setFieldValue('#staffContactSecondary', contact.secondary || '');
@@ -10237,7 +11794,7 @@ function openTeacherContactDrawer() {
     document.getElementById('staffContactOverlay').dataset.kind = 'teacher';
     setText('#staffContactDrawerTitle', 'Edit Teacher Contact Details');
     setText('#staffContactDrawerSubtitle', `${teacher.name} · ${teacher.id}`);
-    setText('#staffContactInitials', getInitials(teacher.name));
+    setFaceElement('#staffContactInitials', `record-context-avatar ${getTeacherFaceClass(teacher)}`, teacher.name);
     setText('#staffContactName', teacher.name);
     setFieldValue('#staffContactPrimary', contact.primary || '');
     setFieldValue('#staffContactSecondary', contact.secondary || '');
@@ -10322,7 +11879,7 @@ function openStaffScheduleDrawer() {
     const times = getStaffScheduleTimes(staff);
     const workingDays = staffWorkDays[staff.name] || [];
     setText('#staffScheduleSubtitle', `Update ${staff.name}'s regular non-teaching hours.`);
-    setText('#staffScheduleAvatar', getInitials(staff.name));
+    setFaceElement('#staffScheduleAvatar', `record-context-avatar ${getStaffFaceClass(staff)}`, staff.name);
     setText('#staffScheduleName', staff.name);
     setText('#staffScheduleMeta', `${staff.role} · ${staff.department}`);
     setFieldValue('#staffScheduleStart', times.start);
@@ -10847,7 +12404,7 @@ function renderStudentTable() {
             <tr class="${student.id === selectedStudentId ? 'selected' : ''}" data-student-row="${student.id}" tabindex="0" aria-label="Open ${student.name} student profile">
                 <td>
                     <button class="student-person" type="button" data-student-id="${student.id}">
-                        <span>${getInitials(student.name)}</span>
+                        <span class="${escapeHtml(getStudentFaceClass(student))}" aria-label="${escapeHtml(student.name)} mock profile photo"></span>
                         <div><strong>${student.name}</strong><small>${student.id}</small></div>
                     </button>
                 </td>
@@ -10887,7 +12444,12 @@ function openStudentProfile(studentId) {
     const { used, total } = getLessonParts(student.lessons);
     const meta = `${student.id} · ${student.type} · ${student.level} English`;
 
-    setText('#studentProfileAvatar', getInitials(student.name));
+    const studentAvatar = document.getElementById('studentProfileAvatar');
+    if (studentAvatar) {
+        studentAvatar.textContent = '';
+        studentAvatar.className = `student-avatar ${getStudentFaceClass(student)}`;
+        studentAvatar.setAttribute('aria-label', `${student.name} mock profile photo`);
+    }
     setText('#studentProfileName', student.name);
     setText('#studentProfileMeta', meta);
     setText('#studentPaymentTitle', `${student.name}’s Payment History`);
@@ -11169,7 +12731,7 @@ function openManualPaymentDrawer() {
     if (!student) return;
 
     setText('#studentPaymentRecordMeta', `${student.name} · ${student.id}`);
-    setText('#studentPaymentRecordAvatar', getInitials(student.name));
+    setFaceElement('#studentPaymentRecordAvatar', `record-context-avatar ${getStudentFaceClass(student)}`, student.name);
     setText('#studentPaymentRecordName', student.name);
     setText('#studentPaymentRecordContext', `Payment History · ${student.country}`);
     setFieldValue('#manualPaymentDate', new Date().toISOString().slice(0, 10));
@@ -12182,7 +13744,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('addTeacherButton')?.addEventListener('click', addTeacherFromPrompt);
     document.getElementById('editTeacherLinks')?.addEventListener('click', openTeacherLinksDrawer);
-    document.getElementById('teacherDetailEditLinks')?.addEventListener('click', openTeacherLinksDrawer);
     document.getElementById('teacherLinksClose')?.addEventListener('click', closeTeacherLinksDrawer);
     document.getElementById('teacherLinksCancel')?.addEventListener('click', closeTeacherLinksDrawer);
     document.getElementById('teacherLinksOverlay')?.addEventListener('click', (event) => {
@@ -12196,6 +13757,9 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => setTeacherProfileTab(button.dataset.teacherTab));
     });
     document.getElementById('teacherLinksPanelEdit')?.addEventListener('click', openTeacherLinksDrawer);
+    document.getElementById('teacherInfoPanelEdit')?.addEventListener('click', editTeacherInformation);
+    document.getElementById('teacherAssignmentPanelEdit')?.addEventListener('click', editTeacherAssignment);
+    document.getElementById('teacherSupervisorPanelEdit')?.addEventListener('click', editTeacherSupervisor);
     document.getElementById('teacherEditContactDetails')?.addEventListener('click', openTeacherContactDrawer);
     document.getElementById('teacherAddNote')?.addEventListener('click', openTeacherNoteModal);
     document.getElementById('teacherUploadDocument')?.addEventListener('click', openTeacherDocumentUpload);
@@ -12626,11 +14190,21 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         openLogoutConfirmModal();
     });
+    document.getElementById('managerPortalLogoutButton')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        openLogoutConfirmModal();
+    });
     document.getElementById('teacherMobileMenu')?.addEventListener('click', () => {
         document.getElementById('teacherSidebar')?.classList.toggle('open');
     });
+    document.getElementById('managerMobileMenu')?.addEventListener('click', () => {
+        document.getElementById('managerSidebar')?.classList.toggle('open');
+    });
     document.querySelectorAll('[data-teacher-portal-target]').forEach((button) => {
         button.addEventListener('click', () => activateTeacherPortal(button.dataset.teacherPortalTarget));
+    });
+    document.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
+        button.addEventListener('click', () => activateManagerPortal(button.dataset.managerPortalTarget));
     });
 
     document.getElementById('mobileMenu')?.addEventListener('click', () => {
