@@ -28755,6 +28755,300 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
     font-weight: 850;
 }
 
+.manager-students-page {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.manager-student-intro {
+    border-color: #cfe3f7;
+    background: linear-gradient(135deg, #f3f8ff 0%, #ffffff 58%, #eef8f4 100%);
+}
+
+.manager-student-summary-grid article {
+    min-height: 92px;
+    border-color: #cfe0f0;
+    background: #ffffff;
+}
+
+.manager-student-summary-grid article:nth-child(1) {
+    box-shadow: inset 0 4px 0 #2e87dc, 0 8px 18px #14375a0d;
+}
+
+.manager-student-summary-grid article:nth-child(2) {
+    box-shadow: inset 0 4px 0 #20a66a, 0 8px 18px #14375a0d;
+}
+
+.manager-student-summary-grid article:nth-child(3) {
+    box-shadow: inset 0 4px 0 #d8851f, 0 8px 18px #14375a0d;
+}
+
+.manager-student-summary-grid article:nth-child(4) {
+    box-shadow: inset 0 4px 0 #6d5bd0, 0 8px 18px #14375a0d;
+}
+
+.manager-student-directory-panel {
+    border: 1px solid #cfe0f0;
+    background: #ffffff;
+}
+
+.manager-student-table-wrap {
+    max-height: 620px;
+    overflow: auto;
+    background: #fbfdff;
+}
+
+.manager-student-table {
+    min-width: 1180px;
+}
+
+.manager-student-table tbody tr {
+    background: #ffffff;
+}
+
+.manager-student-table tbody tr:nth-child(even) {
+    background: #f8fbff;
+}
+
+.manager-student-table td:last-child button {
+    border: 1px solid #bcd6f4;
+    background: #eef6ff;
+    color: #1769e8;
+}
+
+.manager-student-table td:nth-child(7) strong,
+.manager-student-table td:nth-child(7) small {
+    display: block;
+}
+
+.manager-student-table td:nth-child(7) small {
+    margin-top: 3px;
+    color: #7d92a8;
+}
+
+.manager-student-directory-note {
+    padding: 12px 20px;
+    border-top: 1px solid #dfeaf5;
+    background: #f7fbff;
+    color: #70869c;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.manager-student-profile-panel {
+    border: 1px solid #cfe0f0;
+    background: #ffffff;
+}
+
+.manager-student-progress-card {
+    background: linear-gradient(180deg, #fbfdff, #f1f8ff);
+}
+
+.manager-safe-student-grid {
+    padding-top: 0;
+}
+
+.manager-student-profile-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px 20px 20px;
+}
+
+.manager-student-profile-cards article {
+    border: 1px solid #dce8f4;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 16px;
+    box-shadow: 0 8px 18px #14375a0d;
+}
+
+.manager-student-profile-cards span {
+    display: block;
+    color: #647d97;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.manager-student-profile-cards strong {
+    display: block;
+    margin: 7px 0 5px;
+    color: #102b4d;
+    font-size: 24px;
+    font-weight: 950;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+}
+
+.manager-student-profile-cards small {
+    color: #8195aa;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.manager-student-lesson-list {
+    padding: 0 20px 20px;
+}
+
+.manager-student-schedule-grid {
+    padding-top: 18px;
+}
+
+.manager-slot-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.manager-added-class-list {
+    display: grid;
+    gap: 10px;
+    padding: 0 20px 20px;
+}
+
+.manager-added-class-list article {
+    display: grid;
+    grid-template-columns: minmax(160px, .35fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #dce8f4;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 13px 15px;
+}
+
+.manager-added-class-list strong {
+    color: #102b4d;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.manager-added-class-list span {
+    color: #71869c;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.previous-package-lessons {
+    margin: 18px 20px 20px;
+    overflow: hidden;
+    border: 1px solid #cfe0f0;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px #14375a0d;
+}
+
+.previous-package-head {
+    margin: 0;
+    border-bottom-color: #dce8f4;
+}
+
+.previous-package-list {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    background: #f6f9fd;
+}
+
+.previous-package-card {
+    overflow: hidden;
+    border: 1px solid #d8e5f2;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.previous-package-card summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    cursor: pointer;
+    padding: 14px 16px;
+    list-style: none;
+}
+
+.previous-package-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.previous-package-card summary::before {
+    content: "+";
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #eaf3ff;
+    color: #1769e8;
+    font-weight: 950;
+}
+
+.previous-package-card[open] summary::before {
+    content: "-";
+}
+
+.previous-package-card summary span {
+    min-width: 0;
+    flex: 1;
+}
+
+.previous-package-card summary strong {
+    display: block;
+    color: #102b4d;
+    font-size: 15px;
+    font-weight: 950;
+}
+
+.previous-package-card summary small {
+    display: block;
+    margin-top: 3px;
+    color: #71869c;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.previous-package-card summary b {
+    border-radius: 999px;
+    background: #eef6ff;
+    color: #1769e8;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.previous-package-table-wrap {
+    max-height: 440px;
+    overflow: auto;
+    border-top: 1px solid #e3edf7;
+}
+
+.previous-package-table {
+    min-width: 980px;
+}
+
+.previous-package-table tbody tr:nth-child(even) {
+    background: #f8fbff;
+}
+
+.previous-package-table .protected-lesson-view-button span {
+    background: #e8f3ff;
+    color: #1769e8;
+}
+
+.previous-package-table .protected-lesson-view-button {
+    cursor: pointer;
+}
+
+.manager-previous-package-lessons {
+    margin-top: 0;
+}
+
 .teacher-profile-tabs button,
 .student-profile-tabs button,
 .teacher-portal-policy-tabs button {

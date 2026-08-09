@@ -92,6 +92,7 @@ const students = [
         name: 'Liam Chen',
         country: 'China',
         type: 'Kid',
+        age: 9,
         level: 'A2',
         teacher: 'Maria Santos',
         lessons: '18 / 30',
@@ -114,6 +115,7 @@ const students = [
         name: 'Sophia Kim',
         country: 'South Korea',
         type: 'Adult',
+        age: 27,
         level: 'B1',
         teacher: 'David Lee',
         lessons: '8 / 15',
@@ -136,6 +138,7 @@ const students = [
         name: 'Eddie Zhang',
         country: 'China',
         type: 'Kid',
+        age: 8,
         level: 'Starter',
         teacher: 'Maria Santos',
         lessons: '24 / 30',
@@ -158,6 +161,7 @@ const students = [
         name: 'Chloe Huang',
         country: 'China',
         type: 'Adult',
+        age: 31,
         level: 'B1',
         teacher: 'Maria Santos',
         lessons: '10 / 20',
@@ -180,6 +184,7 @@ const students = [
         name: 'Leo Wang',
         country: 'China',
         type: 'Kid',
+        age: 10,
         level: 'A1',
         teacher: 'Maria Santos',
         lessons: '6 / 15',
@@ -202,6 +207,7 @@ const students = [
         name: 'Aria Lin',
         country: 'China',
         type: 'Teen',
+        age: 14,
         level: 'A2',
         teacher: 'Maria Santos',
         lessons: '12 / 20',
@@ -224,6 +230,7 @@ const students = [
         name: 'Kevin Zhao',
         country: 'China',
         type: 'Adult',
+        age: 34,
         level: 'B2',
         teacher: 'Maria Santos',
         lessons: '14 / 20',
@@ -246,6 +253,7 @@ const students = [
         name: 'Bella Xu',
         country: 'China',
         type: 'Kid',
+        age: 7,
         level: 'Starter',
         teacher: 'Maria Santos',
         lessons: '3 / 15',
@@ -268,6 +276,7 @@ const students = [
         name: 'Noah Brown',
         country: 'Israel',
         type: 'Kid',
+        age: 11,
         level: 'A1',
         teacher: 'Emma Wilson',
         lessons: '4 / 15',
@@ -290,6 +299,7 @@ const students = [
         name: 'Mira Wang',
         country: 'UAE',
         type: 'Adult',
+        age: 29,
         level: 'A2',
         teacher: 'James Smith',
         lessons: '11 / 15',
@@ -1399,8 +1409,14 @@ let activeManagerPortalSection = 'manager-teachers';
 let managerOverviewCountry = 'All Countries';
 let managerTeacherDirectoryStatus = 'All Statuses';
 let managerTeacherDirectorySearch = '';
+let managerStudentCountry = 'All Countries';
+let managerStudentTeacher = 'All Teachers';
+let managerStudentSearch = '';
+let activeManagerStudentProfileId = '';
+let activeManagerStudentProfileTab = 'profile';
 let activeManagerTeacherProfileId = '';
 let activeManagerTeacherProfileTab = 'profile';
+const managerAddedClasses = [];
 
 function getTeacherPortalTeacher() {
     return teachers.find((teacher) => teacher.id === activeTeacherPortalTeacherId) || teachers[0];
@@ -1633,9 +1649,9 @@ function renderTeacherPortalWeeklyCalendar(teacher) {
                         const state = getTeacherPortalSlotState(teacher, day, time, dayMap);
                         const isOpen = state === 'open';
                         if (booking) {
-                            return `<td class="teacher-calendar-slot booked teacher-portal-class-slot" data-teacher-locked-slot="${escapeHtml(`${day}-${time}`)}"><strong>Assigned · ${escapeHtml(booking.student.name)}</strong><span>${escapeHtml(booking.topic)} · ${escapeHtml(booking.platform)}</span><button type="button" data-teacher-classroom-day="${escapeHtml(day)}" data-teacher-classroom-time="${escapeHtml(time)}">Enter</button></td>`;
+                            return `<td class="teacher-calendar-slot booked teacher-portal-class-slot" data-slot-state="booked" data-slot-day="${escapeHtml(day)}" data-slot-time="${escapeHtml(time)}" data-slot-student="${escapeHtml(booking.student.id)}" data-slot-topic="${escapeHtml(booking.topic)}" data-slot-platform="${escapeHtml(booking.platform)}" data-teacher-locked-slot="${escapeHtml(`${day}-${time}`)}"><strong>Assigned · ${escapeHtml(booking.student.name)}</strong><span>${escapeHtml(booking.topic)} · ${escapeHtml(booking.platform)}</span><button type="button" data-teacher-classroom-day="${escapeHtml(day)}" data-teacher-classroom-time="${escapeHtml(time)}">Enter</button></td>`;
                         }
-                        return `<td class="teacher-calendar-slot ${isOpen ? 'open' : 'closed'} teacher-portal-toggle-slot" data-teacher-slot-day="${escapeHtml(day)}" data-teacher-slot-time="${escapeHtml(time)}"><strong>${isOpen ? 'Available' : 'Closed'}</strong><span>${isOpen ? 'Admin can assign' : 'Teacher is not available'}</span></td>`;
+                        return `<td class="teacher-calendar-slot ${isOpen ? 'open' : 'closed'} teacher-portal-toggle-slot" data-slot-state="${isOpen ? 'open' : 'closed'}" data-slot-day="${escapeHtml(day)}" data-slot-time="${escapeHtml(time)}" data-teacher-slot-day="${escapeHtml(day)}" data-teacher-slot-time="${escapeHtml(time)}"><strong>${isOpen ? 'Available' : 'Closed'}</strong><span>${isOpen ? 'Admin can assign' : 'Teacher is not available'}</span></td>`;
                     }).join('')}
                 </tr>
             `).join('')}
@@ -1685,7 +1701,7 @@ function renderTeacherPortalStudents(teacher) {
                                 <tr>
                                     <td>${escapeHtml(row.date)}</td>
                                     <td><button class="lesson-pdf-link" type="button" data-teacher-protected-lesson="${escapeHtml(row.topic)}"><span>PDF</span>${escapeHtml(row.topic)}</button></td>
-                                    <td><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.id)} · ${escapeHtml(row.student.country)}</small></td>
+                                    <td><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.id)} · Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)}</small></td>
                                     <td>${escapeHtml(row.duration)}</td>
                                     <td>${renderTeacherPortalStatusControl(row)}</td>
                                     <td>${classroomButton}</td>
@@ -2513,6 +2529,7 @@ function renderManagerPortal() {
         ${activeManagerPortalSection === 'manager-profile' ? renderManagerProfile() : ''}
     `;
     bindManagerPortalEvents(root);
+    attachLessonActionHandlers(root);
     refreshIcons();
 }
 
@@ -2653,6 +2670,178 @@ function getManagerDirectoryTeachers() {
         const matchesSearch = !search || `${teacher.name} ${teacher.id} ${teacher.country} ${teacher.type}`.toLowerCase().includes(search);
         return matchesStatus && matchesSearch;
     });
+}
+
+function getManagerStudentTeachers(country = managerStudentCountry) {
+    const scopedStudents = country === 'All Countries' ? students : students.filter((student) => student.country === country);
+    return [...new Set(scopedStudents.map((student) => student.teacher))];
+}
+
+function getManagerStudentRows() {
+    const search = managerStudentSearch.trim().toLowerCase();
+    return students.filter((student) => {
+        const matchesCountry = managerStudentCountry === 'All Countries' || student.country === managerStudentCountry;
+        const matchesTeacher = managerStudentTeacher === 'All Teachers' || student.teacher === managerStudentTeacher;
+        const matchesSearch = !search || `${student.name} ${student.id} ${student.country} ${student.teacher} ${student.level} ${student.type} ${student.age}`.toLowerCase().includes(search);
+        return matchesCountry && matchesTeacher && matchesSearch;
+    });
+}
+
+function getManagerStudentSummaryRows() {
+    return students.filter((student) => managerStudentCountry === 'All Countries' || student.country === managerStudentCountry);
+}
+
+function isLowCreditStudent(student) {
+    const { used, total } = getLessonParts(student.lessons);
+    return (Number(total) || 0) - (Number(used) || 0) <= 5;
+}
+
+function getStudentPreviousPackages(student) {
+    const { total } = getLessonParts(student?.lessons || '0 / 15');
+    const packageSize = Number(total) || 15;
+    const packageCount = packageSize >= 30 ? 1 : 1;
+    return Array.from({ length: packageCount }, (_, packageIndex) => ({
+        id: `${student.id}-previous-${packageIndex + 1}`,
+        label: `Previous Package ${packageIndex + 1}`,
+        packageName: `${packageSize} Lessons`,
+        size: packageSize,
+        completedAt: packageIndex === 0 ? 'Completed before current package' : 'Older completed package',
+    }));
+}
+
+function getPreviousPackageLessonRows(student, packageRecord) {
+    const baseTopics = [
+        'Diagnostic Review',
+        'Vocabulary Builder',
+        'Grammar Practice',
+        'Guided Reading',
+        'Listening Check',
+        'Speaking Fluency',
+        'Pronunciation Drill',
+        'Free Conversation',
+        'Writing Practice',
+        'Unit Review',
+    ];
+    const durations = student?.schedule?.duration || (student?.type === 'Kid' ? '25 minutes' : '50 minutes');
+    const platform = student?.schedule?.platform || 'Classroom';
+    const teacher = student?.teacher || 'Assigned teacher';
+    const monthNames = ['Mar', 'Apr', 'May', 'Jun', 'Jul'];
+
+    return Array.from({ length: packageRecord.size }, (_, index) => {
+        const lessonNumber = index + 1;
+        const month = monthNames[Math.floor(index / 6) % monthNames.length];
+        const day = ((index * 3) % 27) + 1;
+        return {
+            number: lessonNumber,
+            date: `${month} ${String(day).padStart(2, '0')}, 2026`,
+            topic: `${baseTopics[index % baseTopics.length]} ${lessonNumber}`,
+            teacher,
+            duration: durations,
+            platform,
+            status: index % 11 === 7 ? 'Student is late' : 'Completed',
+            feedback: index % 4 === 0 ? 'Needs review' : 'Approved',
+            corrections: `Review ${baseTopics[index % baseTopics.length].toLowerCase()} errors from lesson ${lessonNumber}.`,
+            strengths: `${student.name} participated well and completed the guided practice.`,
+            improvement: 'Continue practicing target vocabulary before the next lesson.',
+            note: 'Teacher feedback from the previous package is available for review only.',
+        };
+    });
+}
+
+function renderPreviousPackageLessons(student, context = 'admin') {
+    const packages = getStudentPreviousPackages(student);
+    const isManager = context === 'manager';
+    return `
+        <section class="previous-package-lessons ${isManager ? 'manager-previous-package-lessons' : ''}">
+            <div class="student-record-head previous-package-head">
+                <div>
+                    <h3>Previous Package Lesson History</h3>
+                    <p>Completed lesson rows from each finished package. Open a package to scan every taught lesson.</p>
+                </div>
+                <span class="status-pill neutral">${packages.length} package${packages.length === 1 ? '' : 's'}</span>
+            </div>
+            <div class="previous-package-list">
+                ${packages.map((packageRecord) => {
+                    const rows = getPreviousPackageLessonRows(student, packageRecord);
+                    return `
+                        <details class="previous-package-card">
+                            <summary>
+                                <span>
+                                    <strong>${escapeHtml(packageRecord.label)}</strong>
+                                    <small>${escapeHtml(packageRecord.packageName)} · collapsed by default · ${escapeHtml(packageRecord.completedAt)}</small>
+                                </span>
+                                <b>${rows.length} taught lessons</b>
+                            </summary>
+                            <div class="table-wrap previous-package-table-wrap">
+                                <table class="student-lessons-table previous-package-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Date Taught</th>
+                                            <th>Lesson Topic</th>
+                                            <th>Teacher</th>
+                                            <th>Duration</th>
+                                            <th>Platform</th>
+                                            <th>Status</th>
+                                            <th>Feedback</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rows.map((row) => `
+                                            <tr data-feedback-submitted="true" data-feedback-status="${escapeHtml(row.feedback)}" data-feedback-corrections="${escapeHtml(row.corrections)}" data-feedback-strengths="${escapeHtml(row.strengths)}" data-feedback-improvement="${escapeHtml(row.improvement)}" data-feedback-note="${escapeHtml(row.note)}">
+                                                <td><strong>${row.number}</strong></td>
+                                                <td>${escapeHtml(row.date)}</td>
+                                                <td><button class="lesson-pdf-link protected-lesson-view-button" type="button" data-previous-lesson-view="${escapeHtml(row.topic)}"><span>VIEW</span>${escapeHtml(row.topic)}</button></td>
+                                                <td data-student-lesson-teacher>${escapeHtml(row.teacher)}</td>
+                                                <td>${escapeHtml(row.duration)}</td>
+                                                <td>${escapeHtml(row.platform)}</td>
+                                                <td>${marketingStatus(row.status)}</td>
+                                                <td><button class="feedback-button" type="button" data-previous-feedback-view="${escapeHtml(row.topic)}">${escapeHtml(row.feedback === 'Approved' ? 'View Feedback' : 'Review Feedback')}</button></td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    `;
+                }).join('')}
+            </div>
+        </section>
+    `;
+}
+
+function getManagerSelectedStudent() {
+    return students.find((student) => student.id === activeManagerStudentProfileId) || students[0];
+}
+
+function openManagerStudentClassSchedule(studentId = activeManagerStudentProfileId) {
+    const student = students.find((item) => item.id === studentId) || getManagerSelectedStudent();
+    if (!student) return;
+    selectedStudentId = student.id;
+    activeManagerStudentProfileId = student.id;
+    activeManagerStudentProfileTab = 'schedule';
+    openClassScheduleModal();
+}
+
+function openManagerTeacherClassSchedule(teacherId = activeManagerTeacherProfileId) {
+    const teacher = teachers.find((item) => item.id === teacherId) || teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
+    if (!teacher) return;
+    selectedTeacherId = teacher.id;
+    activeManagerTeacherProfileId = teacher.id;
+    activeManagerTeacherProfileTab = 'weekly';
+    const student = students.find((item) => item.teacher === teacher.name) || students.find((item) => item.country === teacher.country) || students[0];
+    if (student) selectedStudentId = student.id;
+    const slot = document.querySelector('.manager-portal-content .teacher-calendar-slot.open') || document.querySelector('.manager-portal-content .teacher-calendar-slot.closed');
+    if (slot) {
+        openTeacherSlotModal(slot);
+        const action = document.getElementById('teacherSlotAction');
+        if (action && Array.from(action.options).some((option) => option.value === 'assign')) {
+            action.value = 'assign';
+            setTeacherSlotAction('assign');
+        }
+        return;
+    }
+    openClassScheduleModal(teacher.name);
 }
 
 function renderManagerOperationBox(label, value, note, icon = 'activity') {
@@ -2835,7 +3024,7 @@ function renderManagerTeacherTodayRows(teacher) {
             <tr data-manager-feedback-row="${escapeHtml(row.id)}">
                 <td>${escapeHtml(row.date)}</td>
                 <td><button class="lesson-pdf-link" type="button" data-manager-toast="${escapeHtml(row.topic)} material opened."><span>PDF</span>${escapeHtml(row.topic)}</button></td>
-                <td><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.id)} · ${escapeHtml(row.student.country)}</small></td>
+                <td><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.id)} · Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)}</small></td>
                 <td>${escapeHtml(row.duration)}</td>
                 <td>${marketingStatus(row.status)}</td>
                 <td>${classroomButton}</td>
@@ -2937,7 +3126,7 @@ function renderManagerTeacherWeeklyTab(teacher, availability) {
                 <section class="teacher-week-card">
                     <div class="schedule-week-head">
                         <div><span>WEEKLY AVAILABILITY</span><h4>Teaching Pattern</h4></div>
-                        <b>Asia/Manila · PHT</b>
+                        <button class="secondary-button" type="button" data-manager-teacher-add-class="${escapeHtml(teacher.id)}"><i data-lucide="calendar-plus"></i> Add Class</button>
                     </div>
                     <div class="teacher-week-grid">${renderManagerTeacherWeekDayCards(availability)}</div>
                 </section>
@@ -2986,7 +3175,10 @@ function renderManagerTeacherWeeklyTab(teacher, availability) {
                     <div class="teacher-schedule-control-note"><strong>Admin · Manager · Staff Controls</strong><span>Click a schedule slot to manage its class and availability.</span></div>
                     <div class="teacher-open-slots-bar">
                         <div><strong>${slotCount} open time slot${slotCount === 1 ? '' : 's'}</strong><span>30-minute increments · 6:00 AM to 12:00 midnight</span></div>
-                        <button type="button" data-manager-toast="Close all slots requested for ${escapeHtml(teacher.name)}.">Close All</button>
+                        <div class="manager-slot-actions">
+                            <button type="button" data-manager-teacher-add-class="${escapeHtml(teacher.id)}">Add Class</button>
+                            <button type="button" data-manager-toast="Close all slots requested for ${escapeHtml(teacher.name)}.">Close All</button>
+                        </div>
                     </div>
                     <div class="teacher-weekly-calendar-wrap">
                         <table class="teacher-weekly-calendar">${renderTeacherPortalWeeklyCalendar(teacher)}</table>
@@ -3465,7 +3657,7 @@ function renderManagerSchedule() {
                         </div>
                         <div class="manager-schedule-student">
                             <span class="${escapeHtml(getStudentFaceClass(row.student))}" role="img" aria-label="${escapeHtml(row.student.name)} mock student photo"></span>
-                            <div><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)} · ${escapeHtml(row.duration || '30 minutes')}</small></div>
+                            <div><strong>${escapeHtml(row.student.name)}</strong><small>Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)} · ${escapeHtml(row.duration || '30 minutes')}</small></div>
                         </div>
                         <div class="manager-schedule-lesson">
                             <strong>${escapeHtml(row.topic)}</strong>
@@ -3581,19 +3773,276 @@ function renderManagerTeachers() {
 }
 
 function renderManagerStudents() {
+    if (activeManagerStudentProfileId) return renderManagerStudentProfile();
+
+    const countries = getManagerOverviewCountries();
+    const teacherOptions = getManagerStudentTeachers();
+    const rows = getManagerStudentRows();
+    const summaryRows = getManagerStudentSummaryRows();
+    const activeCount = summaryRows.filter((student) => student.status === 'Active').length;
+    const lowCreditsCount = summaryRows.filter(isLowCreditStudent).length;
+    const assignedTeacherCount = getManagerStudentTeachers(managerStudentCountry).length;
+    const visibleLabel = managerStudentCountry === 'All Countries' ? 'all country teams' : `${managerStudentCountry} team`;
+
     return `
-        ${renderManagerHero('Student Follow-up', 'See assignment, package progress, and operational status without private payment/contact credentials.')}
-        <article class="teacher-portal-panel">
-            <div class="teacher-panel-head"><div><h3>Student Operations</h3><p>Contact details and payment credentials stay hidden from manager view unless Admin grants access.</p></div></div>
-            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
-                <table>
-                    <thead><tr><th>Student</th><th>Country</th><th>Level</th><th>Teacher</th><th>Lessons</th><th>Preferred Time</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody>
-                        ${students.map((student) => `<tr><td><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.id)} · ${escapeHtml(student.type)}</small></td><td>${escapeHtml(student.country)}</td><td>${escapeHtml(student.level)}</td><td>${escapeHtml(student.teacher)}</td><td>${escapeHtml(student.lessons)}</td><td>${escapeHtml(student.preferredDay)} · ${escapeHtml(student.preferredTime)}</td><td>${marketingStatus(student.status)}</td><td><button type="button" data-manager-toast="Student follow-up opened for ${escapeHtml(student.name)}.">Review</button></td></tr>`).join('')}
-                    </tbody>
-                </table>
+        <section class="manager-students-page student-page">
+            <div class="section-intro student-intro manager-student-intro">
+                <div>
+                    <span>STUDENT OPERATIONS</span>
+                    <h2>Student Management</h2>
+                    <p>View assigned students, package progress, teachers, and schedule preferences for ${escapeHtml(visibleLabel)}.</p>
+                </div>
             </div>
-        </article>`;
+
+            <section class="student-summary-grid manager-student-summary-grid" aria-label="Manager student summary">
+                <article><span>Total Students</span><strong>${summaryRows.length}</strong><small>${escapeHtml(visibleLabel)}</small></article>
+                <article><span>Active Students</span><strong>${activeCount}</strong><small>Currently enrolled</small></article>
+                <article><span>Low Credits</span><strong>${lowCreditsCount}</strong><small>5 lessons or fewer</small></article>
+                <article><span>Assigned Teachers</span><strong>${assignedTeacherCount}</strong><small>With students in view</small></article>
+            </section>
+
+            <article class="panel student-directory-panel manager-student-directory-panel">
+                <div class="student-directory-head">
+                    <div>
+                        <span>DIRECTORY</span>
+                        <h3>Student Directory</h3>
+                        <p><b>${rows.length}</b> visible students · Same admin layout, focused for manager review</p>
+                    </div>
+                    <div class="student-filters">
+                        <label>Country
+                            <select id="managerStudentCountry">
+                                ${countries.map((country) => `<option ${managerStudentCountry === country ? 'selected' : ''}>${escapeHtml(country)}</option>`).join('')}
+                            </select>
+                        </label>
+                        <label>Assigned Teacher
+                            <select id="managerStudentTeacher">
+                                <option>All Teachers</option>
+                                ${teacherOptions.map((teacher) => `<option ${managerStudentTeacher === teacher ? 'selected' : ''}>${escapeHtml(teacher)}</option>`).join('')}
+                            </select>
+                        </label>
+                        <label class="student-search"><i data-lucide="search"></i><input id="managerStudentSearch" type="search" value="${escapeHtml(managerStudentSearch)}" placeholder="Search students..."></label>
+                    </div>
+                </div>
+                <div class="table-wrap manager-student-table-wrap">
+                    <table class="student-table student-directory-table manager-student-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Country</th>
+                                            <th>Student Type</th>
+                                            <th>Age</th>
+                                            <th>Level</th>
+                                <th>Assigned Teacher</th>
+                                <th>Lessons</th>
+                                <th>Schedule</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.length ? rows.map((student) => {
+                                const { used, total } = getLessonParts(student.lessons);
+                                const percent = Math.min(100, Math.round((Number(used) / Number(total || 1)) * 100));
+                                const remaining = (Number(total) || 0) - (Number(used) || 0);
+                                const creditClass = remaining <= 5 ? 'low' : '';
+                                return `
+                                    <tr>
+                                        <td>
+                                            <button class="student-person" type="button" data-manager-student="${escapeHtml(student.id)}">
+                                                <span class="${escapeHtml(getStudentFaceClass(student))}" aria-label="${escapeHtml(student.name)} mock profile photo"></span>
+                                                <div><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.id)} · Age ${escapeHtml(student.age || '—')}</small></div>
+                                            </button>
+                                        </td>
+                                        <td><span class="country-badge">${escapeHtml(student.country)}</span></td>
+                                        <td><span class="student-type type-${escapeHtml(student.type.toLowerCase())}">${escapeHtml(student.type)}</span></td>
+                                        <td>${escapeHtml(student.age || '—')}</td>
+                                        <td>${escapeHtml(student.level)}</td>
+                                        <td>${escapeHtml(student.teacher)}</td>
+                                        <td>
+                                            <div class="student-lesson-cell">
+                                                <strong>${escapeHtml(student.lessons)}</strong>
+                                                <span><b style="width:${percent}%"></b></span>
+                                                <small class="${creditClass}">${remaining} lessons left</small>
+                                            </div>
+                                        </td>
+                                        <td><strong>${escapeHtml(student.preferredDay)}</strong><small>${escapeHtml(student.preferredTime)} · ${escapeHtml(student.schedule?.platform || 'Classroom')}</small></td>
+                                        <td><span class="status-pill ${statusClass(student.status)}">${escapeHtml(student.status)}</span></td>
+                                        <td><button type="button" data-manager-student="${escapeHtml(student.id)}">Review</button></td>
+                                    </tr>
+                                `;
+                            }).join('') : '<tr><td colspan="10" class="empty-row">No students match the selected filters.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                <footer class="manager-student-directory-note">Student contact details and payment credentials remain protected unless Admin grants access.</footer>
+            </article>
+        </section>`;
+}
+
+function renderManagerStudentProfile() {
+    const student = getManagerSelectedStudent();
+    if (!student) {
+        activeManagerStudentProfileId = '';
+        return renderManagerStudents();
+    }
+
+    const { used, total } = getLessonParts(student.lessons);
+    const remaining = Math.max(0, (Number(total) || 0) - (Number(used) || 0));
+    const percent = Math.min(100, Math.round((Number(used) / Number(total || 1)) * 100));
+    const referrals = student.referrals || { total: 0, converted: 0, credits: 0, discount: '0%' };
+    const schedule = student.schedule || { duration: '25 minutes', frequency: '2x weekly', platform: 'Voov' };
+    const addedClasses = managerAddedClasses.filter((item) => item.studentId === student.id);
+    const tabs = [
+        ['profile', 'Profile'],
+        ['package', 'Package'],
+        ['lessons', 'Lessons'],
+        ['referrals', 'Referrals'],
+        ['schedule', 'Schedule'],
+    ];
+
+    return `
+        <section class="manager-students-page student-page">
+            <article class="panel student-profile-panel manager-student-profile-panel">
+                <header class="student-profile-header">
+                    <div class="student-profile-identity">
+                        <span class="student-avatar ${escapeHtml(getStudentFaceClass(student))}" role="img" aria-label="${escapeHtml(student.name)} mock profile photo"></span>
+                        <div>
+                            <span>STUDENT PROFILE</span>
+                            <h3>${escapeHtml(student.name)}</h3>
+                            <p>${escapeHtml(student.id)} · Age ${escapeHtml(student.age || '—')} · ${escapeHtml(student.type)} · ${escapeHtml(student.level)} English · ${escapeHtml(student.country)}</p>
+                        </div>
+                    </div>
+                    <div class="student-profile-actions">
+                        <button class="secondary-button" type="button" data-manager-student-back><i data-lucide="arrow-left"></i> Back to Students</button>
+                        <button class="primary-button" type="button" data-manager-toast="Manager review opened for ${escapeHtml(student.name)}."><i data-lucide="clipboard-check"></i> Review Student</button>
+                    </div>
+                </header>
+
+                <div class="student-profile-tabs" role="tablist">
+                    ${tabs.map(([id, label]) => `<button class="${activeManagerStudentProfileTab === id ? 'active' : ''}" type="button" data-manager-student-tab="${escapeHtml(id)}">${escapeHtml(label)}</button>`).join('')}
+                </div>
+
+                <section class="student-package-booking-card manager-student-progress-card">
+                    <div class="profile-card-head">
+                        <i data-lucide="calendar-check"></i>
+                        <div>
+                            <h4>Package Booking Status</h4>
+                            <p>Shows whether purchased lessons have already been assigned to class slots.</p>
+                        </div>
+                    </div>
+                    <div class="student-package-booking-metrics">
+                        <article><span>Lessons Purchased</span><strong>${escapeHtml(total)}</strong></article>
+                        <article><span>Lessons Used</span><strong>${escapeHtml(used)}</strong></article>
+                        <article><span>Lessons Left</span><strong>${remaining}</strong></article>
+                        <article><span>Status</span><strong class="${remaining ? 'needs-booking' : 'is-complete'}">${remaining ? 'Active package' : 'Completed'}</strong></article>
+                    </div>
+                    <div class="student-booking-progress" aria-hidden="true"><span style="width:${percent}%"></span></div>
+                    <p>${escapeHtml(used)} of ${escapeHtml(total)} purchased lessons have been used.</p>
+                </section>
+
+                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'profile' ? 'active' : ''}" data-manager-student-tab-panel="profile">
+                    <section class="student-profile-grid">
+                        <article>
+                            <div class="profile-card-head"><i data-lucide="id-card"></i><div><h4>Personal Information</h4><p>Basic student record</p></div></div>
+                            <dl>
+                                <div><dt>Student ID</dt><dd>${escapeHtml(student.id)}</dd></div>
+                                <div><dt>Country / Market</dt><dd>${escapeHtml(student.country)}</dd></div>
+                                <div><dt>Student Type</dt><dd>${escapeHtml(student.type)}</dd></div>
+                                <div><dt>Age</dt><dd>${escapeHtml(student.age || '—')}</dd></div>
+                                <div><dt>English Level</dt><dd>${escapeHtml(student.level)}</dd></div>
+                                <div><dt>Account Status</dt><dd>${escapeHtml(student.status)}</dd></div>
+                            </dl>
+                        </article>
+                        <article>
+                            <div class="profile-card-head"><i data-lucide="book-open-check"></i><div><h4>Learning Assignment</h4><p>Teacher, package, and progress</p></div></div>
+                            <dl>
+                                <div><dt>Assigned Teacher</dt><dd>${escapeHtml(student.teacher)}</dd></div>
+                                <div><dt>Lessons Used</dt><dd>${escapeHtml(used)}</dd></div>
+                                <div><dt>Package Lessons</dt><dd>${escapeHtml(total)}</dd></div>
+                                <div><dt>Package Status</dt><dd>${remaining <= 5 ? 'Low credits' : 'Healthy'}</dd></div>
+                            </dl>
+                        </article>
+                        <article class="student-schedule-card">
+                            <div class="profile-card-head"><i data-lucide="calendar-days"></i><div><h4>Preferred Class Schedule</h4><p>Use this when assigning available slots</p></div></div>
+                            <dl>
+                                <div><dt>Preferred Day</dt><dd>${escapeHtml(student.preferredDay)}</dd></div>
+                                <div><dt>Preferred Time</dt><dd>${escapeHtml(student.preferredTime)}</dd></div>
+                                <div><dt>Platform</dt><dd>${escapeHtml(schedule.platform)}</dd></div>
+                            </dl>
+                        </article>
+                    </section>
+                    <section class="student-sensitive-grid manager-safe-student-grid">
+                        <article class="student-activity-card">
+                            <div class="student-activity-head">
+                                <div class="student-activity-title">
+                                    <span class="student-activity-icon"><i data-lucide="clipboard-list"></i></span>
+                                    <div>
+                                        <span>INTERNAL · MANAGER VIEW</span>
+                                        <h4>Profile Activity &amp; Notes</h4>
+                                        <p>Track operational notes. Private contact credentials and payment identifiers are not shown here.</p>
+                                    </div>
+                                </div>
+                                <div class="student-activity-actions"><b>Hidden from students</b><button class="primary-button" type="button" data-manager-toast="Manager note composer opened.">+ Add Note</button></div>
+                            </div>
+                            <ul>
+                                <li><span></span><div><strong>Learning assignment reviewed</strong><p>${escapeHtml(student.teacher)} confirmed as assigned teacher.</p></div><div><strong>Angela Reyes</strong><small>Manager</small></div><div><strong>Today</strong><small>PHT</small></div></li>
+                                <li><span></span><div><strong>Package progress checked</strong><p>${remaining} lessons remaining in the current package.</p></div><div><strong>System</strong><small>Auto</small></div><div><strong>Today</strong><small>PHT</small></div></li>
+                            </ul>
+                            <footer><span>Manager access excludes private payment credentials and contact details by default.</span><b>Newest activity shown first</b></footer>
+                        </article>
+                    </section>
+                </div>
+
+                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'package' ? 'active' : ''}" data-manager-student-tab-panel="package">
+                    <article class="panel student-record-panel">
+                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Package</h3><p>Package progress and manager-safe billing state.</p></div>${remaining <= 5 ? marketingStatus('Needs Follow-up') : marketingStatus('Healthy')}</div>
+                        <div class="manager-student-profile-cards">
+                            <article><span>Lessons Used</span><strong>${escapeHtml(student.lessons)}</strong><small>${remaining} lessons left</small></article>
+                            <article><span>Package Access</span><strong>${escapeHtml(student.payment === 'Paid' ? 'Cleared' : 'Review')}</strong><small>Finance details hidden</small></article>
+                            <article><span>Teacher</span><strong>${escapeHtml(student.teacher)}</strong><small>Assigned teacher</small></article>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'lessons' ? 'active' : ''}" data-manager-student-tab-panel="lessons">
+                    <article class="panel student-record-panel">
+                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Lessons</h3><p>Recent and upcoming operational lesson records.</p></div><button type="button" data-manager-student-add-class="${escapeHtml(student.id)}"><i data-lucide="calendar-plus"></i> Add Class</button></div>
+                        <div class="teacher-lesson-list manager-student-lesson-list">
+                            ${[
+                                ...addedClasses.map((item) => [item.date, item.time, 'Scheduled', item.platform, item.topic, item.teacher]),
+                                ['Today', student.preferredTime, 'Pending', schedule.platform],
+                                ['Last class', student.preferredTime, 'Completed', schedule.platform],
+                                ['Next class', student.preferredTime, 'Scheduled', schedule.platform],
+                            ].map(([date, time, status, platform, topic = `${student.level} English lesson`, teacherName = student.teacher]) => `<article><div><strong>${escapeHtml(date)} · ${escapeHtml(time)}</strong><small>${escapeHtml(platform)} · ${escapeHtml(teacherName)}</small></div><span>${escapeHtml(topic)}</span>${marketingStatus(status)}<button type="button" data-manager-toast="Lesson details opened.">View</button></article>`).join('')}
+                        </div>
+                    </article>
+                    ${renderPreviousPackageLessons(student, 'manager')}
+                </div>
+
+                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'referrals' ? 'active' : ''}" data-manager-student-tab-panel="referrals">
+                    <article class="panel student-record-panel">
+                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Referrals</h3><p>Referral activity visible to manager operations.</p></div><button type="button" data-manager-toast="Referral follow-up queued.">Follow Up</button></div>
+                        <div class="manager-student-profile-cards">
+                            <article><span>Total Referrals</span><strong>${referrals.total}</strong><small>Shared code: ${escapeHtml(student.referralCode)}</small></article>
+                            <article><span>Converted</span><strong>${referrals.converted}</strong><small>Successful enrollments</small></article>
+                            <article><span>Credits Earned</span><strong>${referrals.credits}</strong><small>${escapeHtml(referrals.discount)} discount flag</small></article>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'schedule' ? 'active' : ''}" data-manager-student-tab-panel="schedule">
+                    <article class="panel student-record-panel">
+                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Schedule</h3><p>Preferred class timing and classroom assignment.</p></div><button type="button" data-manager-student-add-class="${escapeHtml(student.id)}"><i data-lucide="calendar-plus"></i> Add Class</button></div>
+                        <section class="student-profile-grid manager-student-schedule-grid">
+                            <article><div class="profile-card-head"><i data-lucide="calendar"></i><div><h4>Preference</h4><p>Requested schedule</p></div></div><dl><div><dt>Preferred Day</dt><dd>${escapeHtml(student.preferredDay)}</dd></div><div><dt>Preferred Time</dt><dd>${escapeHtml(student.preferredTime)}</dd></div></dl></article>
+                            <article><div class="profile-card-head"><i data-lucide="video"></i><div><h4>Classroom</h4><p>Platform and duration</p></div></div><dl><div><dt>Platform</dt><dd>${escapeHtml(schedule.platform)}</dd></div><div><dt>Duration</dt><dd>${escapeHtml(schedule.duration)}</dd></div><div><dt>Frequency</dt><dd>${escapeHtml(schedule.frequency)}</dd></div></dl></article>
+                            <article><div class="profile-card-head"><i data-lucide="user-check"></i><div><h4>Teacher</h4><p>Current assignment</p></div></div><dl><div><dt>Teacher</dt><dd>${escapeHtml(student.teacher)}</dd></div><div><dt>Status</dt><dd>${escapeHtml(student.status)}</dd></div><div><dt>Added Classes</dt><dd>${addedClasses.length}</dd></div></dl></article>
+                        </section>
+                        ${addedClasses.length ? `<div class="manager-added-class-list">${addedClasses.map((item) => `<article><strong>${escapeHtml(item.date)} · ${escapeHtml(item.time)}</strong><span>${escapeHtml(item.teacher)} · ${escapeHtml(item.topic)} · ${escapeHtml(item.platform)}</span>${marketingStatus('Scheduled')}</article>`).join('')}</div>` : ''}
+                    </article>
+                </div>
+            </article>
+        </section>`;
 }
 
 function renderManagerFeedback() {
@@ -3764,7 +4213,7 @@ function openManagerScheduleFollowup(rowId) {
                 <div class="manager-followup-summary">
                     <article><span>Schedule</span><strong>${escapeHtml(row.date)}</strong><small>${escapeHtml(inputTimeToRange(row.time))} · ${escapeHtml(row.duration || '30 minutes')}</small></article>
                     <article><span>Teacher</span><strong>${escapeHtml(getManagerLessonTeacherName(row))}</strong><small>${escapeHtml(row.topic)} · ${escapeHtml(row.platform)}</small></article>
-                    <article><span>Status</span><strong>${escapeHtml(row.status)}</strong><small>${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)}</small></article>
+                    <article><span>Status</span><strong>${escapeHtml(row.status)}</strong><small>Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)}</small></article>
                 </div>
                 <form class="manager-followup-form" data-manager-followup-form>
                     <label>Follow-up type
@@ -3882,6 +4331,65 @@ function bindManagerPortalEvents(root) {
         searchInput?.focus();
         searchInput?.setSelectionRange(cursor, cursor);
     });
+    root.querySelector('#managerStudentCountry')?.addEventListener('change', (event) => {
+        managerStudentCountry = event.target.value;
+        managerStudentTeacher = 'All Teachers';
+        renderManagerPortal();
+    });
+    root.querySelector('#managerStudentTeacher')?.addEventListener('change', (event) => {
+        managerStudentTeacher = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelector('#managerStudentSearch')?.addEventListener('input', (event) => {
+        const cursor = event.target.selectionStart || 0;
+        managerStudentSearch = event.target.value;
+        renderManagerPortal();
+        const searchInput = document.getElementById('managerStudentSearch');
+        searchInput?.focus();
+        searchInput?.setSelectionRange(cursor, cursor);
+    });
+    root.querySelector('[data-manager-student-back]')?.addEventListener('click', () => {
+        activeManagerStudentProfileId = '';
+        activeManagerStudentProfileTab = 'profile';
+        renderManagerPortal();
+    });
+    root.querySelectorAll('[data-manager-student-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeManagerStudentProfileTab = button.dataset.managerStudentTab || 'profile';
+            renderManagerPortal();
+        });
+    });
+    root.querySelectorAll('[data-manager-student]').forEach((button) => {
+        const openManagerStudent = () => {
+            activeManagerStudentProfileId = button.dataset.managerStudent;
+            selectedStudentId = activeManagerStudentProfileId;
+            activeManagerStudentProfileTab = 'profile';
+            activeManagerPortalSection = 'manager-students';
+            renderManagerPortal();
+        };
+        button.addEventListener('click', openManagerStudent);
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openManagerStudent();
+            }
+        });
+    });
+    root.querySelectorAll('[data-manager-student-add-class]').forEach((button) => {
+        button.addEventListener('click', () => openManagerStudentClassSchedule(button.dataset.managerStudentAddClass));
+    });
+    root.querySelectorAll('[data-manager-teacher-add-class]').forEach((button) => {
+        button.addEventListener('click', () => openManagerTeacherClassSchedule(button.dataset.managerTeacherAddClass));
+    });
+    root.querySelectorAll('.teacher-calendar-slot[data-slot-day][data-slot-time]').forEach((slot) => {
+        slot.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || getSelectedTeacher();
+            if (teacher) selectedTeacherId = teacher.id;
+            openTeacherSlotModal(slot);
+        });
+    });
     root.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
         button.addEventListener('click', () => activateManagerPortal(button.dataset.managerPortalTarget));
     });
@@ -3937,7 +4445,7 @@ function bindManagerPortalEvents(root) {
 }
 
 function renderTeacherPortalLessonList(lessons, feedback = false) {
-    return `<div class="teacher-lesson-list">${lessons.map((lesson) => `<article><div><strong>${escapeHtml(lesson.date)} · ${escapeHtml(inputTimeToRange(lesson.time))}</strong><small>${escapeHtml(lesson.student.name)} · ${escapeHtml(lesson.duration)} · ${escapeHtml(lesson.platform)}</small></div><span>${escapeHtml(lesson.topic)}</span>${marketingStatus(lesson.status)}<button type="button" data-teacher-action="${feedback ? 'feedback' : 'classroom'}">${feedback ? 'Add Feedback' : 'Enter Classroom'}</button></article>`).join('')}</div>`;
+    return `<div class="teacher-lesson-list">${lessons.map((lesson) => `<article><div><strong>${escapeHtml(lesson.date)} · ${escapeHtml(inputTimeToRange(lesson.time))}</strong><small>${escapeHtml(lesson.student.name)} · Age ${escapeHtml(lesson.student.age || '—')} · ${escapeHtml(lesson.duration)} · ${escapeHtml(lesson.platform)}</small></div><span>${escapeHtml(lesson.topic)}</span>${marketingStatus(lesson.status)}<button type="button" data-teacher-action="${feedback ? 'feedback' : 'classroom'}">${feedback ? 'Add Feedback' : 'Enter Classroom'}</button></article>`).join('')}</div>`;
 }
 
 function bindTeacherPortalEvents(root) {
@@ -4224,7 +4732,7 @@ function openTeacherPortalStatusModal(rowId) {
                     <div>
                         <span>Student</span>
                         <strong>${escapeHtml(row.student.name)}</strong>
-                        <small>${escapeHtml(row.student.id)} · ${escapeHtml(row.student.country)}</small>
+                        <small>${escapeHtml(row.student.id)} · Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)}</small>
                     </div>
                     <div>
                         <span>Lesson</span>
@@ -4289,6 +4797,13 @@ function getTeacherPortalStatusHelp(status) {
 
 function openTeacherProtectedLesson(lessonTitle = 'Lesson Material') {
     const teacher = getTeacherPortalTeacher();
+    const managerAppVisible = !document.getElementById('managerDashboardApp')?.hasAttribute('hidden');
+    const teacherAppVisible = !document.getElementById('teacherDashboardApp')?.hasAttribute('hidden');
+    const viewerRole = managerAppVisible
+        ? 'MANAGER PORTAL · PROTECTED LESSON'
+        : teacherAppVisible
+            ? 'TEACHER PORTAL · LESSON PRESENTATION'
+            : 'ADMIN DASHBOARD · PROTECTED LESSON';
     const overlay = document.createElement('section');
     overlay.className = 'lesson-pdf-reader teacher-protected-lesson-reader';
     overlay.id = 'teacherProtectedLessonReader';
@@ -4300,7 +4815,7 @@ function openTeacherProtectedLesson(lessonTitle = 'Lesson Material') {
         <header class="lesson-pdf-reader-head teacher-protected-reader-head">
             <button class="secondary-button" type="button" data-teacher-modal-close>Back to Classes</button>
             <div>
-                <p>TEACHER PORTAL · LESSON PRESENTATION</p>
+                <p>${escapeHtml(viewerRole)}</p>
                 <h3>${escapeHtml(lessonTitle)}</h3>
             </div>
             <span class="status-pill positive">Protected Slide</span>
@@ -4387,7 +4902,7 @@ function openTeacherPortalVideoUrlModal(rowId) {
                     <div>
                         <span>Student</span>
                         <strong>${escapeHtml(row.student.name)}</strong>
-                        <small>${escapeHtml(row.student.id)} · ${escapeHtml(row.student.country)}</small>
+                        <small>${escapeHtml(row.student.id)} · Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)}</small>
                     </div>
                     <div>
                         <span>Lesson</span>
@@ -4441,7 +4956,7 @@ function openTeacherPortalClassroomDetails(details) {
                     <div>
                         <span>Student</span>
                         <strong>${escapeHtml(details.student.name)}</strong>
-                        <small>${escapeHtml(details.student.id)} · ${escapeHtml(details.student.country)} · ${escapeHtml(details.student.level)}</small>
+                        <small>${escapeHtml(details.student.id)} · Age ${escapeHtml(details.student.age || '—')} · ${escapeHtml(details.student.country)} · ${escapeHtml(details.student.level)}</small>
                     </div>
                     <div>
                         <span>Schedule</span>
@@ -5506,7 +6021,7 @@ function openLessonAssignmentModal(lesson) {
                 <label>
                     Student
                     <select id="lessonAssignStudent">
-                        ${students.map((studentOption) => `<option value="${escapeHtml(studentOption.id)}" ${studentOption.id === student.id ? 'selected' : ''}>${escapeHtml(studentOption.name)}</option>`).join('')}
+                        ${students.map((studentOption) => `<option value="${escapeHtml(studentOption.id)}" ${studentOption.id === student.id ? 'selected' : ''}>${escapeHtml(`${studentOption.name} · Age ${studentOption.age || '—'}`)}</option>`).join('')}
                     </select>
                 </label>
                 <label>
@@ -9714,7 +10229,7 @@ function renderTeacherAssignedStudents(teacher) {
 
     body.innerHTML = assignedStudents.map((student) => `
         <tr>
-            <td><strong>${student.name}</strong><small>${student.id}</small></td>
+            <td><strong>${student.name}</strong><small>${student.id} · Age ${escapeHtml(student.age || '—')}</small></td>
             <td><span class="country-badge">${student.country}</span></td>
             <td>${student.level}</td>
             <td>${student.lessons}</td>
@@ -10942,7 +11457,7 @@ function renderTeacherScheduleRows(teacher) {
         <tr data-meeting-submitted="${isCompleted}" data-feedback-submitted="${isCompleted}">
             <td>${dates[index % dates.length]}</td>
             <td><button class="lesson-pdf-link" type="button"><span>PDF</span>${topic}</button></td>
-            <td><strong>${student.name}</strong><small>${student.id} · ${student.country}</small></td>
+            <td><strong>${student.name}</strong><small>${student.id} · Age ${escapeHtml(student.age || '—')} · ${student.country}</small></td>
             <td>${duration}</td>
             <td><span class="status-pill ${isCompleted ? 'positive' : 'neutral'}" data-lesson-status>${isCompleted ? 'Completed' : 'Scheduled'}</span></td>
             <td>${hasAccess ? `<button class="enter-classroom-button" type="button" data-lesson-action="classroom" data-lesson-topic="${topic}">Enter Classroom</button>` : '<span class="lesson-link-unavailable">Not ready</span>'}</td>
@@ -11149,7 +11664,7 @@ function getTeacherSlotFilteredStudents() {
 }
 
 function renderTeacherSlotStudentOption(student, selectedId = '') {
-    return `<option value="${escapeHtml(student.id)}" ${student.id === selectedId ? 'selected' : ''}>${escapeHtml(`${student.id} · ${student.name} · ${student.country}`)}</option>`;
+    return `<option value="${escapeHtml(student.id)}" ${student.id === selectedId ? 'selected' : ''}>${escapeHtml(`${student.id} · ${student.name} · Age ${student.age || '—'} · ${student.country}`)}</option>`;
 }
 
 function updateTeacherSlotStudentOptions(selectedIds = []) {
@@ -12585,7 +13100,7 @@ function getStudentRows() {
     const teacher = document.getElementById('studentTeacherFilter')?.value || 'All Teachers';
 
     return students.filter((student) => {
-        const matchesSearch = !search || student.name.toLowerCase().includes(search) || student.id.toLowerCase().includes(search);
+        const matchesSearch = !search || `${student.name} ${student.id} ${student.country} ${student.teacher} ${student.level} ${student.type} ${student.age}`.toLowerCase().includes(search);
         const matchesCountry = country === 'All Countries' || student.country === country;
         const matchesTeacher = teacher === 'All Teachers' || student.teacher === teacher;
         return matchesSearch && matchesCountry && matchesTeacher;
@@ -12606,7 +13121,7 @@ function renderStudentTable() {
     setText('#studentVisibleCount', String(rows.length));
 
     if (!rows.length) {
-        body.innerHTML = '<tr><td colspan="8" class="empty-row">No students match the selected filters.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9" class="empty-row">No students match the selected filters.</td></tr>';
         return;
     }
 
@@ -12621,11 +13136,12 @@ function renderStudentTable() {
                 <td>
                     <button class="student-person" type="button" data-student-id="${student.id}">
                         <span class="${escapeHtml(getStudentFaceClass(student))}" aria-label="${escapeHtml(student.name)} mock profile photo"></span>
-                        <div><strong>${student.name}</strong><small>${student.id}</small></div>
+                        <div><strong>${student.name}</strong><small>${student.id} · Age ${escapeHtml(student.age || '—')}</small></div>
                     </button>
                 </td>
                 <td><span class="country-badge">${student.country}</span></td>
                 <td><span class="student-type type-${student.type.toLowerCase()}">${student.type}</span></td>
+                <td>${escapeHtml(student.age || '—')}</td>
                 <td>${student.level}</td>
                 <td>${student.teacher}</td>
                 <td>
@@ -12658,7 +13174,7 @@ function openStudentProfile(studentId) {
 
     selectedStudentId = student.id;
     const { used, total } = getLessonParts(student.lessons);
-    const meta = `${student.id} · ${student.type} · ${student.level} English`;
+    const meta = `${student.id} · Age ${student.age || '—'} · ${student.type} · ${student.level} English`;
 
     const studentAvatar = document.getElementById('studentProfileAvatar');
     if (studentAvatar) {
@@ -12670,9 +13186,15 @@ function openStudentProfile(studentId) {
     setText('#studentProfileMeta', meta);
     setText('#studentPaymentTitle', `${student.name}’s Payment History`);
     setText('#studentLessonsTitle', `${student.name}’s Lessons`);
+    const previousPackageWrap = document.getElementById('studentPreviousPackageLessons');
+    if (previousPackageWrap) {
+        previousPackageWrap.innerHTML = renderPreviousPackageLessons(student, 'admin');
+        attachLessonActionHandlers(previousPackageWrap);
+    }
     setText('#studentProfileId', student.id);
     setText('#studentProfileCountry', student.country);
     setText('#studentProfileType', student.type);
+    setText('#studentProfileAge', student.age || '—');
     setText('#studentProfileLevel', student.level);
     setText('#studentProfileStatus', student.status);
     setText('#studentProfileTeacher', student.teacher);
@@ -12771,10 +13293,11 @@ function openStudentEditDrawer() {
     if (!student) return;
 
     const { used, total } = getLessonParts(student.lessons);
-    setText('#studentEditMeta', `${student.name} · ${student.id}`);
+    setText('#studentEditMeta', `${student.name} · ${student.id} · Age ${student.age || '—'}`);
     setFieldValue('#studentEditName', student.name);
     setFieldValue('#studentEditCountry', student.country);
     setFieldValue('#studentEditType', student.type);
+    setFieldValue('#studentEditAge', student.age || '');
     setFieldValue('#studentEditLevel', student.level);
     setFieldValue('#studentEditStatus', student.status);
     setFieldValue('#studentEditTeacher', student.teacher);
@@ -12797,7 +13320,7 @@ function openStudentContactDrawer() {
     const student = getSelectedStudent();
     if (!student) return;
 
-    setText('#studentContactRecordMeta', `${student.name} · ${student.id}`);
+    setText('#studentContactRecordMeta', `${student.name} · ${student.id} · Age ${student.age || '—'}`);
     setFieldValue('#studentContactWechat', student.wechat);
     setFieldValue('#studentContactWhatsapp', student.whatsapp);
     setFieldValue('#studentContactEmail', student.email);
@@ -12900,6 +13423,7 @@ function saveStudentProfileEdit() {
     student.name = cleanName;
     student.country = document.getElementById('studentEditCountry')?.value || student.country;
     student.type = document.getElementById('studentEditType')?.value || student.type;
+    student.age = Number(document.getElementById('studentEditAge')?.value) || student.age;
     student.level = document.getElementById('studentEditLevel')?.value || student.level;
     student.status = document.getElementById('studentEditStatus')?.value || student.status;
     student.teacher = document.getElementById('studentEditTeacher')?.value || student.teacher;
@@ -12946,7 +13470,7 @@ function openManualPaymentDrawer() {
     const student = getSelectedStudent();
     if (!student) return;
 
-    setText('#studentPaymentRecordMeta', `${student.name} · ${student.id}`);
+    setText('#studentPaymentRecordMeta', `${student.name} · ${student.id} · Age ${student.age || '—'}`);
     setFaceElement('#studentPaymentRecordAvatar', `record-context-avatar ${getStudentFaceClass(student)}`, student.name);
     setText('#studentPaymentRecordName', student.name);
     setText('#studentPaymentRecordContext', `Payment History · ${student.country}`);
@@ -13000,7 +13524,7 @@ function openPaymentReceipt(button) {
     ] = cells;
 
     setText('#paymentReceiptTitle', student.name);
-    setText('#receiptStudentMeta', `${student.id} · ${student.country} · ${student.type} · ${student.level} English`);
+    setText('#receiptStudentMeta', `${student.id} · Age ${student.age || '—'} · ${student.country} · ${student.type} · ${student.level} English`);
     setText('#receiptNumber', `RCPT-${reference || Date.now().toString().slice(-6)}`);
     setText('#receiptDate', date || 'Today');
     setText('#receiptReference', reference || 'Manual record');
@@ -13303,7 +13827,7 @@ function saveScheduleRecord() {
     showSparkToast('Student schedule saved in prototype mode.');
 }
 
-function openClassScheduleModal() {
+function openClassScheduleModal(preferredTeacher = '') {
     const student = getSelectedStudent();
     if (!student) return;
 
@@ -13313,7 +13837,7 @@ function openClassScheduleModal() {
     setFieldValue('#classScheduleDate', today);
     setFieldValue('#classScheduleTime', displayTimeToInput(student.preferredTime));
     setFieldValue('#classScheduleCountry', student.country);
-    updateClassTeacherOptions(student.teacher);
+    updateClassTeacherOptions(preferredTeacher || student.teacher);
     setFieldValue('#classScheduleDuration', schedule.duration || '25 minutes');
     const defaultGroup = getDefaultCurriculumGroup(student);
     setSelectOptions('#classScheduleCategory', curriculumGroups.map((group) => group.name), defaultGroup);
@@ -13341,26 +13865,44 @@ function saveClassScheduleRecord() {
 
     const teacher = teacherSelect.value || getSelectedStudent()?.teacher || 'Teacher';
     const body = document.getElementById('studentScheduleBody');
-    if (!body) return;
-
-    body.insertAdjacentHTML('afterbegin', `
-        <tr>
-            <td>${formatScheduleDate(date)}</td>
-            <td>${formatScheduleDay(date)}</td>
-            <td>${time} PHT</td>
-            <td data-student-schedule-teacher>${teacher}</td>
-            <td>${topic}</td>
-            <td><span class="status-pill positive">From teacher profile</span></td>
-        </tr>
-    `);
 
     const student = getSelectedStudent();
+    const formattedDate = formatScheduleDate(date);
+    const formattedDay = formatScheduleDay(date);
+    const platform = student?.schedule?.platform || getTeacherMeetingSource(teachers.find((item) => item.name === teacher))[0] || 'Classroom';
+
+    if (body) {
+        body.insertAdjacentHTML('afterbegin', `
+            <tr>
+                <td>${formattedDate}</td>
+                <td>${formattedDay}</td>
+                <td>${time} PHT</td>
+                <td data-student-schedule-teacher>${teacher}</td>
+                <td>${topic}</td>
+                <td><span class="status-pill positive">From teacher profile</span></td>
+            </tr>
+        `);
+    }
+
     if (student) {
+        managerAddedClasses.unshift({
+            studentId: student.id,
+            teacher,
+            date: formattedDate,
+            day: formattedDay,
+            time: `${time} PHT`,
+            topic,
+            platform,
+        });
         student.assignedClasses = (student.assignedClasses ?? Number(student.schedule?.frequency?.match(/\d+/)?.[0] || 0)) + 1;
         updateStudentPackageBookingStatus(student);
     }
 
     closeClassScheduleModal();
+    if (activeManagerPortalSection === 'manager-students' && activeManagerStudentProfileId) {
+        activeManagerStudentProfileTab = 'schedule';
+        renderManagerPortal();
+    }
     showSparkToast('Class added to student schedule.');
 }
 
@@ -13397,6 +13939,16 @@ function attachLessonActionHandlers(scope = document) {
         const freshSelect = select.cloneNode(true);
         select.replaceWith(freshSelect);
         freshSelect.addEventListener('change', () => handleLessonRowAction(freshSelect));
+    });
+    scope.querySelectorAll('[data-previous-lesson-view]').forEach((button) => {
+        const freshButton = button.cloneNode(true);
+        button.replaceWith(freshButton);
+        freshButton.addEventListener('click', () => openTeacherProtectedLesson(freshButton.dataset.previousLessonView || 'Previous lesson'));
+    });
+    scope.querySelectorAll('[data-previous-feedback-view]').forEach((button) => {
+        const freshButton = button.cloneNode(true);
+        button.replaceWith(freshButton);
+        freshButton.addEventListener('click', () => openLessonFeedbackModal(freshButton.closest('tr'), freshButton.dataset.previousFeedbackView || 'Previous lesson'));
     });
 }
 
@@ -13459,7 +14011,8 @@ function openLessonFeedbackModal(row, topic) {
     activeFeedbackRow = row;
     const submitted = row?.dataset.feedbackSubmitted === 'true';
     const teacher = row?.querySelector('[data-student-lesson-teacher]')?.textContent || student.teacher;
-    const status = row?.querySelector('.feedback-decision-note')?.textContent.trim().split(/\s{2,}/)[0]
+    const status = row?.dataset.feedbackStatus
+        || row?.querySelector('.feedback-decision-note')?.textContent.trim().split(/\s{2,}/)[0]
         || (submitted ? 'Pending Approval' : 'Not Submitted');
 
     setText('#lessonFeedbackStudent', student.name);

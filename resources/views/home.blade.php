@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=admin-country-coverage-colors-20260810">
-    <script src="{{ asset('js/app.js') }}?v=admin-country-coverage-colors-20260810" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=student-age-edit-modal-20260810">
+    <script src="{{ asset('js/app.js') }}?v=student-age-edit-modal-20260810" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -1134,6 +1134,7 @@
                                     <th>Student</th>
                                     <th>Country</th>
                                     <th>Student Type</th>
+                                    <th>Age</th>
                                     <th>Level</th>
                                     <th>Assigned Teacher</th>
                                     <th>Lessons</th>
@@ -1207,6 +1208,7 @@
                                     <div><dt>Student ID</dt><dd id="studentProfileId">S1-001</dd></div>
                                     <div><dt>Country / Market</dt><dd id="studentProfileCountry">China</dd></div>
                                     <div><dt>Student Type</dt><dd id="studentProfileType">Kid</dd></div>
+                                    <div><dt>Age</dt><dd id="studentProfileAge">9</dd></div>
                                     <div><dt>English Level</dt><dd id="studentProfileLevel">A2</dd></div>
                                     <div><dt>Account Status</dt><dd id="studentProfileStatus">Active</dd></div>
                                 </dl>
@@ -1455,6 +1457,7 @@
                                 Lesson records are generated automatically when a scheduled class is created. Student-facing feedback requires Admin or Manager approval before publishing.
                             </footer>
                         </article>
+                        <section id="studentPreviousPackageLessons"></section>
                     </div>
 
                     <div class="student-tab-panel" data-student-tab-panel="referrals">
@@ -2849,6 +2852,9 @@
                     <div class="drawer-form-grid">
                         <label class="full">Student name
                             <input id="studentEditName" required>
+                        </label>
+                        <label>Student age
+                            <input id="studentEditAge" type="number" min="1" max="100" placeholder="e.g. 9">
                         </label>
                         <label>Country / Market
                             <select id="studentEditCountry">
