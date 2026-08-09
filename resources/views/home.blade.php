@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=teacher-supervisor-card-20260809">
-    <script src="{{ asset('js/app.js') }}?v=teacher-supervisor-card-20260809" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=mobile-dashboard-friendly-20260809">
+    <script src="{{ asset('js/app.js') }}?v=mobile-dashboard-friendly-20260809" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -392,7 +392,6 @@
                             </select>
                         </label>
                         <button class="analytics-search" type="button">⌕ Search</button>
-                        <button type="button" title="Notifications">♢<b>3</b></button>
                         <button type="button" id="analyticsRefresh">↻ Refresh</button>
                     </div>
                 </section>
@@ -537,7 +536,10 @@
                 <article class="panel teacher-detail-panel student-profile-panel" id="teacherDetailPanel" hidden>
                     <header class="student-profile-header teacher-detail-header">
                         <div class="student-profile-identity">
-                            <span class="student-avatar" id="teacherDetailAvatar">MS</span>
+                            <span class="student-avatar teacher-profile-photo-avatar">
+                                <img id="teacherDetailPhoto" src="{{ asset('images/teacher-profile-maria.svg') }}" alt="Maria Santos profile picture">
+                                <b id="teacherDetailAvatar">MS</b>
+                            </span>
                             <div>
                                 <span>TEACHER PROFILE</span>
                                 <h3 id="teacherDetailName">Maria Santos</h3>
@@ -559,7 +561,7 @@
                     </div>
 
                     <div class="teacher-tab-panel active" data-teacher-tab-panel="profile">
-                        <section class="teacher-profile-overview">
+                        <section class="teacher-profile-overview admin-teacher-profile-overview">
                             <article class="teacher-profile-info-card">
                                 <h4>Teacher Information</h4>
                                 <p>Individual employment record</p>
@@ -580,6 +582,14 @@
                                     <div><dt>Classes Today</dt><dd id="teacherDetailToday">6</dd></div>
                                     <div><dt>Hourly Rate</dt><dd id="teacherDetailRate">₱230/hr</dd></div>
                                 </dl>
+                            </article>
+
+                            <article class="teacher-profile-info-card admin-teacher-supervisor-card">
+                                <span>ASSIGNED SUPERVISOR</span>
+                                <img class="admin-teacher-supervisor-photo" id="teacherDetailSupervisorPhoto" src="{{ asset('images/supervisor-angela-reyes.svg') }}" width="64" height="64" alt="Angela Reyes supervisor picture">
+                                <h4 id="teacherDetailSupervisorName">Angela Reyes</h4>
+                                <p id="teacherDetailSupervisorRole">Academic Supervisor</p>
+                                <small>Primary supervisor for teacher support, schedule coordination, and performance review.</small>
                             </article>
                         </section>
 

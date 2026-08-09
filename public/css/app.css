@@ -2319,9 +2319,9 @@ nav svg {
 
 .today-income-heading {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 270px;
+    grid-template-columns: minmax(0, 1fr) 218px;
     align-items: center;
-    gap: 18px;
+    gap: 14px;
     margin-bottom: 14px;
 }
 
@@ -2359,18 +2359,18 @@ nav svg {
 
 .exchange-rate-editor {
     display: grid;
-    gap: 5px;
+    gap: 4px;
     min-width: 0;
-    padding: 10px 11px;
+    padding: 8px 9px;
     border: 2px solid #9bcfb2;
-    border-radius: 9px;
+    border-radius: 8px;
     background: white;
     color: #416b56;
 }
 
 .exchange-rate-editor > span:first-child {
     color: #26764f;
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 850;
     letter-spacing: 0;
 }
@@ -2379,9 +2379,9 @@ nav svg {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     color: #173f31 !important;
-    font-size: 14px !important;
+    font-size: 12px !important;
     letter-spacing: 0 !important;
 }
 
@@ -2390,19 +2390,20 @@ nav svg {
 }
 
 .exchange-rate-input input {
-    width: 96px;
+    width: 78px;
     border: 2px solid #78b994;
-    border-radius: 7px;
+    border-radius: 6px;
     background: #f7fffa;
     color: #173f31;
-    padding: 7px 8px;
-    font-size: 14px !important;
+    padding: 5px 7px;
+    font-size: 12px !important;
     font-weight: 850;
     text-align: right;
 }
 
 .exchange-rate-editor > small {
-    font-size: 9px !important;
+    font-size: 8px !important;
+    line-height: 1.25;
 }
 
 .income-metrics {
@@ -5684,6 +5685,10 @@ nav svg {
     padding: 18px 20px 0;
 }
 
+.admin-teacher-profile-overview {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(260px, .82fr);
+}
+
 .teacher-profile-info-card {
     min-height: 220px;
     border: 1px solid #d6e2ee;
@@ -5730,6 +5735,56 @@ nav svg {
     color: #1d3c5a;
     font-size: 15px;
     font-weight: 900;
+}
+
+.admin-teacher-supervisor-card {
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    min-height: 220px;
+    gap: 6px;
+    text-align: center;
+}
+
+.admin-teacher-supervisor-card > span {
+    color: #3976ad;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .14em;
+}
+
+#teacherDetailSupervisorPhoto,
+.admin-teacher-supervisor-card .admin-teacher-supervisor-photo {
+    display: block;
+    flex: 0 0 64px;
+    width: 64px !important;
+    min-width: 64px;
+    max-width: 64px !important;
+    height: 64px !important;
+    min-height: 64px;
+    max-height: 64px !important;
+    margin: 10px 0 8px;
+    border: 1px solid #cddfec;
+    border-radius: 16px;
+    background: #eef6ff;
+    object-fit: cover;
+    aspect-ratio: 1 / 1;
+}
+
+.admin-teacher-supervisor-card h4 {
+    margin-bottom: 4px;
+}
+
+.admin-teacher-supervisor-card p {
+    margin-bottom: 12px;
+}
+
+.admin-teacher-supervisor-card small {
+    max-width: 260px;
+    color: #6c8197;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.45;
 }
 
 .teacher-detail-summary {
@@ -14512,6 +14567,33 @@ body.drawer-open {
     color: #60788e;
 }
 
+.teacher-profile-photo-avatar {
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border: 1px solid #cfe1f1;
+    border-radius: 16px;
+    background: #eef6ff;
+    padding: 3px;
+}
+
+.teacher-profile-photo-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.teacher-profile-photo-avatar b {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
 .teacher-portal-profile-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -17879,6 +17961,30 @@ body.drawer-open {
 
     .exchange-rate-editor {
         min-width: 0;
+        width: min(100%, 240px);
+        justify-self: start;
+        padding: 7px 8px;
+        border-width: 1px;
+    }
+
+    .exchange-rate-editor > span:first-child {
+        font-size: 8px;
+    }
+
+    .exchange-rate-input {
+        gap: 7px;
+        font-size: 11px !important;
+    }
+
+    .exchange-rate-input input {
+        width: 70px;
+        min-height: 30px;
+        padding: 4px 6px;
+        font-size: 11px !important;
+    }
+
+    .exchange-rate-editor > small {
+        font-size: 7px !important;
     }
 
     .country-exchange-head > div:last-child {
@@ -25713,4 +25819,478 @@ body .modal-backdrop .teacher-protected-lesson-modal {
 body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
     width: calc(100vw - 20px) !important;
     max-width: none !important;
+}
+
+/* Mobile dashboard layout polish for live phone use. */
+@media (max-width: 900px) {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    body {
+        background: #eef4fa;
+    }
+
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 18;
+        background: rgba(5, 24, 45, .44);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .18s ease;
+    }
+
+    body:has(.sidebar.open)::after,
+    body:has(.teacher-sidebar.open)::after {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .app-shell,
+    .teacher-app-shell {
+        display: block;
+        min-height: 100vh;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .sidebar,
+    .teacher-sidebar {
+        width: min(286px, 84vw);
+        max-width: 286px;
+        transform: translateX(-105%);
+        transition: transform .22s cubic-bezier(.22, 1, .36, 1);
+        box-shadow: 18px 0 40px rgba(7, 30, 54, .28);
+    }
+
+    .sidebar.open,
+    .teacher-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main,
+    .teacher-main {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .topbar,
+    .teacher-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 15;
+        min-height: auto;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+    }
+
+    .mobile-menu {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 42px;
+        width: 42px;
+        height: 42px;
+        border: 1px solid rgba(18, 58, 101, .2);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, .55);
+    }
+
+    .topbar-navigation {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .global-back-button {
+        margin-right: 0;
+        padding: 7px 9px;
+    }
+
+    .page-breadcrumbs {
+        gap: 5px;
+        font-size: 10px;
+    }
+
+    .topbar h1,
+    .teacher-topbar h1 {
+        max-width: 48vw;
+        overflow: hidden;
+        font-size: 20px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dashboard-user-card,
+    .teacher-user-card {
+        width: auto;
+        min-width: 0;
+        max-width: 44vw;
+        min-height: 42px;
+        padding: 5px 7px;
+        gap: 6px;
+    }
+
+    .dashboard-user-photo,
+    .teacher-user-card .dashboard-user-photo {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+        border-width: 2px;
+    }
+
+    .dashboard-user-copy small,
+    .dashboard-user-copy span,
+    .dashboard-user-chevron {
+        display: none;
+    }
+
+    .dashboard-user-copy strong {
+        max-width: 28vw;
+        font-size: 11px;
+    }
+
+    .page-content,
+    .teacher-portal-content {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 14px 12px 28px;
+        gap: 12px;
+    }
+
+    .dashboard-filter-bar,
+    .student-intro,
+    .teacher-portal-hero,
+    .panel,
+    .teacher-portal-panel {
+        border-radius: 10px;
+    }
+
+    .student-intro,
+    .teacher-portal-hero,
+    .teacher-panel-head,
+    .panel-heading,
+    .student-directory-head,
+    .student-profile-header,
+    .teacher-weekly-calendar-head,
+    .communication-hero,
+    .slack-hero,
+    .provider-connection,
+    .employee-record-toolbar,
+    .policy-manual-head,
+    .policy-detail-head {
+        align-items: flex-start !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .student-intro h2,
+    .teacher-portal-hero h2,
+    .panel-heading h2,
+    .student-directory-head h3,
+    .teacher-panel-head h3,
+    .communication-hero h2,
+    .slack-hero h2,
+    .policy-detail-head h3 {
+        font-size: 22px !important;
+        line-height: 1.15;
+    }
+
+    .metric-grid,
+    .student-summary-grid,
+    .teacher-summary-grid,
+    .teacher-detail-summary,
+    .teacher-detail-grid,
+    .teacher-profile-overview,
+    .admin-teacher-profile-overview,
+    .teacher-portal-kpis,
+    .teacher-portal-grid,
+    .teacher-profile-grid,
+    .teacher-portal-profile-overview,
+    .teacher-payroll-grid,
+    .teacher-document-grid,
+    .teacher-record-kpis,
+    .finance-summary-grid,
+    .monthly-income-grid,
+    .business-overview-grid,
+    .executive-kpis,
+    .lesson-library-layout,
+    .packages-layout,
+    .user-management-grid,
+    .policy-shell,
+    .chatbot-settings-grid,
+    .slack-channel-workspace,
+    body #communicationWorkspace.slack-page .slack-channel-workspace {
+        grid-template-columns: 1fr !important;
+    }
+
+    .teacher-profile-info-card,
+    .admin-teacher-supervisor-card {
+        min-height: 0;
+    }
+
+    .admin-teacher-supervisor-card {
+        justify-items: start;
+        text-align: left;
+    }
+
+    .admin-teacher-supervisor-card small {
+        max-width: none;
+    }
+
+    .student-filters,
+    .lesson-filters,
+    .finance-filters,
+    .teacher-controls,
+    .employee-record-controls,
+    .communication-tabs,
+    .slack-tabs,
+    .slack-tabs-bar,
+    .teacher-portal-note,
+    .teacher-slot-legend,
+    .teacher-quick-actions,
+    .teacher-profile-photo-actions,
+    .teacher-contact-list,
+    .student-sensitive-list,
+    .teacher-portal-contact-card footer,
+    .modal-actions {
+        grid-template-columns: 1fr !important;
+        width: 100%;
+    }
+
+    .student-filters,
+    .lesson-filters,
+    .finance-filters,
+    .teacher-controls,
+    .employee-record-controls,
+    .communication-tabs,
+    .slack-tabs,
+    .teacher-slot-legend {
+        display: grid !important;
+    }
+
+    .student-search,
+    .student-search input,
+    .search-label,
+    .search-label input,
+    select,
+    input,
+    textarea,
+    .primary-button,
+    .secondary-button,
+    .danger-button,
+    .teacher-panel-head button,
+    .teacher-quick-actions button,
+    .teacher-lesson-library button,
+    .teacher-policy-list button {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .table-wrap,
+    .teacher-weekly-calendar-wrap,
+    .teacher-portal-payroll .table-wrap,
+    .policy-list-scroll,
+    .email-scroll,
+    .chatbot-conversation-scroll,
+    .slack-channel-list {
+        max-width: 100%;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .student-table,
+    .completed-lessons-table,
+    .teacher-portal-table,
+    .payroll-table,
+    .payroll-history-table,
+    .payroll-deductions-table,
+    .policy-table {
+        min-width: 760px;
+    }
+
+    .teacher-weekly-calendar,
+    .teacher-portal-weekly-calendar {
+        min-width: 980px;
+    }
+
+    .student-profile-tabs,
+    .teacher-profile-tabs,
+    .teacher-portal-policy-tabs,
+    .communication-tabs,
+    .slack-tabs {
+        display: flex !important;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .student-profile-tabs button,
+    .teacher-profile-tabs button,
+    .teacher-portal-policy-tabs button,
+    .communication-tabs button,
+    .slack-tabs button {
+        flex: 0 0 auto;
+    }
+
+    body #communicationWorkspace.email-inbox-page .email-shell,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    body #communicationWorkspace.email-inbox-page .email-folders,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders {
+        position: static !important;
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        padding: 12px !important;
+    }
+
+    body #communicationWorkspace.email-inbox-page .email-list,
+    body #communicationWorkspace.email-inbox-page .email-detail,
+    body #communicationWorkspace.unified-inbox-page .conversation-layout,
+    body #communicationWorkspace.chatbot-page .chatbot-conversation-grid {
+        grid-template-columns: 1fr !important;
+        min-height: 0 !important;
+    }
+
+    body #communicationWorkspace.unified-inbox-page .message-row > div,
+    body #communicationWorkspace.unified-inbox-page .message-row p {
+        max-width: 92% !important;
+    }
+
+    body .modal,
+    body .modal.slack-tabs-modal,
+    body .modal-backdrop .teacher-protected-lesson-modal {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: calc(100vh - 24px) !important;
+        border-radius: 12px !important;
+    }
+
+    body .modal-backdrop {
+        padding: 12px !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .topbar,
+    .teacher-topbar {
+        padding: 8px 10px;
+    }
+
+    .topbar h1,
+    .teacher-topbar h1 {
+        max-width: 42vw;
+        font-size: 18px;
+    }
+
+    .page-breadcrumbs,
+    .global-back-button {
+        display: none;
+    }
+
+    .dashboard-user-card,
+    .teacher-user-card {
+        max-width: 38vw;
+    }
+
+    .dashboard-user-copy strong {
+        max-width: 21vw;
+    }
+
+    .page-content,
+    .teacher-portal-content {
+        padding: 12px 10px 24px;
+    }
+
+    .metric-card,
+    .student-summary-grid article,
+    .teacher-portal-kpis article,
+    .teacher-profile-info-card,
+    .teacher-portal-panel,
+    .panel {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .student-intro h2,
+    .teacher-portal-hero h2,
+    .panel-heading h2,
+    .student-directory-head h3,
+    .teacher-panel-head h3 {
+        font-size: 20px !important;
+    }
+
+    .teacher-profile-info-card dl,
+    .student-sensitive-list,
+    .teacher-contact-list {
+        grid-template-columns: 1fr !important;
+    }
+
+    body #communicationWorkspace.email-inbox-page .email-folders,
+    body .main .page-content.dashboard-section.communication-page.active #communicationWorkspace.email-inbox-page .email-shell .email-folders {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 900px) {
+    body .app-shell .today-income-heading {
+        grid-template-columns: 1fr !important;
+    }
+
+    body .app-shell .income-heading-tools {
+        justify-items: start !important;
+    }
+
+    body .app-shell .exchange-rate-editor {
+        width: 218px !important;
+        max-width: 100% !important;
+        gap: 3px !important;
+        padding: 7px 8px !important;
+        border-width: 1px !important;
+    }
+
+    body .app-shell .exchange-rate-editor > span:first-child {
+        min-height: 0 !important;
+        color: #26764f !important;
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+        letter-spacing: .04em !important;
+        white-space: nowrap !important;
+    }
+
+    body .app-shell .exchange-rate-input {
+        min-height: 0 !important;
+        gap: 7px !important;
+        color: #173f31 !important;
+        font-size: 11px !important;
+        line-height: 1.1 !important;
+        white-space: nowrap !important;
+    }
+
+    body .app-shell .exchange-rate-input input {
+        width: 70px !important;
+        min-height: 30px !important;
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        line-height: 1 !important;
+    }
+
+    body .app-shell .exchange-rate-editor > small {
+        min-height: 0 !important;
+        color: #688072 !important;
+        font-size: 7px !important;
+        line-height: 1.2 !important;
+    }
 }

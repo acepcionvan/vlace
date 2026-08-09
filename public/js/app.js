@@ -1301,6 +1301,18 @@ const teacherPortalSupervisors = {
 };
 let activeEmployeeDocumentUploadSource = 'admin';
 
+function getTeacherProfilePicture(teacher) {
+    return teacherPortalProfilePictures[teacher?.id] || '/images/teacher-profile-default.svg';
+}
+
+function getTeacherSupervisor(teacher) {
+    return teacherPortalSupervisors[teacher?.id] || {
+        name: 'Angela Reyes',
+        role: 'Academic Supervisor',
+        photo: '/images/supervisor-angela-reyes.svg',
+    };
+}
+
 const teacherPortalTitles = {
     'teacher-overview': 'Teacher Dashboard',
     'teacher-schedule': 'My Schedule',
@@ -2252,8 +2264,8 @@ function renderTeacherPortalProfile(teacher) {
     const contact = teacherContacts[teacher.name] || {};
     const availability = teacherAvailability[teacher.name]?.slots || [];
     const meetingLinks = teacher.links || {};
-    const profilePicture = teacherPortalProfilePictures[teacher.id] || '/images/teacher-profile-maria.svg';
-    const supervisor = teacherPortalSupervisors[teacher.id] || { name: 'Angela Reyes', role: 'Academic Supervisor', photo: '/images/supervisor-angela-reyes.svg' };
+    const profilePicture = getTeacherProfilePicture(teacher);
+    const supervisor = getTeacherSupervisor(teacher);
     return `
         ${renderTeacherPortalHero(teacher, 'My Profile', 'View your teacher profile, contact details, teaching assignment, meeting setup, and payroll information.')}
         <section class="teacher-portal-profile-dashboard">
@@ -7987,6 +7999,19 @@ function openTeacherProfile(teacherId) {
     setText('#teacherLinksPanelMeet', teacher.links.meet || 'Missing');
     setText('#teacherLinksPanelTeams', teacher.links.teams || 'Missing');
     setText('#teacherLinksPanelZoom', teacher.links.zoom || 'Missing');
+    const teacherDetailPhoto = document.getElementById('teacherDetailPhoto');
+    if (teacherDetailPhoto) {
+        teacherDetailPhoto.src = getTeacherProfilePicture(teacher);
+        teacherDetailPhoto.alt = `${teacher.name} profile picture`;
+    }
+    const teacherDetailSupervisor = getTeacherSupervisor(teacher);
+    const teacherDetailSupervisorPhoto = document.getElementById('teacherDetailSupervisorPhoto');
+    if (teacherDetailSupervisorPhoto) {
+        teacherDetailSupervisorPhoto.src = teacherDetailSupervisor.photo;
+        teacherDetailSupervisorPhoto.alt = `${teacherDetailSupervisor.name} supervisor picture`;
+    }
+    setText('#teacherDetailSupervisorName', teacherDetailSupervisor.name);
+    setText('#teacherDetailSupervisorRole', teacherDetailSupervisor.role);
 
     const contact = teacherContacts[teacher.name] || {};
     setText('#teacherPrimaryPhone', contact.primary || 'Not provided');
