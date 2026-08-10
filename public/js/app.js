@@ -87,6 +87,39 @@ const analyticsMetricValues = {
     Students: { value: '138', php: '' },
 };
 
+const analyticsCountryMultipliers = {
+    'All Countries': 1,
+    China: 1.18,
+    'South Korea': 0.62,
+    Japan: 0.48,
+    UAE: 0.54,
+    'Saudi Arabia': 0.34,
+    Dubai: 0.28,
+    Israel: 0.52,
+};
+
+const analyticsDateRangeMultipliers = {
+    Today: 0.18,
+    Yesterday: 0.16,
+    'Last 7 Days': 0.52,
+    'This Month': 1,
+    'Last Month': 0.88,
+    'This Year': 6.6,
+    'Custom Date Range': 0.72,
+};
+
+const renewalWatchStudents = [
+    { name: 'Mira Wang', id: 'S-004', country: 'China', teacher: 'Maria Santos', packageUsed: '11/15', usedPercent: 73, creditsLeft: 4, attendance: '83%', module: 'Module 1', referralBonus: 'No bonus', probability: '52%' },
+    { name: 'Eddie Zhang', id: 'S-002', country: 'China', teacher: 'David Lee', packageUsed: '8/15', usedPercent: 53, creditsLeft: 7, attendance: '94%', module: 'Module 2', referralBonus: 'No bonus', probability: '74%' },
+    { name: 'Chloe Huang', id: 'S-006', country: 'South Korea', teacher: 'Hannah Park', packageUsed: '26/30', usedPercent: 87, creditsLeft: 4, attendance: '91%', module: 'Speaking Confidence', referralBonus: 'Pending', probability: '68%' },
+    { name: 'Kevin Zhao', id: 'S-009', country: 'Japan', teacher: 'Aya Nakamura', packageUsed: '27/30', usedPercent: 90, creditsLeft: 3, attendance: '89%', module: 'Monthly Review', referralBonus: 'No bonus', probability: '61%' },
+    { name: 'Fatima Al Mansoori', id: 'S-011', country: 'UAE', teacher: 'James Smith', packageUsed: '12/15', usedPercent: 80, creditsLeft: 3, attendance: '86%', module: 'Conversation Practice', referralBonus: 'Eligible', probability: '58%' },
+    { name: 'Omar Al Saud', id: 'S-014', country: 'Saudi Arabia', teacher: 'Omar Reyes', packageUsed: '25/30', usedPercent: 83, creditsLeft: 5, attendance: '92%', module: 'Vocabulary Builder', referralBonus: 'No bonus', probability: '71%' },
+    { name: 'Yuki Lee', id: 'S-016', country: 'South Korea', teacher: 'David Lee', packageUsed: '9/15', usedPercent: 60, creditsLeft: 6, attendance: '96%', module: 'Free Conversation', referralBonus: 'Pending', probability: '76%' },
+];
+
+let activeAnalyticsMetric = 'Revenue';
+
 const students = [
     {
         id: 'S1-001',
@@ -6298,10 +6331,235 @@ function updateAnalyticsRefreshTime(date = new Date()) {
     }));
 }
 
+function formatAnalyticsUsd(value) {
+    return `$${Math.round(value).toLocaleString('en-US')}`;
+}
+
+function formatAnalyticsPhp(value) {
+    return `≈ PHP ₱${Math.round(value).toLocaleString('en-US')}`;
+}
+
+function getAnalyticsFilterData(country, dateRange) {
+    const countryMultiplier = analyticsCountryMultipliers[country] || 1;
+    const dateMultiplier = analyticsDateRangeMultipliers[dateRange] || 1;
+    const multiplier = countryMultiplier * dateMultiplier;
+    const monthMultiplier = countryMultiplier * Math.max(dateMultiplier, 0.32);
+    const revenue = 1240 * multiplier;
+    const profit = Math.max(120, revenue * 0.74);
+    const completedLessons = Math.max(1, Math.round(28 * multiplier));
+    const newStudents = Math.max(1, Math.round(6 * monthMultiplier));
+    const trialClasses = Math.max(1, Math.round(7 * multiplier));
+    const cancelledLessons = Math.max(0, Math.round(4 * multiplier));
+
+    return {
+        kpis: {
+            'Classes Today': { value: Math.max(1, Math.round(36 * multiplier)), note: '▲ +8.2%', trend: 'up' },
+            'Revenue Today': { value: formatAnalyticsUsd(revenue), php: formatAnalyticsPhp(revenue * 58.5), note: '▲ +14.3%', trend: 'up' },
+            'Profit Today': { value: formatAnalyticsUsd(profit), php: formatAnalyticsPhp(profit * 58.5), note: '▲ +11.8%', trend: 'up' },
+            'Completed Lessons': { value: completedLessons, note: '▲ +9.1%', trend: 'up' },
+            'Cancelled Lessons': { value: cancelledLessons, note: cancelledLessons > 3 ? '▼ −2.4%' : '▲ −5.1%', trend: cancelledLessons > 3 ? 'down' : 'up' },
+            'Trial Classes': { value: trialClasses, note: '▲ +16.7%', trend: 'up' },
+            'New Students': { value: newStudents, note: '▲ +20.0%', trend: 'up' },
+            'Active Teachers': { value: Math.max(1, Math.round(22 * countryMultiplier)), note: '▲ +4.8%', trend: 'up' },
+            'Student Attendance': { value: `${Math.min(99.4, 92.8 + countryMultiplier * 1.4).toFixed(1)}%`, note: '▲ +1.6%', trend: 'up' },
+            'Teacher Attendance': { value: `${Math.min(99.2, 95.4 + countryMultiplier * 1.4).toFixed(1)}%`, note: '▲ +0.9%', trend: 'up' },
+        },
+        weekly: {
+            'Revenue (Last 7 Days)': { value: formatAnalyticsUsd(6842 * multiplier), php: formatAnalyticsPhp(6842 * multiplier * 58.5), note: '▲ 8.6%' },
+            'Completed Lessons': { value: Math.max(1, Math.round(186 * multiplier)), note: '▲ 8.6%' },
+            'New Students': { value: Math.max(1, Math.round(24 * monthMultiplier)), note: '▲ 8.6%' },
+            'Trial Conversion Rate': { value: `${Math.min(92, 62 + countryMultiplier * 6.4).toFixed(1)}%`, note: '▲ 4.2%' },
+        },
+        metrics: {
+            Revenue: { value: formatAnalyticsUsd(9240 * monthMultiplier), php: formatAnalyticsPhp(9240 * monthMultiplier * 58.5) },
+            Profit: { value: formatAnalyticsUsd(6810 * monthMultiplier), php: formatAnalyticsPhp(6810 * monthMultiplier * 58.5) },
+            Expenses: { value: formatAnalyticsUsd(2430 * monthMultiplier), php: formatAnalyticsPhp(2430 * monthMultiplier * 58.5) },
+            Payroll: { value: formatAnalyticsUsd(1410 * monthMultiplier), php: formatAnalyticsPhp(1410 * monthMultiplier * 58.5) },
+            Lessons: { value: String(Math.max(1, Math.round(294 * monthMultiplier))), php: '' },
+            Students: { value: String(Math.max(1, Math.round(138 * countryMultiplier))), php: '' },
+        },
+        operations: getAnalyticsOperationsData(country, dateRange),
+    };
+}
+
+function getAnalyticsOperationsData(country, dateRange) {
+    const countryMultiplier = analyticsCountryMultipliers[country] || 1;
+    const dateMultiplier = analyticsDateRangeMultipliers[dateRange] || 1;
+    const monthMultiplier = countryMultiplier * Math.max(dateMultiplier, 0.32);
+    const todayMultiplier = countryMultiplier * (dateRange === 'Yesterday' ? 0.92 : 1);
+    const makeProfit = (gross, salaryRate = 0.26) => {
+        const salary = gross * salaryRate;
+        const maintenance = gross * 0.10;
+        return {
+            gross: formatAnalyticsUsd(gross),
+            salary: formatAnalyticsUsd(salary),
+            maintenance: formatAnalyticsUsd(maintenance),
+            net: formatAnalyticsUsd(gross - salary - maintenance),
+        };
+    };
+
+    return {
+        today: {
+            scope: `${country} · Today`,
+            scheduled: Math.max(1, Math.round(36 * todayMultiplier)),
+            completed: Math.max(1, Math.round(28 * todayMultiplier)),
+            absentTeachers: Math.max(0, Math.round(2 * todayMultiplier)),
+            absentStudents: Math.max(0, Math.round(4 * todayMultiplier)),
+            transferred: Math.max(0, Math.round(3 * todayMultiplier)),
+            cancelled: Math.max(0, Math.round(4 * todayMultiplier)),
+            ...makeProfit(1240 * todayMultiplier),
+        },
+        month: {
+            title: dateRange,
+            scope: `${country} · ${dateRange}`,
+            scheduled: Math.max(1, Math.round(324 * monthMultiplier)),
+            completed: Math.max(1, Math.round(294 * monthMultiplier)),
+            absentTeachers: Math.max(0, Math.round(11 * monthMultiplier)),
+            absentStudents: Math.max(0, Math.round(37 * monthMultiplier)),
+            transferred: Math.max(0, Math.round(19 * monthMultiplier)),
+            cancelled: Math.max(0, Math.round(28 * monthMultiplier)),
+            ...makeProfit(17593 * monthMultiplier, 0.0575),
+        },
+    };
+}
+
+function updateAnalyticsKpiCard(card, data) {
+    const valueNode = card.querySelector('strong');
+    const phpNode = card.querySelector('.analytics-php-conversion');
+    const trendNode = card.querySelector('em');
+    if (valueNode) valueNode.textContent = data.value;
+    if (phpNode && data.php) {
+        phpNode.textContent = data.php;
+        phpNode.removeAttribute('hidden');
+    } else if (phpNode) {
+        phpNode.setAttribute('hidden', '');
+    }
+    if (trendNode) {
+        trendNode.textContent = data.note;
+        trendNode.className = data.trend || 'up';
+    }
+}
+
+function updateAnalyticsMetricSummary(data, dateRange) {
+    const metric = data.metrics[activeAnalyticsMetric] || data.metrics.Revenue;
+    setText('#analyticsMetricSummary', `${activeAnalyticsMetric} · ${dateRange}`);
+    setText('#analyticsMetricValue', metric.value);
+    setText('#analyticsMetricPhp', metric.php);
+    document.getElementById('analyticsMetricPhp')?.toggleAttribute('hidden', !metric.php);
+}
+
+function updateAnalyticsOperationsBoxes(operations) {
+    ['today', 'month'].forEach((period) => {
+        const data = operations?.[period];
+        if (!data) return;
+        if (data.title) setText(`[data-analytics-period-title="${period}"]`, data.title);
+        setText(`[data-analytics-period-scope="${period}"]`, data.scope);
+        ['scheduled', 'completed', 'absentTeachers', 'absentStudents', 'transferred', 'cancelled', 'gross', 'salary', 'maintenance', 'net'].forEach((key) => {
+            setText(`[data-analytics-value="${period}.${key}"]`, String(data[key]));
+        });
+    });
+}
+
+function getRenewalCreditLabel(threshold) {
+    if (threshold === 'all') return 'All credit balances';
+    return `${threshold} credits or fewer`;
+}
+
+function getFilteredRenewalWatchStudents() {
+    const country = document.getElementById('renewalWatchCountryFilter')?.value || 'All Countries';
+    const threshold = document.getElementById('renewalWatchCreditFilter')?.value || '5';
+    const maxCredits = threshold === 'all' ? Number.POSITIVE_INFINITY : Number(threshold);
+
+    return renewalWatchStudents
+        .filter((student) => country === 'All Countries' || student.country === country)
+        .filter((student) => student.creditsLeft <= maxCredits)
+        .sort((a, b) => a.creditsLeft - b.creditsLeft || b.usedPercent - a.usedPercent || a.name.localeCompare(b.name))
+        .slice(0, 5);
+}
+
+function renderRenewalWatchStudents() {
+    const rows = document.getElementById('renewalWatchRows');
+    if (!rows) return;
+
+    const country = document.getElementById('renewalWatchCountryFilter')?.value || 'All Countries';
+    const threshold = document.getElementById('renewalWatchCreditFilter')?.value || '5';
+    const studentsToShow = getFilteredRenewalWatchStudents();
+
+    setText('#renewalWatchCount', String(studentsToShow.length));
+    setText('#renewalWatchScope', `${country} · ${getRenewalCreditLabel(threshold)}`);
+    setText('#renewalWatchSortNote', studentsToShow.length ? 'Showing up to 5 students · Fewest credits first' : 'No matching students');
+
+    if (!studentsToShow.length) {
+        rows.innerHTML = '<tr><td colspan="11" class="empty-table-cell">No students match the selected renewal filters.</td></tr>';
+        return;
+    }
+
+    rows.innerHTML = studentsToShow.map((student, index) => {
+        const isWatch = student.creditsLeft <= 5;
+        const bonusClass = student.referralBonus === 'No bonus' ? 'no-referral' : 'renewal-score';
+        return `<tr>
+            <td><b class="renewal-priority ${isWatch ? 'watch' : 'normal'}">#${index + 1}</b></td>
+            <td><strong>${escapeHtml(student.name)}</strong><small>${escapeHtml(student.id)}</small></td>
+            <td>${escapeHtml(student.country)}</td>
+            <td>${escapeHtml(student.teacher)}</td>
+            <td><strong class="package-progress">${escapeHtml(student.packageUsed)}</strong><small>${student.usedPercent}% used</small></td>
+            <td><strong class="credits-left ${isWatch ? 'watch' : ''}">${student.creditsLeft}</strong></td>
+            <td>${escapeHtml(student.attendance)}</td>
+            <td>${escapeHtml(student.module)}</td>
+            <td><span class="${bonusClass}">${escapeHtml(student.referralBonus)}</span></td>
+            <td><span class="renewal-score">${escapeHtml(student.probability)}</span></td>
+            <td><button class="follow-up-btn">Follow Up</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function applyAnalyticsFilters() {
+    const country = document.getElementById('analyticsCountryFilter')?.value || 'All Countries';
+    const dateRange = document.getElementById('analyticsDateRangeFilter')?.value || 'This Month';
+    const data = getAnalyticsFilterData(country, dateRange);
+    setText('#analyticsScopeLabel', country);
+    updateAnalyticsOperationsBoxes(data.operations);
+
+    document.querySelectorAll('.executive-kpi').forEach((card) => {
+        const label = card.querySelector(':scope > span')?.textContent.trim();
+        if (label && data.kpis[label]) {
+            updateAnalyticsKpiCard(card, data.kpis[label]);
+        }
+    });
+
+    document.querySelectorAll('.weekly-performance .executive-card-head p').forEach((node) => {
+        node.textContent = dateRange;
+    });
+    document.querySelectorAll('.weekly-performance .executive-card').forEach((card) => {
+        const label = card.querySelector('h3')?.textContent.trim();
+        const cardData = label ? data.weekly[label] : null;
+        if (!cardData) return;
+        const valueNode = card.querySelector('.weekly-value');
+        if (valueNode) {
+            valueNode.innerHTML = `${escapeHtml(String(cardData.value))} <span class="up">${escapeHtml(cardData.note)}</span>`;
+        }
+        const phpNode = card.querySelector('.analytics-php-conversion');
+        if (phpNode && cardData.php) {
+            phpNode.textContent = cardData.php;
+            phpNode.removeAttribute('hidden');
+        } else if (phpNode) {
+            phpNode.setAttribute('hidden', '');
+        }
+    });
+
+    updateAnalyticsMetricSummary(data, dateRange);
+    updateAnalyticsRefreshTime();
+    showSparkToast(`Analytics filters applied: ${country} · ${dateRange}.`);
+}
+
 function setAnalyticsMetric(metric) {
-    const data = analyticsMetricValues[metric] || analyticsMetricValues.Revenue;
+    activeAnalyticsMetric = metric;
+    const country = document.getElementById('analyticsCountryFilter')?.value || 'All Countries';
+    const dateRange = document.getElementById('analyticsDateRangeFilter')?.value || 'This Month';
+    const filteredData = getAnalyticsFilterData(country, dateRange);
+    const data = filteredData.metrics[metric] || analyticsMetricValues[metric] || analyticsMetricValues.Revenue;
     setText('#analyticsMetricLabel', metric);
-    setText('#analyticsMetricSummary', `${metric} this month`);
+    setText('#analyticsMetricSummary', `${metric} · ${dateRange}`);
     setText('#analyticsMetricValue', data.value);
     setText('#analyticsMetricPhp', data.php);
     document.getElementById('analyticsMetricPhp')?.toggleAttribute('hidden', !data.php);
@@ -7397,6 +7655,7 @@ function showDashboard() {
     document.getElementById('teacherDashboardApp')?.setAttribute('hidden', '');
     document.getElementById('managerDashboardApp')?.setAttribute('hidden', '');
     window.vlaceLoginMotion?.stop();
+    updateAdminProfileChrome();
     refreshIcons();
 }
 
@@ -7670,6 +7929,20 @@ const websitePackages = [
     { id: 'CN-K-P', market: 'China', audience: 'Kids', duration: '25 minutes', name: 'Platinum', lessons: '45', price: '249', visibility: 'Published' },
 ];
 
+const websiteCoupons = [
+    { id: 'CPN-001', code: 'WELCOME10', discount: 10, validFrom: 'Aug 1, 2026', validUntil: 'Sep 30, 2026', usageLimit: 100, used: 18, status: 'Active', websiteSync: 'Ready for checkout' },
+    { id: 'CPN-002', code: 'KIDS15', discount: 15, validFrom: 'Aug 10, 2026', validUntil: 'Oct 15, 2026', usageLimit: 50, used: 7, status: 'Active', websiteSync: 'Ready for checkout' },
+    { id: 'CPN-003', code: 'RENEWAL5', discount: 5, validFrom: 'Jul 1, 2026', validUntil: 'Dec 31, 2026', usageLimit: 200, used: 42, status: 'Active', websiteSync: 'Renewal only' },
+    { id: 'CPN-004', code: 'SUMMER20', discount: 20, validFrom: 'Jun 1, 2026', validUntil: 'Jul 31, 2026', usageLimit: 40, used: 40, status: 'Expired', websiteSync: 'Disabled' },
+];
+
+const couponUsageRecords = [
+    { student: 'Liam Chen', studentId: 'S1-001', coupon: 'WELCOME10', timesUsed: 1, appliedAt: 'Aug 8, 2026', packageName: 'Kids Gold · 30 lessons', discountApplied: '10%', status: 'Applied' },
+    { student: 'Eddie Zhang', studentId: 'S1-003', coupon: 'KIDS15', timesUsed: 1, appliedAt: 'Aug 6, 2026', packageName: 'Kids Silver · 15 lessons', discountApplied: '15%', status: 'Applied' },
+    { student: 'Grace Liu', studentId: 'S1-006', coupon: 'RENEWAL5', timesUsed: 2, appliedAt: 'Aug 5, 2026', packageName: 'Adults Gold · 30 lessons', discountApplied: '5%', status: 'Renewal' },
+    { student: 'Soo-jin Kim', studentId: 'S1-011', coupon: 'WELCOME10', timesUsed: 1, appliedAt: 'Aug 2, 2026', packageName: 'Adults Silver · 15 lessons', discountApplied: '10%', status: 'Applied' },
+];
+
 let activePackageMarket = 'All Markets';
 
 function packageStatus(value) {
@@ -7733,6 +8006,174 @@ function renderPackagesAndPrices() {
             if (pkg) openPackageEditor({ ...pkg });
         });
     });
+
+    renderCouponManagement();
+}
+
+function renderCouponManagement() {
+    const couponBody = document.getElementById('couponTableBody');
+    const usageBody = document.getElementById('couponUsageTableBody');
+
+    if (couponBody) {
+        couponBody.innerHTML = websiteCoupons.map((coupon) => `
+            <tr>
+                <td class="strong"><span class="coupon-code">${escapeHtml(coupon.code)}</span></td>
+                <td><span class="package-price">${escapeHtml(String(coupon.discount))}% off</span></td>
+                <td>${escapeHtml(coupon.validFrom)} - ${escapeHtml(coupon.validUntil)}</td>
+                <td>${escapeHtml(String(coupon.usageLimit))} use${Number(coupon.usageLimit) === 1 ? '' : 's'}</td>
+                <td>${escapeHtml(String(coupon.used))}</td>
+                <td>${packageStatus(coupon.status)}</td>
+                <td><span class="coupon-sync-note">${escapeHtml(coupon.websiteSync)}</span></td>
+                <td>
+                    <div class="coupon-action-row">
+                        <button class="edit-price-button" type="button" data-coupon-edit="${escapeHtml(coupon.id)}">Edit</button>
+                        <button class="coupon-status-button" type="button" data-coupon-status="${escapeHtml(coupon.id)}">${coupon.status === 'Active' ? 'Deactivate' : 'Activate'}</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        couponBody.querySelectorAll('[data-coupon-edit]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const coupon = websiteCoupons.find((item) => item.id === button.dataset.couponEdit);
+                if (coupon) openCouponEditor({ ...coupon });
+            });
+        });
+        couponBody.querySelectorAll('[data-coupon-status]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const coupon = websiteCoupons.find((item) => item.id === button.dataset.couponStatus);
+                if (!coupon) return;
+                coupon.status = coupon.status === 'Active' ? 'Paused' : 'Active';
+                coupon.websiteSync = coupon.status === 'Active' ? 'Ready for checkout' : 'Disabled';
+                renderCouponManagement();
+                showSparkToast(`${coupon.code} is now ${coupon.status}.`);
+            });
+        });
+    }
+
+    if (usageBody) {
+        usageBody.innerHTML = couponUsageRecords.map((record) => `
+            <tr>
+                <td><strong>${escapeHtml(record.student)}</strong><small>${escapeHtml(record.studentId)}</small></td>
+                <td><span class="coupon-code">${escapeHtml(record.coupon)}</span></td>
+                <td>${escapeHtml(String(record.timesUsed))}</td>
+                <td>${escapeHtml(record.appliedAt)}</td>
+                <td>${escapeHtml(record.packageName)}</td>
+                <td><span class="package-price">${escapeHtml(record.discountApplied)}</span></td>
+                <td>${packageStatus(record.status)}</td>
+            </tr>
+        `).join('');
+    }
+}
+
+function openCouponEditor(coupon = null) {
+    const editing = coupon || {
+        id: `CPN-${String(websiteCoupons.length + 1).padStart(3, '0')}`,
+        code: '',
+        discount: 10,
+        validFrom: 'Aug 10, 2026',
+        validUntil: 'Dec 31, 2026',
+        usageLimit: 50,
+        used: 0,
+        status: 'Draft',
+        websiteSync: 'Not synced',
+    };
+    const existing = websiteCoupons.some((item) => item.id === editing.id);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop package-prices-backdrop';
+    overlay.setAttribute('role', 'presentation');
+    overlay.innerHTML = `
+        <div class="modal package-editor-modal coupon-editor-modal" role="dialog" aria-modal="true" aria-labelledby="coupon-editor-title">
+            <div class="modal-head">
+                <div>
+                    <p>WEBSITE COUPON CONTROL · ADMIN ONLY</p>
+                    <h3 id="coupon-editor-title">${existing ? 'Edit Coupon' : 'Add Coupon'}</h3>
+                </div>
+                <button type="button" data-coupon-close aria-label="Close">×</button>
+            </div>
+            <p class="modal-intro">Coupons created here are prepared for the future website checkout integration. Admin controls discount, validity, usage limit, and status.</p>
+            <div class="package-editor-grid">
+                <label>Coupon Code<input id="couponEditCode" placeholder="Example: WELCOME10" autofocus></label>
+                <label>Discount Percentage<input id="couponEditDiscount" type="number" min="1" max="100" step="1"></label>
+                <label>Valid From<input id="couponEditValidFrom" placeholder="Aug 10, 2026"></label>
+                <label>Valid Until<input id="couponEditValidUntil" placeholder="Dec 31, 2026"></label>
+                <label>Usage Limit<input id="couponEditUsageLimit" type="number" min="1" step="1"></label>
+                <label>Status<select id="couponEditStatus"><option>Active</option><option>Draft</option><option>Paused</option><option>Expired</option></select></label>
+                <label>Website Integration<select id="couponEditWebsiteSync"><option>Ready for checkout</option><option>Not synced</option><option>Renewal only</option><option>Disabled</option></select></label>
+            </div>
+            <div class="package-save-preview">
+                <span>Coupon preview</span>
+                <strong id="couponSavePreview"></strong>
+                <small id="couponSaveNote"></small>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-coupon-close>Cancel</button>
+                <button class="primary-button" type="button" id="saveCouponButton">Save Coupon</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const fields = {
+        code: overlay.querySelector('#couponEditCode'),
+        discount: overlay.querySelector('#couponEditDiscount'),
+        validFrom: overlay.querySelector('#couponEditValidFrom'),
+        validUntil: overlay.querySelector('#couponEditValidUntil'),
+        usageLimit: overlay.querySelector('#couponEditUsageLimit'),
+        status: overlay.querySelector('#couponEditStatus'),
+        websiteSync: overlay.querySelector('#couponEditWebsiteSync'),
+    };
+
+    Object.entries(fields).forEach(([key, field]) => {
+        field.value = editing[key];
+        field.addEventListener('input', updatePreview);
+        field.addEventListener('change', updatePreview);
+    });
+
+    function close() {
+        overlay.remove();
+    }
+
+    function updatePreview() {
+        const code = fields.code.value.trim().toUpperCase() || 'COUPON';
+        overlay.querySelector('#couponSavePreview').textContent = `${code} · ${fields.discount.value || 0}% off`;
+        overlay.querySelector('#couponSaveNote').textContent = `${fields.status.value} · ${fields.usageLimit.value || 0} maximum uses · ${fields.validFrom.value || 'Start date'} to ${fields.validUntil.value || 'End date'}`;
+        overlay.querySelector('#saveCouponButton').disabled = !fields.code.value.trim() || !fields.discount.value || !fields.usageLimit.value;
+    }
+
+    function save() {
+        if (!fields.code.value.trim() || !fields.discount.value || !fields.usageLimit.value) return;
+        const nextCoupon = {
+            id: editing.id,
+            code: fields.code.value.trim().toUpperCase(),
+            discount: Number(fields.discount.value) || 0,
+            validFrom: fields.validFrom.value.trim() || 'No start date',
+            validUntil: fields.validUntil.value.trim() || 'No end date',
+            usageLimit: Number(fields.usageLimit.value) || 1,
+            used: editing.used || 0,
+            status: fields.status.value,
+            websiteSync: fields.websiteSync.value,
+        };
+        const index = websiteCoupons.findIndex((item) => item.id === editing.id);
+        if (index >= 0) websiteCoupons[index] = nextCoupon;
+        else websiteCoupons.push(nextCoupon);
+        close();
+        renderCouponManagement();
+        showSparkToast(`${nextCoupon.code} coupon saved.`);
+    }
+
+    overlay.querySelectorAll('[data-coupon-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('#saveCouponButton')?.addEventListener('click', save);
+    overlay.querySelector('.coupon-editor-modal')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            save();
+        }
+    });
+    updatePreview();
 }
 
 function openPackageEditor(pkg = null) {
@@ -8048,6 +8489,19 @@ function gatewayStateDisplay(gateway) {
     return `${normalizeGatewayState(gateway.state)} · ${gateway.mode || 'Test Mode'}`;
 }
 
+function getFinanceTabMeta(tab) {
+    return {
+        Overview: { icon: 'layout-dashboard', count: 0 },
+        Transactions: { icon: 'receipt-text', count: 3 },
+        'Payment Channels': { icon: 'credit-card', count: 0 },
+        Settlements: { icon: 'landmark', count: 0 },
+        Refunds: { icon: 'rotate-ccw', count: 0 },
+        'Invoices & Receipts': { icon: 'file-text', count: 0 },
+        Reconciliation: { icon: 'badge-check', count: 2 },
+        'Financial Reports': { icon: 'bar-chart-3', count: 0 },
+    }[tab] || { icon: 'circle-dollar-sign', count: 0 };
+}
+
 function sparklineSvg(points, color = '#2673e8') {
     const max = Math.max(...points);
     const min = Math.min(...points);
@@ -8063,13 +8517,16 @@ function sparklineSvg(points, color = '#2673e8') {
 function renderFinanceTabs() {
     const tabs = document.getElementById('financePageTabs');
     if (!tabs) return;
-    tabs.innerHTML = financeTabs.map((tab) => `
-        <button type="button" class="${activeFinancePage === tab ? 'active' : ''}" data-finance-page="${escapeHtml(tab)}">
-            ${escapeHtml(tab)}
-            ${tab === 'Transactions' ? '<b>3</b>' : ''}
-            ${tab === 'Reconciliation' ? '<b>2</b>' : ''}
+    tabs.innerHTML = financeTabs.map((tab) => {
+        const meta = getFinanceTabMeta(tab);
+        return `
+        <button type="button" class="finance-tab-button ${activeFinancePage === tab ? 'active' : ''}" data-finance-page="${escapeHtml(tab)}" role="tab" aria-selected="${activeFinancePage === tab ? 'true' : 'false'}">
+            <span class="finance-tab-icon"><i data-lucide="${escapeHtml(meta.icon)}"></i></span>
+            <span class="finance-tab-label">${escapeHtml(tab)}</span>
+            ${meta.count ? `<b>${meta.count}</b>` : ''}
         </button>
-    `).join('');
+    `;
+    }).join('');
 
     tabs.querySelectorAll('[data-finance-page]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -8311,6 +8768,7 @@ function renderFinanceModule() {
     renderFinanceTabs();
     content.innerHTML = renderFinanceContent();
     bindFinanceControls(content);
+    refreshIcons();
 }
 
 function bindFinanceControls(root = document) {
@@ -8681,6 +9139,37 @@ function communicationStatus(value) {
     return `<span class="status status-${String(value).toLowerCase().replaceAll(' ', '-')}">${escapeHtml(value)}</span>`;
 }
 
+function getCommunicationChannelMeta(channel) {
+    return {
+        All: { icon: 'inbox', label: 'All Channels', tone: 'all' },
+        'Facebook Messenger': { icon: 'messages-square', label: 'Facebook Messenger', tone: 'facebook' },
+        WhatsApp: { icon: 'phone-call', label: 'WhatsApp', tone: 'whatsapp' },
+        'Website Chat': { icon: 'message-circle', label: 'Website Chat', tone: 'website' },
+        LINE: { icon: 'message-square', label: 'LINE', tone: 'line' },
+        KakaoTalk: { icon: 'message-circle-more', label: 'KakaoTalk', tone: 'kakao' },
+    }[channel] || { icon: 'message-circle', label: channel, tone: 'default' };
+}
+
+function renderCommunicationChannelTab(channel) {
+    const meta = getCommunicationChannelMeta(channel);
+    const conversations = channel === 'All'
+        ? communicationConversations
+        : communicationConversations.filter((item) => item.channel === channel);
+    const unread = conversations.reduce((sum, item) => sum + item.unread, 0);
+    const isActive = activeCommunicationChannel === channel;
+
+    return `
+        <button type="button" class="communication-channel-tab channel-${escapeHtml(meta.tone)} ${isActive ? 'active' : ''}" data-communication-channel="${escapeHtml(channel)}" role="tab" aria-selected="${isActive ? 'true' : 'false'}">
+            <span class="channel-tab-icon"><i data-lucide="${escapeHtml(meta.icon)}"></i></span>
+            <span class="channel-tab-copy">
+                <strong>${escapeHtml(meta.label)}</strong>
+                <small>${conversations.length} conversation${conversations.length === 1 ? '' : 's'}</small>
+            </span>
+            <b aria-label="${unread} unread messages">${unread}</b>
+        </button>
+    `;
+}
+
 function renderCommunicationWorkspace() {
     const root = document.getElementById('communicationWorkspace');
     if (!root) return;
@@ -8729,7 +9218,7 @@ function renderUnifiedInboxPanel() {
             <button class="secondary-button" type="button" data-open-channel-drawer>Manage Channels</button>
         </div>
         <div class="channel-filters" role="tablist">
-            ${communicationChannels.map((channel) => `<button type="button" class="${activeCommunicationChannel === channel ? 'active' : ''}" data-communication-channel="${channel}" role="tab" aria-selected="${activeCommunicationChannel === channel ? 'true' : 'false'}"><span class="channel-dot"></span>${channel}<b>${channel === 'All' ? communicationConversations.length : communicationConversations.filter((item) => item.channel === channel).length}</b></button>`).join('')}
+            ${communicationChannels.map(renderCommunicationChannelTab).join('')}
         </div>
         <section class="inbox-shell">
             <aside class="conversation-list">
@@ -10183,6 +10672,73 @@ const adminSecurityState = {
     },
 };
 
+const adminProfileStorageKey = 'vlace.adminProfile';
+
+function getDefaultAdminProfile() {
+    const user = window.VLACE_AUTH_USER || {};
+    return {
+        name: user.name || 'Van Lester Acepcion',
+        displayName: user.name || 'Van Lester Acepcion',
+        email: user.email || 'van@vlace.com',
+        title: 'Administrator',
+        phone: '+63 917 555 0101',
+        location: 'Philippines · Remote Operations',
+        photoUrl: '',
+        photoName: '',
+        updatedAt: '',
+    };
+}
+
+function loadAdminProfileState() {
+    try {
+        return { ...getDefaultAdminProfile(), ...(JSON.parse(window.localStorage.getItem(adminProfileStorageKey) || '{}')) };
+    } catch {
+        return getDefaultAdminProfile();
+    }
+}
+
+const adminProfileState = loadAdminProfileState();
+
+function saveAdminProfileState() {
+    try {
+        window.localStorage.setItem(adminProfileStorageKey, JSON.stringify(adminProfileState));
+    } catch {
+        adminSecurityState.notice = 'Admin profile updated, but browser storage is unavailable in this session.';
+    }
+}
+
+function getAdminDisplayName() {
+    return adminProfileState.displayName.trim() || adminProfileState.name.trim() || 'Administrator';
+}
+
+function getAdminPhotoMarkup(className = 'avatar user-photo-avatar') {
+    const safeName = escapeHtml(getAdminDisplayName());
+    if (adminProfileState.photoUrl) {
+        return `<span class="${escapeHtml(className)} admin-profile-photo-custom" role="img" aria-label="${safeName} profile photo"><img src="${escapeHtml(adminProfileState.photoUrl)}" alt="${safeName}"></span>`;
+    }
+    return `<span class="${escapeHtml(className)} staff-face staff-face-0" role="img" aria-label="${safeName} mock profile photo"></span>`;
+}
+
+function updateAdminProfileChrome() {
+    const photo = document.getElementById('adminUserPhoto');
+    if (photo) {
+        photo.textContent = '';
+        photo.className = adminProfileState.photoUrl ? 'dashboard-face admin-profile-photo-custom' : 'dashboard-face staff-face staff-face-0';
+        photo.setAttribute('role', 'img');
+        photo.setAttribute('aria-label', `${getAdminDisplayName()} ${adminProfileState.photoUrl ? 'profile photo' : 'mock profile photo'}`);
+        photo.innerHTML = adminProfileState.photoUrl ? `<img src="${escapeHtml(adminProfileState.photoUrl)}" alt="${escapeHtml(getAdminDisplayName())}">` : '';
+    }
+
+    setText('#adminUserName', getAdminDisplayName());
+    setText('#adminUserRole', adminProfileState.title || 'Administrator');
+
+    const adminUser = typeof dashboardUsers === 'undefined' ? null : dashboardUsers.find((user) => user.id === 'AD-001');
+    if (adminUser) {
+        adminUser.name = getAdminDisplayName();
+        adminUser.email = adminProfileState.email || adminUser.email;
+    }
+}
+
 const companyBrandingStorageKey = 'vlace.companyBranding';
 const defaultCompanyLogoUrl = '/images/vlace-logo.png';
 
@@ -10261,6 +10817,38 @@ function renderAdminSecuritySettings() {
         ${adminSecurityState.notice ? `<div class="success-notice settings-notice">${escapeHtml(adminSecurityState.notice)}<button type="button" data-settings-notice-close>×</button></div>` : ''}
         <section class="admin-settings-layout">
             <div class="admin-settings-main">
+                <article class="panel admin-profile-card">
+                    <div class="admin-settings-head">
+                        <div class="admin-lock-icon"><i data-lucide="id-card"></i></div>
+                        <div><span>ADMIN ONLY · PROFILE</span><h2>Admin Information</h2><p>Update the admin name, contact details, role label, and profile photo used across the dashboard.</p></div>
+                        <small>Admin Only</small>
+                    </div>
+                    <div class="admin-profile-editor">
+                        <div class="admin-profile-photo-panel">
+                            <div class="admin-profile-photo-frame">
+                                ${getAdminPhotoMarkup('admin-profile-photo-preview')}
+                            </div>
+                            <strong>${escapeHtml(getAdminDisplayName())}</strong>
+                            <span>${escapeHtml(adminProfileState.photoName || 'Mock admin portrait currently used')}</span>
+                            <label class="secondary-button admin-photo-upload">Upload Photo
+                                <input type="file" accept="image/png,image/jpeg,image/webp" data-admin-photo-input>
+                            </label>
+                            <button class="secondary-button" type="button" data-admin-photo-reset ${adminProfileState.photoUrl ? '' : 'disabled'}>Use Mock Photo</button>
+                        </div>
+                        <div class="admin-profile-form">
+                            <label>Full name<input type="text" value="${escapeHtml(adminProfileState.name)}" data-admin-profile-field="name"></label>
+                            <label>Display name<input type="text" value="${escapeHtml(adminProfileState.displayName)}" data-admin-profile-field="displayName"></label>
+                            <label>Email address<input type="email" value="${escapeHtml(adminProfileState.email)}" data-admin-profile-field="email"></label>
+                            <label>Role title<input type="text" value="${escapeHtml(adminProfileState.title)}" data-admin-profile-field="title"></label>
+                            <label>Phone number<input type="text" value="${escapeHtml(adminProfileState.phone)}" data-admin-profile-field="phone"></label>
+                            <label>Location<input type="text" value="${escapeHtml(adminProfileState.location)}" data-admin-profile-field="location"></label>
+                        </div>
+                    </div>
+                    <div class="admin-settings-foot">
+                        <div><strong>Visible in admin dashboard</strong><span>Changes update the topbar account card and admin settings summary in this prototype.</span></div>
+                        <button class="primary-button" type="button" data-admin-profile-save>Save Admin Information</button>
+                    </div>
+                </article>
                 <article class="panel company-branding-card">
                     <div class="admin-settings-head">
                         <div class="admin-lock-icon">◆</div>
@@ -10313,8 +10901,8 @@ function renderAdminSecuritySettings() {
                     </div>
                     <div class="admin-settings-body">
                         <div class="admin-account-summary">
-                            <span class="avatar user-photo-avatar staff-face staff-face-0" role="img" aria-label="Van Lester Acepcion mock profile photo"></span>
-                            <div><strong>Van A.</strong><small>van@vlace.com · Administrator</small></div>
+                            ${getAdminPhotoMarkup('avatar user-photo-avatar')}
+                            <div><strong>${escapeHtml(getAdminDisplayName())}</strong><small>${escapeHtml(adminProfileState.email)} · ${escapeHtml(adminProfileState.title || 'Administrator')}</small></div>
                             ${adminSettingsStatus('Admin Only')}
                         </div>
                         <div class="admin-password-form">
@@ -10422,6 +11010,64 @@ function renderAuthenticatorSetup() {
 function bindAdminSecuritySettings(root) {
     root.querySelector('[data-settings-notice-close]')?.addEventListener('click', () => {
         adminSecurityState.notice = '';
+        renderAdminSecuritySettings();
+    });
+
+    root.querySelectorAll('[data-admin-profile-field]').forEach((input) => {
+        input.addEventListener('input', (event) => {
+            adminProfileState[event.target.dataset.adminProfileField] = event.target.value;
+        });
+    });
+
+    root.querySelector('[data-admin-profile-save]')?.addEventListener('click', () => {
+        adminProfileState.name = adminProfileState.name.trim() || 'VLACE Admin';
+        adminProfileState.displayName = adminProfileState.displayName.trim() || adminProfileState.name;
+        adminProfileState.email = adminProfileState.email.trim() || 'admin@vlace.com';
+        adminProfileState.title = adminProfileState.title.trim() || 'Administrator';
+        adminProfileState.phone = adminProfileState.phone.trim();
+        adminProfileState.location = adminProfileState.location.trim();
+        adminProfileState.updatedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        saveAdminProfileState();
+        updateAdminProfileChrome();
+        adminSecurityState.notice = 'Admin information updated.';
+        renderAdminSecuritySettings();
+        renderUserManagement();
+    });
+
+    root.querySelector('[data-admin-photo-input]')?.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            window.alert('Please choose an image file for the admin photo.');
+            event.target.value = '';
+            return;
+        }
+        if (file.size > 1024 * 1024) {
+            window.alert('Please choose a profile photo under 1 MB for this prototype.');
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            adminProfileState.photoUrl = String(reader.result || '');
+            adminProfileState.photoName = file.name;
+            adminProfileState.updatedAt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            adminSecurityState.notice = 'Admin profile photo updated.';
+            saveAdminProfileState();
+            updateAdminProfileChrome();
+            renderAdminSecuritySettings();
+        });
+        reader.readAsDataURL(file);
+    });
+
+    root.querySelector('[data-admin-photo-reset]')?.addEventListener('click', () => {
+        adminProfileState.photoUrl = '';
+        adminProfileState.photoName = '';
+        adminProfileState.updatedAt = '';
+        saveAdminProfileState();
+        updateAdminProfileChrome();
+        adminSecurityState.notice = 'Mock admin photo restored.';
         renderAdminSecuritySettings();
     });
 
@@ -15678,13 +16324,25 @@ function confirmSparkAction() {
 
 function toggleMenu(groupName) {
     if (groupName === 'communication') {
-        activateSection('inbox');
         const menu = document.getElementById('communicationMenu');
         const trigger = document.querySelector('[data-group-toggle="communication"]');
-        menu?.removeAttribute('hidden');
-        menu?.classList.add('open');
-        trigger?.setAttribute('aria-expanded', 'true');
-        if (trigger?.querySelector('.nav-chevron')) {
+        if (!menu || !trigger) return;
+
+        const isOpen = !menu.hasAttribute('hidden');
+        if (isOpen) {
+            menu.classList.remove('open');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.querySelector('.nav-chevron').textContent = '›';
+            window.setTimeout(() => {
+                if (!menu.classList.contains('open')) {
+                    menu.setAttribute('hidden', '');
+                }
+            }, 240);
+        } else {
+            activateSection('inbox');
+            menu.removeAttribute('hidden');
+            window.requestAnimationFrame(() => menu.classList.add('open'));
+            trigger.setAttribute('aria-expanded', 'true');
             trigger.querySelector('.nav-chevron').textContent = '⌄';
         }
         return;
@@ -15731,6 +16389,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openStaffProfile(staffMembers[0]?.id);
     setupLessonLibrary();
     showAuthenticatedDashboard(window.VLACE_AUTH_USER);
+    renderRenewalWatchStudents();
 
     document.getElementById('dashboardCountry')?.addEventListener('change', updateOverview);
     document.getElementById('phpPerUsd')?.addEventListener('input', updateOverview);
@@ -15772,6 +16431,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('analyticsRefresh')?.addEventListener('click', () => {
         updateAnalyticsRefreshTime();
+    });
+    document.getElementById('analyticsApplyFilters')?.addEventListener('click', applyAnalyticsFilters);
+    document.getElementById('renewalWatchApply')?.addEventListener('click', () => {
+        renderRenewalWatchStudents();
+        showSparkToast('Student renewal watch filters applied.');
     });
 
     document.querySelectorAll('[data-analytics-metric]').forEach((button) => {
@@ -16346,7 +17010,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelectorAll('[data-section-target]').forEach((button) => {
-        button.addEventListener('click', () => activateSection(button.dataset.sectionTarget));
+        button.addEventListener('click', () => {
+            if (button.dataset.groupToggle) return;
+            activateSection(button.dataset.sectionTarget);
+        });
     });
 
     document.getElementById('packageMarketFilter')?.addEventListener('change', (event) => {
@@ -16355,6 +17022,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('addPackageButton')?.addEventListener('click', () => openPackageEditor());
+    document.getElementById('addCouponButton')?.addEventListener('click', () => openCouponEditor());
     document.getElementById('manageServiceCountries')?.addEventListener('click', openServiceCountriesModal);
     renderPackagesAndPrices();
 

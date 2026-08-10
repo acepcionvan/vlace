@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/website', [HomeController::class, 'website'])->name('website');
+Route::get('/speakryt', [HomeController::class, 'website'])->name('speakryt.website');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest')->name('login');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/setup/{key}', SetupController::class)->name('setup');

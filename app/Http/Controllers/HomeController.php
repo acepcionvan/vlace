@@ -12,6 +12,11 @@ class HomeController extends Controller
         return view('home');
     }
 
+    public function website(): View
+    {
+        return view('speakryt');
+    }
+
     public function generate(Request $request): string
     {
         $request->validate([

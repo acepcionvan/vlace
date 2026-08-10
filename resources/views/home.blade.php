@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=approval-request-review-button-20260810">
-    <script src="{{ asset('js/app.js') }}?v=approval-request-review-button-20260810" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=renewal-watch-filter-controls-20260810">
+    <script src="{{ asset('js/app.js') }}?v=renewal-watch-filter-controls-20260810" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -193,8 +193,8 @@
                     </div>
                     <div class="dashboard-user-copy">
                         <small>Welcome back!</small>
-                        <strong>Van Lester Acepcion</strong>
-                        <span>Administrator</span>
+                        <strong id="adminUserName">Van Lester Acepcion</strong>
+                        <span id="adminUserRole">Administrator</span>
                     </div>
                     <span class="dashboard-user-chevron">›</span>
                 </button>
@@ -395,8 +395,20 @@
                         <span>Last refreshed <span id="analyticsRefreshTime">Loading...</span> PHT · Auto-refresh every 30 seconds</span>
                     </div>
                     <div class="executive-actions">
+                        <label>Country
+                            <select id="analyticsCountryFilter">
+                                <option selected>All Countries</option>
+                                <option>China</option>
+                                <option>South Korea</option>
+                                <option>Japan</option>
+                                <option>UAE</option>
+                                <option>Saudi Arabia</option>
+                                <option>Dubai</option>
+                                <option>Israel</option>
+                            </select>
+                        </label>
                         <label>Date Range
-                            <select>
+                            <select id="analyticsDateRangeFilter">
                                 <option>Today</option>
                                 <option>Yesterday</option>
                                 <option>Last 7 Days</option>
@@ -406,42 +418,55 @@
                                 <option>Custom Date Range</option>
                             </select>
                         </label>
-                        <button class="analytics-search" type="button">⌕ Search</button>
+                        <button class="analytics-search" type="button" id="analyticsApplyFilters">Apply Filters</button>
                         <button type="button" id="analyticsRefresh">↻ Refresh</button>
                     </div>
                 </section>
 
-                <section class="analytics-filters">
-                    <label>Country<select><option>All Countries</option><option>China</option><option>South Korea</option><option>Japan</option><option>UAE</option><option>Saudi Arabia</option><option>Dubai</option><option>Israel</option></select></label>
-                    <label>Teacher<select><option>All Teachers</option><option>Top Performing</option><option>Needs Attention</option></select></label>
-                    <label>Program<select><option>All Programs</option><option>Top Performing</option><option>Needs Attention</option></select></label>
-                    <label>Course<select><option>All Courses</option><option>Top Performing</option><option>Needs Attention</option></select></label>
-                    <label>Student Type<select><option>All Student Types</option><option>Kids</option><option>Adults</option></select></label>
-                    <label>Status<select><option>All Statuss</option><option>Active</option><option>Trial</option></select></label>
-                </section>
+                <section class="analytics-operations-panels">
+                    <article class="analytics-operations-card" data-analytics-period-card="today">
+                        <div class="analytics-operations-head">
+                            <div><span>OPERATIONS OVERVIEW</span><h3>Today</h3><p data-analytics-period-scope="today">All Countries · Live operating view</p></div>
+                            <i data-lucide="calendar-days"></i>
+                        </div>
+                        <div class="analytics-operations-grid">
+                            <div><span>Classes Scheduled</span><strong data-analytics-value="today.scheduled">36</strong></div>
+                            <div><span>Classes Completed</span><strong data-analytics-value="today.completed">28</strong></div>
+                            <div><span>Absent Teachers</span><strong data-analytics-value="today.absentTeachers">2</strong></div>
+                            <div><span>Absent Students</span><strong data-analytics-value="today.absentStudents">4</strong></div>
+                            <div><span>Transferred Classes</span><strong data-analytics-value="today.transferred">3</strong></div>
+                            <div><span>Cancelled Classes</span><strong data-analytics-value="today.cancelled">4</strong></div>
+                        </div>
+                        <div class="analytics-profit-row">
+                            <span>Net Profit Calculation</span>
+                            <strong><b data-analytics-value="today.gross">$1,240</b> - <b data-analytics-value="today.salary">$322</b> - <b data-analytics-value="today.maintenance">$124</b> = <em data-analytics-value="today.net">$794</em></strong>
+                            <small>Gross Revenue - Teacher Salaries - 10% Maintenance Fee = Net Profit</small>
+                        </div>
+                    </article>
 
-                <section class="executive-kpis">
-                    <article class="executive-kpi" style="--kpi-color:#2673e8"><div class="kpi-icon"><i data-lucide="calendar-days"></i></div><button class="box-help-button" type="button" title="Classes scheduled today">?</button><span>Classes Today</span><strong>36</strong><em class="up">▲ +8.2%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,34 L16,22 L33,26 L50,15 L66,19 L83,8 L100,4" fill="none" stroke="#2673e8" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#16a36a"><div class="kpi-icon"><i data-lucide="wallet-cards"></i></div><button class="box-help-button" type="button" title="Gross class revenue today">?</button><span>Revenue Today</span><strong>$1,240</strong><small class="analytics-php-conversion">≈ PHP ₱72,540</small><em class="up">▲ +14.3%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,31 L16,27 L33,29 L50,20 L66,17 L83,10 L100,4" fill="none" stroke="#16a36a" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#7758d9"><div class="kpi-icon"><i data-lucide="trending-up"></i></div><button class="box-help-button" type="button" title="Revenue after teacher pay">?</button><span>Profit Today</span><strong>$918</strong><small class="analytics-php-conversion">≈ PHP ₱53,703</small><em class="up">▲ +11.8%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,33 L16,29 L33,25 L50,19 L66,17 L83,10 L100,5" fill="none" stroke="#7758d9" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#00a6a6"><div class="kpi-icon"><i data-lucide="check-circle-2"></i></div><button class="box-help-button" type="button" title="Lessons marked completed">?</button><span>Completed Lessons</span><strong>28</strong><em class="up">▲ +9.1%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,30 L16,25 L33,27 L50,18 L66,20 L83,12 L100,7" fill="none" stroke="#00a6a6" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#e35d6a"><div class="kpi-icon"><i data-lucide="calendar-x"></i></div><button class="box-help-button" type="button" title="Lessons cancelled">?</button><span>Cancelled Lessons</span><strong>4</strong><em class="down">▼ −2.4%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,8 L16,14 L33,12 L50,20 L66,18 L83,22 L100,26" fill="none" stroke="#e35d6a" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#e0942f"><div class="kpi-icon"><i data-lucide="clipboard-check"></i></div><button class="box-help-button" type="button" title="Trial lessons">?</button><span>Trial Classes</span><strong>7</strong><em class="up">▲ +16.7%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,33 L16,30 L33,24 L50,24 L66,18 L83,11 L100,5" fill="none" stroke="#e0942f" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#2e87dc"><div class="kpi-icon"><i data-lucide="user-plus"></i></div><button class="box-help-button" type="button" title="Newly enrolled students">?</button><span>New Students</span><strong>6</strong><em class="up">▲ +20.0%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,34 L16,29 L33,29 L50,23 L66,17 L83,11 L100,5" fill="none" stroke="#2e87dc" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#7158cc"><div class="kpi-icon"><i data-lucide="users-round"></i></div><button class="box-help-button" type="button" title="Teachers working today">?</button><span>Active Teachers</span><strong>22</strong><em class="up">▲ +4.8%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,25 L16,23 L33,19 L50,19 L66,15 L83,15 L100,10" fill="none" stroke="#7158cc" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#18a56b"><div class="kpi-icon"><i data-lucide="graduation-cap"></i></div><button class="box-help-button" type="button" title="Student attendance rate">?</button><span>Student Attendance</span><strong>94.2%</strong><em class="up">▲ +1.6%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,26 L16,22 L33,24 L50,17 L66,19 L83,11 L100,10" fill="none" stroke="#18a56b" stroke-width="3" stroke-linecap="round"/></svg></article>
-                    <article class="executive-kpi" style="--kpi-color:#1486a8"><div class="kpi-icon"><i data-lucide="user-check"></i></div><button class="box-help-button" type="button" title="Teacher attendance rate">?</button><span>Teacher Attendance</span><strong>96.8%</strong><em class="up">▲ +0.9%</em><svg class="sparkline" viewBox="0 0 100 38" preserveAspectRatio="none"><path d="M0,24 L16,20 L33,16 L50,20 L66,10 L83,9 L100,7" fill="none" stroke="#1486a8" stroke-width="3" stroke-linecap="round"/></svg></article>
-                </section>
-
-                <section class="weekly-performance">
-                    <article class="executive-card"><div class="executive-card-head"><div><h3>Revenue (Last 7 Days)</h3><p>This Month</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="weekly-value">$6,842 <span class="up">▲ 8.6%</span></div><small class="analytics-php-conversion">≈ PHP ₱400,257</small><div class="mini-line-chart blue"></div></div></article>
-                    <article class="executive-card"><div class="executive-card-head"><div><h3>Completed Lessons</h3><p>This Month</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="weekly-value">186 <span class="up">▲ 8.6%</span></div><div class="mini-line-chart teal"></div></div></article>
-                    <article class="executive-card"><div class="executive-card-head"><div><h3>New Students</h3><p>This Month</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="weekly-value">24 <span class="up">▲ 8.6%</span></div><div class="mini-line-chart purple"></div></div></article>
-                    <article class="executive-card"><div class="executive-card-head"><div><h3>Trial Conversion Rate</h3><p>This Month</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="weekly-value">68.4% <span class="up">▲ 4.2%</span></div><div class="mini-line-chart orange"></div></div></article>
+                    <article class="analytics-operations-card" data-analytics-period-card="month">
+                        <div class="analytics-operations-head">
+                            <div><span>BUSINESS OVERVIEW</span><h3 data-analytics-period-title="month">Selected Period</h3><p data-analytics-period-scope="month">All Countries · This Month</p></div>
+                            <i data-lucide="bar-chart-3"></i>
+                        </div>
+                        <div class="analytics-operations-grid">
+                            <div><span>Classes Scheduled</span><strong data-analytics-value="month.scheduled">324</strong></div>
+                            <div><span>Classes Completed</span><strong data-analytics-value="month.completed">294</strong></div>
+                            <div><span>Absent Teachers</span><strong data-analytics-value="month.absentTeachers">11</strong></div>
+                            <div><span>Absent Students</span><strong data-analytics-value="month.absentStudents">37</strong></div>
+                            <div><span>Transferred Classes</span><strong data-analytics-value="month.transferred">19</strong></div>
+                            <div><span>Cancelled Classes</span><strong data-analytics-value="month.cancelled">28</strong></div>
+                        </div>
+                        <div class="analytics-profit-row">
+                            <span>Net Profit Calculation</span>
+                            <strong><b data-analytics-value="month.gross">$17,593</b> - <b data-analytics-value="month.salary">$1,012</b> - <b data-analytics-value="month.maintenance">$1,759</b> = <em data-analytics-value="month.net">$14,822</em></strong>
+                            <small>Gross Revenue - Teacher Salaries - 10% Maintenance Fee = Net Profit</small>
+                        </div>
+                    </article>
                 </section>
 
                 <article class="executive-card large-performance">
-                    <div class="executive-card-head"><div><h3>Monthly Business Performance</h3><p><span id="analyticsMetricLabel">Revenue</span> · All Countries</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div>
+                    <div class="executive-card-head"><div><h3>Monthly Business Performance</h3><p><span id="analyticsMetricLabel">Revenue</span> · <span id="analyticsScopeLabel">All Countries</span></p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div>
                     <div class="executive-card-body">
                         <div class="metric-switch" id="analyticsMetricSwitch">
                             <button class="active" data-analytics-metric="Revenue">Revenue</button>
@@ -471,7 +496,7 @@
 
                 <article class="executive-card"><div class="executive-card-head"><div><h3>Teacher Performance</h3><p>Filter by country and rank teachers from highest to lowest</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="teacher-ranking-controls"><label>Country<select><option>All Countries</option><option>China</option><option>Japan</option><option>UAE</option></select></label><label>Rank by<select><option>Revenue Generated</option><option>Cancellation Rate</option><option>Student Rating</option><option>Attendance</option><option>Lessons</option></select></label><span>↓ Highest to lowest</span></div><div class="analytics-table-wrap"><table><thead><tr><th>Rank</th><th>Teacher</th><th>Country</th><th>Lessons</th><th>Attendance</th><th>Student Rating</th><th>Cancellation Rate</th><th>Revenue Generated</th><th>Status</th></tr></thead><tbody><tr><td><b class="teacher-rank">#1</b></td><td><strong>Maria Santos</strong><small>T-001</small></td><td>China</td><td>92</td><td>98%</td><td>★ 4.9</td><td>1.2%</td><td>$2,250</td><td><span class="status-pill positive">Active</span></td></tr><tr><td><b class="teacher-rank">#2</b></td><td><strong>David Lee</strong><small>T-002</small></td><td>South Korea</td><td>76</td><td>96%</td><td>★ 4.8</td><td>2.1%</td><td>$1,840</td><td><span class="status-pill positive">Active</span></td></tr><tr><td><b class="teacher-rank">#3</b></td><td><strong>Aya Nakamura</strong><small>T-003</small></td><td>Japan</td><td>68</td><td>97%</td><td>★ 4.9</td><td>1.5%</td><td>$1,610</td><td><span class="status-pill positive">Active</span></td></tr><tr><td><b class="teacher-rank">#4</b></td><td><strong>James Smith</strong><small>T-004</small></td><td>UAE</td><td>61</td><td>91%</td><td>★ 4.6</td><td>4.2%</td><td>$1,475</td><td><span class="status-pill neutral">Review</span></td></tr></tbody></table></div></div></article>
 
-                <article class="executive-card"><div class="executive-card-head"><div><h3>Student Renewal Watch</h3><p>Students closest to finishing their package appear first</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="renewal-watch-controls"><div><strong>2</strong><span>students need attention</span></div><label>Show students with<select><option>3 credits or fewer</option><option selected>5 credits or fewer</option><option>10 credits or fewer</option><option>All students</option></select></label><span>↑ Fewest credits left first</span></div><div class="analytics-table-wrap"><table><thead><tr><th>Priority</th><th>Student</th><th>Country</th><th>Teacher</th><th>Package Used</th><th>Credits Left</th><th>Attendance</th><th>Current Module</th><th>Referral Bonus</th><th>Renewal Probability</th><th>Follow Up</th></tr></thead><tbody><tr><td><b class="renewal-priority watch">#1</b></td><td><strong>Mira Wang</strong><small>S-004</small></td><td>China</td><td>Maria Santos</td><td><strong class="package-progress">11/15</strong><small>73% used</small></td><td><strong class="credits-left watch">4</strong></td><td>83%</td><td>Module 1</td><td><span class="no-referral">No bonus</span></td><td><span class="renewal-score">52%</span></td><td><button class="follow-up-btn">Follow Up</button></td></tr><tr><td><b class="renewal-priority normal">#2</b></td><td><strong>Eddie Zhang</strong><small>S-002</small></td><td>China</td><td>David Lee</td><td><strong class="package-progress">8/15</strong><small>53% used</small></td><td><strong class="credits-left">7</strong></td><td>94%</td><td>Module 2</td><td><span class="no-referral">No bonus</span></td><td><span class="renewal-score">74%</span></td><td><button class="follow-up-btn">Follow Up</button></td></tr></tbody></table></div></div></article>
+                <article class="executive-card"><div class="executive-card-head"><div><h3>Student Renewal Watch</h3><p>Students closest to finishing their package appear first</p></div><div class="card-tools"><button>?</button><button>⇩</button><button>⎙</button><button>−</button></div></div><div class="executive-card-body"><div class="renewal-watch-controls"><div class="renewal-watch-summary"><span class="renewal-watch-count" id="renewalWatchCount">0</span><div><strong>Students Need Attention</strong><small id="renewalWatchScope">Low package credits and renewal risk</small></div></div><label>Country<select id="renewalWatchCountryFilter"><option>All Countries</option><option>China</option><option>South Korea</option><option>Japan</option><option>UAE</option><option>Saudi Arabia</option></select></label><label>Credit threshold<select id="renewalWatchCreditFilter"><option value="3">3 credits or fewer</option><option value="5" selected>5 credits or fewer</option><option value="10">10 credits or fewer</option><option value="all">All students</option></select></label><button class="renewal-watch-apply" type="button" id="renewalWatchApply">Apply Filters</button><span class="renewal-sort-note" id="renewalWatchSortNote">Sorted by fewest credits left</span></div><div class="analytics-table-wrap"><table><thead><tr><th>Priority</th><th>Student</th><th>Country</th><th>Teacher</th><th>Package Used</th><th>Credits Left</th><th>Attendance</th><th>Current Module</th><th>Referral Bonus</th><th>Renewal Probability</th><th>Follow Up</th></tr></thead><tbody id="renewalWatchRows"></tbody></table></div></div></article>
 
                 <section class="finance-kpis">
                     <article><button class="box-help-button" type="button">?</button><span>Gross Revenue</span><strong>$9,240</strong><small class="analytics-php-conversion">≈ PHP ₱540,540</small><em class="up">+14.2%</em><svg class="sparkline" viewBox="0 0 100 38"><path d="M0,30 L16,25 L33,28 L50,18 L66,15 L83,10 L100,5" fill="none" stroke="#2673e8" stroke-width="3"/></svg></article>
@@ -2410,6 +2435,61 @@
                                 </tr>
                             </thead>
                             <tbody id="packageTableBody"></tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="panel directory-panel package-coupon-panel">
+                    <div class="directory-tools">
+                        <div>
+                            <h3>Website Coupon Codes</h3>
+                            <p>Create and control discount coupons students can use on the future VLACE website checkout.</p>
+                        </div>
+                        <button class="primary-button" type="button" id="addCouponButton">+ Add Coupon</button>
+                    </div>
+
+                    <div class="table-wrap package-table-wrap">
+                        <table class="package-pricing-table coupon-management-table">
+                            <thead>
+                                <tr>
+                                    <th>Coupon Code</th>
+                                    <th>Discount</th>
+                                    <th>Validity</th>
+                                    <th>Usage Limit</th>
+                                    <th>Used</th>
+                                    <th>Status</th>
+                                    <th>Website Integration</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="couponTableBody"></tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="panel directory-panel package-coupon-panel">
+                    <div class="directory-tools">
+                        <div>
+                            <h3>Coupon Usage History</h3>
+                            <p>Track which students used a coupon, how many times they used it, and the date it was applied.</p>
+                        </div>
+                        <span class="status-pill neutral">Admin view only</span>
+                    </div>
+
+                    <div class="table-wrap package-table-wrap">
+                        <table class="package-pricing-table coupon-usage-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Coupon Used</th>
+                                    <th>Times Used</th>
+                                    <th>Date of Application</th>
+                                    <th>Package</th>
+                                    <th>Discount Applied</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="couponUsageTableBody"></tbody>
                         </table>
                     </div>
                 </article>
