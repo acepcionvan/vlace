@@ -11,8 +11,8 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=student-age-edit-modal-20260810">
-    <script src="{{ asset('js/app.js') }}?v=student-age-edit-modal-20260810" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=approval-request-review-button-20260810">
+    <script src="{{ asset('js/app.js') }}?v=approval-request-review-button-20260810" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -135,6 +135,7 @@
 
                 <button data-section-target="packages"><i data-lucide="package"></i><span>Packages &amp; Prices</span></button>
                 <button data-section-target="finance"><i data-lucide="wallet-cards"></i><span>Finance</span></button>
+                <button data-section-target="approvals"><i data-lucide="clipboard-check"></i><span>Approval Requests</span><b class="nav-count" id="approvalRequestNavCount">5</b></button>
 
                 <div class="sidebar-divider" aria-hidden="true"></div>
 
@@ -249,6 +250,8 @@
                     </div>
                     <div class="admin-country-coverage-grid" id="adminCountryCoverageGrid"></div>
                 </section>
+
+                <section class="admin-payroll-approval-tasks" id="adminPayrollApprovalTasks" aria-label="Manager payroll flag approval tasks"></section>
 
                 <section class="today-income" aria-label="Today’s calculated income">
                     <div class="today-income-heading">
@@ -626,6 +629,40 @@
                             </article>
                         </section>
 
+                        <section class="teacher-profile-overview admin-teacher-profile-overview admin-teacher-equipment-bank-overview">
+                            <article class="teacher-profile-info-card">
+                                <div class="teacher-links-card-head">
+                                    <div>
+                                        <h4>Computer Specs</h4>
+                                        <p>Workstation, internet, and continuity readiness</p>
+                                    </div>
+                                    <button class="secondary-button" type="button" id="teacherComputerPanelEdit">Edit</button>
+                                </div>
+                                <dl>
+                                    <div><dt>Computer Specs</dt><dd id="teacherComputerSpecs">MacBook Air M1 / 8GB RAM / 256GB SSD / HD webcam</dd></div>
+                                    <div><dt>Main Internet &amp; Speed</dt><dd id="teacherMainInternet">Fiber broadband · 200 Mbps</dd></div>
+                                    <div><dt>Dual Monitor?</dt><dd id="teacherDualMonitor">Yes</dd></div>
+                                    <div><dt>Backup Internet &amp; Speed</dt><dd id="teacherBackupInternet">5G mobile hotspot · 80 Mbps</dd></div>
+                                    <div><dt>Backup Electricity</dt><dd id="teacherBackupElectricity">UPS · 4 hours backup</dd></div>
+                                </dl>
+                            </article>
+
+                            <article class="teacher-profile-info-card">
+                                <div class="teacher-links-card-head">
+                                    <div>
+                                        <h4>Bank Information</h4>
+                                        <p>Payroll account details on file</p>
+                                    </div>
+                                    <button class="secondary-button" type="button" id="teacherBankPanelEdit">Edit</button>
+                                </div>
+                                <dl>
+                                    <div><dt>Complete Name</dt><dd id="teacherBankCompleteName">Maria Santos</dd></div>
+                                    <div><dt>Bank Name</dt><dd id="teacherBankName">BDO Unibank</dd></div>
+                                    <div><dt>Bank Account Number</dt><dd id="teacherBankAccountNumber">0088-1234-5678</dd></div>
+                                </dl>
+                            </article>
+                        </section>
+
                         <section class="teacher-contact-card">
                             <div class="student-sensitive-head teacher-contact-head">
                                 <div class="student-sensitive-title">
@@ -811,7 +848,6 @@
                                         <strong id="teacherOpenSlotCount">0 open time slots</strong>
                                         <span>30-minute increments · 6:00 AM to 12:00 midnight</span>
                                     </div>
-                                    <button type="button" id="teacherCloseAllSlots">Close All</button>
                                 </div>
 
                                 <div class="teacher-weekly-calendar-wrap">
@@ -2396,6 +2432,10 @@
                 <div id="financePageContent"></div>
             </section>
 
+            <section class="page-content dashboard-section approval-requests-page" data-section="approvals">
+                <div id="adminApprovalRequests"></div>
+            </section>
+
             <section class="page-content dashboard-section communication-page" data-section="inbox">
                 <div id="communicationWorkspace"></div>
             </section>
@@ -3629,13 +3669,13 @@
                         <span>✓</span>
                         <div>
                             <h3>Teacher response</h3>
-                            <p>Optional comment about this review</p>
+                            <p>Required before completing acknowledgment</p>
                         </div>
                     </div>
-                    <textarea id="teacherFeedbackEmployeeNote" placeholder="Add a comment, clarification, or commitment…"></textarea>
+                    <textarea id="teacherFeedbackEmployeeNote" placeholder="Add a comment, clarification, or commitment…" required></textarea>
                 </section>
 
-                <div class="feedback-audit-note">The final acknowledgment records the teacher’s name, date, Philippine time, and any response in the activity log.</div>
+                <div class="feedback-audit-note">The final acknowledgment records the teacher’s name, date, Philippine time, and required response in the activity log.</div>
             </div>
             <footer class="student-edit-footer feedback-drawer-footer">
                 <div><strong id="teacherFeedbackAckProgress">0 of 5</strong><span> items acknowledged</span></div>

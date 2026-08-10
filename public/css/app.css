@@ -6,7 +6,7 @@
     --ink: #102a4c;
     --muted: #687b91;
     --line: #dce4ed;
-    --bg: #f5f8fc;
+    --bg: #a1d2ea;
     --green: #188756;
 }
 
@@ -718,7 +718,7 @@ nav svg {
 
 .teacher-app-shell {
     min-height: 100vh;
-    background: #eef4fa;
+    background: #a1d2ea;
 }
 
 .teacher-sidebar {
@@ -773,6 +773,9 @@ nav svg {
 }
 
 .teacher-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
     min-height: 68px;
     display: flex;
     align-items: center;
@@ -781,6 +784,7 @@ nav svg {
     padding: 9px 28px;
     border-bottom: 2px solid #e1b900;
     background: #ffdf54;
+    box-shadow: 0 8px 22px rgba(17, 45, 78, .08);
 }
 
 .teacher-topbar h1 {
@@ -881,7 +885,7 @@ nav svg {
 }
 
 .teacher-pay-kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .teacher-pay-kpis article {
@@ -894,6 +898,10 @@ nav svg {
 
 .teacher-pay-kpis article:nth-child(3) {
     border-top-color: #df9a28;
+}
+
+.teacher-pay-kpis article:nth-child(4) {
+    border-top-color: #835fea;
 }
 
 .teacher-portal-kpis article,
@@ -1040,6 +1048,132 @@ nav svg {
     color: #71869b;
     font-size: 11px;
     font-weight: 900;
+}
+
+.reassignment-status-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.reassignment-status-button span {
+    font-size: 11px;
+    font-weight: 950;
+    line-height: 1.1;
+}
+
+.reassignment-status-button small {
+    display: none;
+    margin-top: 1px;
+    color: currentColor;
+    font-size: 10px;
+    font-weight: 850;
+    opacity: .82;
+}
+
+.reassignment-status-button:hover {
+    filter: brightness(.98);
+    box-shadow: 0 5px 14px #17385618;
+}
+
+.reassignment-modal {
+    overflow: hidden;
+}
+
+.reassignment-modal-body {
+    display: grid;
+    gap: 16px;
+    padding: 18px;
+}
+
+.reassignment-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #dce8f3;
+    border-radius: 12px;
+    background: #f8fbff;
+    padding: 14px;
+}
+
+.reassignment-flow article {
+    border: 1px solid #dfe9f4;
+    border-radius: 10px;
+    background: #fff;
+    padding: 14px;
+}
+
+.reassignment-flow span,
+.reassignment-detail-grid dt,
+.reassignment-note strong {
+    display: block;
+    color: #6a8096;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.reassignment-flow strong {
+    display: block;
+    margin-top: 5px;
+    color: #102b4d;
+    font-size: 18px;
+    font-weight: 950;
+}
+
+.reassignment-flow > i {
+    width: 22px;
+    height: 22px;
+    color: #1769e8;
+}
+
+.reassignment-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+}
+
+.reassignment-detail-grid div {
+    border: 1px solid #e1eaf4;
+    border-radius: 10px;
+    background: #fff;
+    padding: 12px;
+}
+
+.reassignment-detail-grid dd {
+    margin: 5px 0 0;
+    color: #203f60;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.reassignment-note {
+    border: 1px solid #d9e9dd;
+    border-radius: 12px;
+    background: #f6fbf8;
+    padding: 14px;
+}
+
+.reassignment-note p {
+    margin: 5px 0 12px;
+    color: #42617d;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.reassignment-note p:last-child {
+    margin-bottom: 0;
 }
 
 .teacher-status-choice-list {
@@ -1853,6 +1987,90 @@ nav svg {
     background: #c4d0dc;
 }
 
+.teacher-scheduled-classes-card {
+    margin: 0 18px 12px;
+    overflow: hidden;
+    border: 1px solid #dce8f3;
+    border-radius: 10px;
+    background: #fbfdff;
+}
+
+.teacher-scheduled-classes-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5edf5;
+}
+
+.teacher-scheduled-classes-head h4 {
+    margin: 0;
+    color: #173856;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.teacher-scheduled-classes-head p {
+    margin: 4px 0 0;
+    color: #70869c;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.teacher-scheduled-classes-head > span {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #eef6ff;
+    color: #1769e8;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.teacher-scheduled-classes-wrap {
+    border: 0;
+    border-radius: 0;
+}
+
+.teacher-scheduled-classes-table {
+    width: 100%;
+    min-width: 960px;
+    border-collapse: collapse;
+}
+
+.teacher-scheduled-classes-table th,
+.teacher-scheduled-classes-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: left;
+    white-space: nowrap;
+    color: #203f60;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.teacher-scheduled-classes-table th {
+    background: #f8fbff;
+    color: #657d96;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.teacher-scheduled-classes-table td strong,
+.teacher-scheduled-classes-table td small {
+    display: block;
+}
+
+.teacher-scheduled-classes-table td small {
+    margin-top: 3px;
+    color: #8195aa;
+    font-size: 11px;
+    font-weight: 800;
+}
+
 .teacher-portal-weekly-calendar .teacher-calendar-slot {
     cursor: default;
 }
@@ -1913,6 +2131,9 @@ nav svg {
 }
 
 .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
     min-height: 62px;
     background: #ffde59;
     border-bottom: 2px solid #d2ad00;
@@ -1920,6 +2141,7 @@ nav svg {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    box-shadow: 0 8px 22px rgba(17, 45, 78, .08);
 }
 
 .topbar-navigation {
@@ -4719,6 +4941,16 @@ nav svg {
     color: #96600e;
 }
 
+.status-reassigned-to-me {
+    background: #e5f7ed;
+    color: #167b4c;
+}
+
+.status-reassigned-from-me {
+    background: #fdebec;
+    color: #b43e47;
+}
+
 .country-badge {
     background: #eff6ff;
     color: #2c609e;
@@ -6051,6 +6283,48 @@ nav svg {
     grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr) minmax(0, 1.08fr) minmax(250px, .82fr);
 }
 
+.admin-teacher-equipment-bank-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.teacher-profile-edit-modal {
+    overflow: hidden;
+}
+
+.teacher-profile-edit-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px;
+}
+
+.teacher-profile-edit-form label {
+    display: grid;
+    gap: 7px;
+    color: #60758b;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.teacher-profile-edit-form input,
+.teacher-profile-edit-form select {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #d5e1ed;
+    border-radius: 8px;
+    background: #fff;
+    color: #183856;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.teacher-profile-edit-form .modal-actions {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+}
+
 .teacher-profile-info-card {
     min-height: 220px;
     border: 1px solid #d6e2ee;
@@ -6963,6 +7237,29 @@ nav svg {
 .teacher-payroll-workspace {
     display: grid;
     gap: 16px;
+}
+
+.teacher-payroll-history-card {
+    overflow: hidden;
+    border: 1px solid #dce8f3;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 26px #174a7b0d;
+}
+
+.teacher-payroll-history-card .payroll-toolbar {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e5edf5;
+}
+
+.teacher-payroll-history-card .teacher-payroll-history-panel {
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+}
+
+.teacher-payroll-history-card .table-wrap {
+    border-radius: 0;
 }
 
 .payroll-toolbar {
@@ -11481,6 +11778,10 @@ body.lesson-preview-open {
     border-collapse: collapse;
 }
 
+.manager-student-lessons-table {
+    min-width: 1460px;
+}
+
 .student-referral-table {
     width: 100%;
     min-width: 1120px;
@@ -11525,6 +11826,18 @@ body.lesson-preview-open {
     color: #284763;
     font-size: 14px;
     font-weight: 750;
+}
+
+.manager-student-lessons-table td strong,
+.manager-student-lessons-table td small {
+    display: block;
+}
+
+.manager-student-lessons-table td small {
+    margin-top: 3px;
+    color: #8296aa;
+    font-size: 12px;
+    font-weight: 800;
 }
 
 .student-referral-table td small {
@@ -12547,7 +12860,7 @@ body.drawer-open {
     padding: 24px 28px 55px;
     max-width: 1700px;
     margin: auto;
-    background: #f4f7fb;
+    background: #a1d2ea;
     color: #19324b;
 }
 
@@ -17589,6 +17902,761 @@ body.drawer-open {
     color: #176047;
     font-size: 10px;
     font-weight: 900;
+}
+
+.manager-payroll-panel {
+    overflow: hidden;
+    border: 1px solid #cfe0ee;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(16, 45, 74, .08);
+}
+
+.manager-payroll-head {
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid #e1ebf4;
+    background: #f8fbff;
+}
+
+.manager-payroll-table-wrap {
+    overflow-x: auto;
+}
+
+.manager-payroll-table {
+    width: 100%;
+    min-width: 1060px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.manager-payroll-table th,
+.manager-payroll-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #e6eef6;
+    color: #173554;
+    vertical-align: middle;
+}
+
+.manager-payroll-table th {
+    background: #edf5fc;
+    color: #5f7489;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .04em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.manager-payroll-table tbody tr:nth-child(even) {
+    background: #fbfdff;
+}
+
+.manager-payroll-table tbody tr:hover {
+    background: #f4f9ff;
+}
+
+.manager-payroll-table th:nth-child(1),
+.manager-payroll-table td:nth-child(1) {
+    width: 230px;
+}
+
+.manager-payroll-table th:nth-child(2),
+.manager-payroll-table td:nth-child(2) {
+    width: 130px;
+}
+
+.manager-payroll-table th:nth-child(3),
+.manager-payroll-table th:nth-child(4),
+.manager-payroll-table td:nth-child(3),
+.manager-payroll-table td:nth-child(4) {
+    width: 80px;
+    text-align: center;
+}
+
+.manager-payroll-table th:nth-child(5),
+.manager-payroll-table td:nth-child(5) {
+    width: 105px;
+}
+
+.manager-payroll-table th:nth-child(6),
+.manager-payroll-table th:nth-child(7),
+.manager-payroll-table th:nth-child(8),
+.manager-payroll-table td:nth-child(6),
+.manager-payroll-table td:nth-child(7),
+.manager-payroll-table td:nth-child(8) {
+    width: 125px;
+    text-align: right;
+}
+
+.manager-payroll-table th:nth-child(9),
+.manager-payroll-table td:nth-child(9) {
+    width: 120px;
+    text-align: center;
+}
+
+.manager-payroll-table th:nth-child(10),
+.manager-payroll-table td:nth-child(10) {
+    width: 90px;
+    text-align: right;
+}
+
+.manager-payroll-person {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.manager-payroll-person .user-photo-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    box-shadow: 0 6px 14px rgba(16, 45, 74, .13);
+}
+
+.manager-payroll-person strong,
+.manager-payroll-person small,
+.manager-payroll-table td > small {
+    display: block;
+}
+
+.manager-payroll-person strong {
+    overflow: hidden;
+    color: #14324e;
+    font-size: 14px;
+    font-weight: 950;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.manager-payroll-person small,
+.manager-payroll-table td > small {
+    margin-top: 2px;
+    color: #7b8fa3;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.manager-payroll-number,
+.manager-payroll-money {
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+}
+
+.manager-payroll-table .row-action {
+    min-width: 64px;
+    padding: 8px 12px;
+    border: 1px solid #bcd7f4;
+    border-radius: 8px;
+    background: #eef6ff;
+    color: #1769e8;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.manager-payroll-table .row-action:hover {
+    border-color: #1769e8;
+    background: #e5f0ff;
+}
+
+.manager-payroll-table tfoot td {
+    border-top: 2px solid #cfe0ee;
+    border-bottom: 0;
+    background: #f4f9ff;
+    font-weight: 950;
+}
+
+.manager-payroll-flags,
+.admin-payroll-approval-tasks {
+    border-top: 1px solid #dce8f2;
+    background: #fbfdff;
+}
+
+.manager-payroll-flags {
+    padding: 18px 20px 20px;
+}
+
+.admin-payroll-approval-tasks {
+    overflow: hidden;
+    border: 1px solid #cfe0ee;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(16, 45, 74, .08);
+}
+
+.manager-payroll-flags-head,
+.admin-payroll-approval-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.admin-payroll-approval-head {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e1ebf4;
+    background: #f8fbff;
+}
+
+.manager-payroll-flags-head span,
+.admin-payroll-approval-head span {
+    color: #426f9a;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.manager-payroll-flags-head h4,
+.admin-payroll-approval-head h2 {
+    margin: 3px 0 0;
+    color: #14324e;
+    font-size: 22px;
+    font-weight: 950;
+}
+
+.manager-payroll-flags-head p,
+.admin-payroll-approval-head p {
+    margin: 4px 0 0;
+    color: #70859a;
+    font-weight: 800;
+}
+
+.manager-payroll-flags-head > strong,
+.admin-payroll-approval-head > strong {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #eef6ff;
+    color: #1769e8;
+    font-size: 12px;
+    font-weight: 950;
+}
+
+.manager-payroll-flag-list,
+.admin-payroll-approval-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.admin-payroll-approval-list {
+    margin: 0;
+    padding: 14px;
+}
+
+.manager-payroll-flag-list article {
+    display: grid;
+    grid-template-columns: minmax(210px, 1.2fr) minmax(240px, 1.6fr) 130px 170px;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid #dce8f2;
+    border-radius: 9px;
+    background: #ffffff;
+}
+
+.admin-payroll-approval-list article {
+    display: grid;
+    grid-template-columns: minmax(210px, 1.2fr) minmax(240px, 1.6fr) 130px 170px auto;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid #dce8f2;
+    border-radius: 9px;
+    background: #ffffff;
+}
+
+.manager-payroll-flag-list article.is-empty,
+.admin-payroll-approval-list article.is-empty {
+    display: block;
+    color: #60758a;
+}
+
+.manager-payroll-flag-list div > span,
+.admin-payroll-approval-list div > span {
+    display: block;
+    color: #71869a;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.manager-payroll-flag-list div > strong,
+.manager-payroll-flag-list div > small,
+.admin-payroll-approval-list div > strong,
+.admin-payroll-approval-list div > small {
+    display: block;
+}
+
+.manager-payroll-flag-list div > strong,
+.admin-payroll-approval-list div > strong {
+    margin-top: 3px;
+    color: #14324e;
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.manager-payroll-flag-list div > small,
+.admin-payroll-approval-list div > small {
+    margin-top: 3px;
+    color: #74889c;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.admin-payroll-approval-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.admin-payroll-approval-actions button {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+}
+
+.approval-requests-page {
+    padding: 24px 28px 55px;
+    max-width: 1700px;
+    margin: auto;
+}
+
+.approval-requests-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 24px 28px;
+    border: 1px solid #d7e5f2;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f8fbff 0%, #ffffff 62%, #eef8f4 100%);
+    box-shadow: 0 12px 28px rgba(16, 45, 74, .08);
+}
+
+.approval-requests-hero h2 {
+    margin: 4px 0;
+    color: #14324e;
+    font-size: 30px;
+    font-weight: 950;
+}
+
+.approval-requests-hero span {
+    color: #71869a;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.approval-requests-hero > strong {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border: 1px solid #ffd7a8;
+    border-radius: 999px;
+    background: #fff4e6;
+    color: #b76611;
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.approval-request-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.approval-request-summary article {
+    min-height: 96px;
+    padding: 16px;
+    border: 1px solid #dce8f3;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: inset 0 4px 0 #2b7be8, 0 8px 18px rgba(20, 55, 90, .05);
+}
+
+.approval-request-summary article:nth-child(2) {
+    box-shadow: inset 0 4px 0 #20a66a, 0 8px 18px rgba(20, 55, 90, .05);
+}
+
+.approval-request-summary article:nth-child(3) {
+    box-shadow: inset 0 4px 0 #d95656, 0 8px 18px rgba(20, 55, 90, .05);
+}
+
+.approval-request-summary article:nth-child(4) {
+    box-shadow: inset 0 4px 0 #835fea, 0 8px 18px rgba(20, 55, 90, .05);
+}
+
+.approval-request-summary span,
+.approval-request-summary small {
+    display: block;
+    color: #74889c;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.approval-request-summary strong {
+    display: block;
+    margin: 6px 0;
+    color: #102b4d;
+    font-size: 28px;
+    font-weight: 950;
+}
+
+.approval-request-workspace {
+    overflow: hidden;
+    margin-top: 16px;
+    border: 1px solid #d7e5f2;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(16, 45, 74, .08);
+}
+
+.approval-request-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #e1ebf4;
+    background: #f8fbff;
+}
+
+.approval-request-head h3 {
+    margin: 0;
+    color: #14324e;
+    font-size: 22px;
+    font-weight: 950;
+}
+
+.approval-request-head p,
+.approval-request-head span {
+    margin: 4px 0 0;
+    color: #71869a;
+    font-weight: 800;
+}
+
+.approval-request-list {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+}
+
+.approval-request-row {
+    display: grid;
+    grid-template-columns: minmax(150px, .8fr) minmax(320px, 1.8fr) minmax(180px, .9fr) 120px auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid #dce8f2;
+    border-radius: 9px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.approval-request-row:hover {
+    border-color: #b9d4f3;
+    box-shadow: 0 12px 24px rgba(20, 55, 90, .08);
+    transform: translateY(-1px);
+}
+
+.approval-request-row:focus-visible {
+    outline: 3px solid #cfe4ff;
+    outline-offset: 2px;
+}
+
+.approval-request-row.is-pending {
+    border-left: 4px solid #2b7be8;
+    background: #fbfdff;
+}
+
+.approval-request-row span,
+.approval-request-row small {
+    display: block;
+    color: #74889c;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.approval-request-row strong {
+    display: block;
+    color: #14324e;
+    font-weight: 950;
+}
+
+.approval-request-main p {
+    margin: 5px 0 0;
+    color: #657c93;
+    font-size: 12px;
+    font-weight: 780;
+    line-height: 1.45;
+}
+
+.approval-request-type span,
+.approval-request-source span {
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.approval-request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.approval-request-actions button {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+}
+
+.approval-request-actions small {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #f1f6fb;
+    color: #71869a;
+}
+
+.admin-approval-review-backdrop {
+    z-index: 1200;
+}
+
+.admin-approval-review-modal {
+    width: min(720px, calc(100vw - 34px));
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #d6e5f4;
+}
+
+.admin-approval-review-modal .modal-head {
+    margin: 0;
+    padding: 22px 24px;
+    border-bottom: 1px solid #e0ebf5;
+    background: #f8fbff;
+}
+
+.admin-approval-review-modal .modal-head small {
+    display: block;
+    margin-top: 5px;
+    color: #73899f;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.admin-approval-review-body {
+    display: grid;
+    gap: 14px;
+    padding: 18px 24px 20px;
+}
+
+.admin-approval-review-summary {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid #dce8f3;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.admin-approval-review-summary .status-pill {
+    justify-self: flex-start;
+}
+
+.admin-approval-review-summary strong {
+    color: #14324e;
+    font-size: 18px;
+    font-weight: 950;
+}
+
+.admin-approval-review-summary p,
+.admin-approval-review-note p {
+    margin: 0;
+    color: #667f96;
+    font-size: 13px;
+    font-weight: 780;
+    line-height: 1.55;
+}
+
+.admin-approval-review-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-approval-review-grid article {
+    min-height: 92px;
+    padding: 13px;
+    border: 1px solid #dce8f3;
+    border-radius: 9px;
+    background: #f8fbff;
+}
+
+.admin-approval-review-grid span,
+.admin-approval-review-note span {
+    display: block;
+    color: #71869a;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.admin-approval-review-grid strong {
+    display: block;
+    margin: 7px 0 3px;
+    color: #14324e;
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.admin-approval-review-grid small {
+    color: #71869a;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.admin-approval-review-note {
+    padding: 14px 16px;
+    border: 1px solid #bfdbff;
+    border-radius: 10px;
+    background: #eef6ff;
+}
+
+.admin-approval-review-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid #e0ebf5;
+    background: #ffffff;
+}
+
+.manager-payroll-flag-backdrop {
+    z-index: 80;
+}
+
+.manager-payroll-flag-modal {
+    width: min(620px, calc(100vw - 32px));
+    overflow: hidden;
+}
+
+.manager-payroll-flag-modal .modal-head {
+    padding: 20px 22px;
+    border-bottom: 1px solid #e0ebf5;
+    background: #f7fbff;
+}
+
+.manager-payroll-flag-modal .modal-head p,
+.manager-payroll-flag-modal .modal-head small {
+    margin: 0;
+}
+
+.manager-payroll-flag-modal .modal-head small {
+    display: block;
+    margin-top: 4px;
+    color: #6f8397;
+    font-weight: 850;
+}
+
+.manager-payroll-flag-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px 22px 22px;
+}
+
+.manager-payroll-flag-form label,
+.manager-payroll-flag-form label span {
+    display: grid;
+    gap: 7px;
+    color: #5f7489;
+    font-size: 11px;
+    font-weight: 950;
+    text-transform: uppercase;
+}
+
+.manager-payroll-flag-form input,
+.manager-payroll-flag-form select,
+.manager-payroll-flag-form textarea {
+    width: 100%;
+    border: 1px solid #cfe0ee;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #173554;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: none;
+}
+
+.manager-payroll-flag-form input,
+.manager-payroll-flag-form select {
+    min-height: 44px;
+    padding: 0 12px;
+}
+
+.manager-payroll-flag-form textarea {
+    min-height: 104px;
+    padding: 12px;
+    resize: vertical;
+}
+
+.manager-payroll-flag-form .full,
+.manager-payroll-flag-preview,
+.manager-payroll-flag-form footer {
+    grid-column: 1 / -1;
+}
+
+.manager-payroll-flag-form small {
+    color: #7b8fa3;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: none;
+}
+
+.manager-payroll-flag-preview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 12px 14px;
+    border: 1px solid #d7e6f4;
+    border-radius: 8px;
+    background: #f5faff;
+}
+
+.manager-payroll-flag-preview span,
+.manager-payroll-flag-preview small {
+    color: #6f8397;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+.manager-payroll-flag-preview strong {
+    color: #14324e;
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.manager-payroll-flag-preview small {
+    grid-column: 1 / -1;
+}
+
+.manager-payroll-flag-form footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 4px;
 }
 
 .manager-payroll-total {
@@ -28828,6 +29896,46 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
     color: #7d92a8;
 }
 
+.manager-add-class-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid #b8d6f4;
+    border-radius: 8px;
+    background: #eaf4ff;
+    color: #1769e8;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 4px 12px #1769e812;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.manager-add-class-button:hover {
+    transform: translateY(-1px);
+    border-color: #81b8ef;
+    background: #ddecff;
+    box-shadow: 0 8px 18px #1769e81c;
+}
+
+.manager-add-class-button svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.4;
+}
+
+.manager-add-class-button-compact {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
+}
+
 .manager-student-directory-note {
     padding: 12px 20px;
     border-top: 1px solid #dfeaf5;
@@ -28896,6 +30004,186 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
 
 .manager-student-schedule-grid {
     padding-top: 18px;
+}
+
+.manager-student-weekly-card {
+    margin: 18px 20px 20px;
+    overflow: hidden;
+    border-color: #dce8f3;
+    box-shadow: none;
+}
+
+.manager-student-calendar-legend {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.manager-student-calendar-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #667d94;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.manager-student-calendar-legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+}
+
+.manager-student-calendar-legend .legend-booked {
+    background: #1f73ed;
+}
+
+.manager-student-calendar-legend .legend-preferred {
+    background: #2fbf76;
+}
+
+.manager-student-calendar-legend .legend-completed {
+    background: #835fea;
+}
+
+.manager-student-week-note {
+    margin: 0 18px 14px;
+}
+
+.manager-booked-lessons-card {
+    margin: 0 18px 14px;
+    border: 1px solid #dce8f3;
+    border-radius: 10px;
+    background: #fbfdff;
+    overflow: hidden;
+}
+
+.manager-booked-lessons-card > div:first-child,
+.manager-booked-lessons-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5edf5;
+}
+
+.manager-booked-lessons-card h4 {
+    margin: 0;
+    color: #173856;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.manager-booked-lessons-card p {
+    margin: 4px 0 0;
+    color: #70869c;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.manager-booked-lessons-head > span {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #eef6ff;
+    color: #1769e8;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.manager-booked-lessons-wrap {
+    border: 0;
+    border-radius: 0;
+}
+
+.manager-booked-lessons-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+}
+
+.manager-booked-lessons-table th,
+.manager-booked-lessons-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: left;
+    color: #203f60;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.manager-booked-lessons-table th {
+    background: #f8fbff;
+    color: #657d96;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.manager-booked-lessons-table td strong,
+.manager-booked-lessons-table td small {
+    display: block;
+}
+
+.manager-booked-lessons-table td small {
+    margin-top: 3px;
+    color: #8195aa;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.manager-student-weekly-wrap {
+    margin: 0 18px 18px;
+    max-height: 560px;
+}
+
+.manager-student-weekly-calendar {
+    min-width: 1160px;
+}
+
+.manager-student-week-slot {
+    height: 54px;
+}
+
+.manager-student-week-slot.closed {
+    background: #fbfdff;
+    box-shadow: none;
+}
+
+.manager-student-week-slot.closed strong,
+.manager-student-week-slot.closed span {
+    color: #a3b1bf;
+}
+
+.teacher-calendar-slot.preferred {
+    background: #effaf4;
+    box-shadow: inset 3px 0 0 #2fbf76;
+}
+
+.teacher-calendar-slot.preferred strong {
+    color: #16774b;
+}
+
+.teacher-calendar-slot.preferred span {
+    color: #3f8061;
+}
+
+.teacher-calendar-slot.completed {
+    background: #f4f0ff;
+    box-shadow: inset 3px 0 0 #835fea;
+}
+
+.teacher-calendar-slot.completed strong {
+    color: #4b358f;
+}
+
+.teacher-calendar-slot.completed span {
+    color: #6e5aa7;
 }
 
 .manager-slot-actions {
@@ -29069,7 +30357,7 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
     }
 
     body {
-        background: #eef4fa;
+        background: #a1d2ea;
     }
 
     body::after {
@@ -29112,16 +30400,18 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
     }
 
     .main,
-    .teacher-main {
+    .teacher-main,
+    .manager-main {
         width: 100%;
         margin-left: 0;
     }
 
     .topbar,
-    .teacher-topbar {
+    .teacher-topbar,
+    .manager-topbar {
         position: sticky;
         top: 0;
-        z-index: 15;
+        z-index: 30;
         min-height: auto;
         align-items: center;
         gap: 10px;
@@ -29155,7 +30445,8 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
     }
 
     .topbar h1,
-    .teacher-topbar h1 {
+    .teacher-topbar h1,
+    .manager-topbar h1 {
         max-width: 48vw;
         overflow: hidden;
         font-size: 20px;
@@ -29423,12 +30714,14 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
 
 @media (max-width: 520px) {
     .topbar,
-    .teacher-topbar {
+    .teacher-topbar,
+    .manager-topbar {
         padding: 8px 10px;
     }
 
     .topbar h1,
-    .teacher-topbar h1 {
+    .teacher-topbar h1,
+    .manager-topbar h1 {
         max-width: 42vw;
         font-size: 18px;
     }
@@ -29530,5 +30823,38 @@ body .modal-backdrop .teacher-protected-lesson-modal.is-expanded {
         color: #688072 !important;
         font-size: 7px !important;
         line-height: 1.2 !important;
+    }
+
+    .approval-requests-page {
+        padding: 16px 12px 40px;
+    }
+
+    .approval-requests-hero,
+    .approval-request-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .approval-request-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .approval-request-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .approval-request-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 520px) {
+    .approval-request-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .approval-requests-hero h2 {
+        font-size: 24px;
     }
 }

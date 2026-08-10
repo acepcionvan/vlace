@@ -10,6 +10,7 @@ const sectionTitles = {
     lessons: 'Lessons',
     packages: 'Packages & Prices',
     finance: 'Finance',
+    approvals: 'Approval Requests',
     inbox: 'Unified Inbox',
     email: 'Email Inbox',
     chatbot: 'Chatbot',
@@ -652,6 +653,7 @@ const teacherPayrollRecords = {
 const teacherPayrollDeductions = [
     {
         id: 'DED-001',
+        teacherId: 'T1-001',
         period: 'January 1–15, 2026',
         reason: 'Absent',
         amount: 115,
@@ -663,6 +665,105 @@ const teacherPayrollDeductions = [
         status: 'Applied',
     },
 ];
+
+const teacherPayrollDeductionsStorageKey = 'vlace-teacher-payroll-deductions';
+
+function getPrototypeStorageItem(storageName, key) {
+    try {
+        return window[storageName]?.getItem(key) || '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function setPrototypeStorageItem(storageName, key, value) {
+    try {
+        window[storageName]?.setItem(key, value);
+    } catch (error) {
+        // Prototype remains usable if a storage surface is unavailable.
+    }
+}
+
+function getPrototypeWindowNameItem(key) {
+    try {
+        const payload = JSON.parse(window.name || '{}');
+        return payload?.[key] || '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function setPrototypeWindowNameItem(key, value) {
+    try {
+        const payload = JSON.parse(window.name || '{}');
+        payload[key] = value;
+        window.name = JSON.stringify(payload);
+    } catch (error) {
+        window.name = JSON.stringify({ [key]: value });
+    }
+}
+
+function loadTeacherPayrollDeductions() {
+    try {
+        const request = new XMLHttpRequest();
+        request.open('GET', '/prototype/payroll-deductions', false);
+        request.setRequestHeader('Accept', 'application/json');
+        request.send();
+        if (request.status >= 200 && request.status < 300) {
+            const serverStored = JSON.parse(request.responseText || '[]');
+            if (Array.isArray(serverStored)) {
+                serverStored.forEach((item) => {
+                    if (item?.id && !teacherPayrollDeductions.some((record) => record.id === item.id)) {
+                        teacherPayrollDeductions.push(item);
+                    }
+                });
+                return;
+            }
+        }
+    } catch (error) {
+        // Fall back to browser storage below.
+    }
+
+    try {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith(`${teacherPayrollDeductionsStorageKey}=`))
+            ?.split('=')
+            .slice(1)
+            .join('=');
+        const raw = getPrototypeWindowNameItem(teacherPayrollDeductionsStorageKey)
+            || getPrototypeStorageItem('localStorage', teacherPayrollDeductionsStorageKey)
+            || getPrototypeStorageItem('sessionStorage', teacherPayrollDeductionsStorageKey)
+            || (cookieValue ? decodeURIComponent(cookieValue) : '[]');
+        const stored = JSON.parse(raw || '[]');
+        if (!Array.isArray(stored)) return;
+        stored.forEach((item) => {
+            if (item?.id && !teacherPayrollDeductions.some((record) => record.id === item.id)) {
+                teacherPayrollDeductions.push(item);
+            }
+        });
+    } catch (error) {
+        // Prototype remains usable if local storage is unavailable.
+    }
+}
+
+function saveTeacherPayrollDeductions() {
+    try {
+        const serialized = JSON.stringify(teacherPayrollDeductions);
+        setPrototypeStorageItem('localStorage', teacherPayrollDeductionsStorageKey, serialized);
+        setPrototypeStorageItem('sessionStorage', teacherPayrollDeductionsStorageKey, serialized);
+        setPrototypeWindowNameItem(teacherPayrollDeductionsStorageKey, serialized);
+        document.cookie = `${teacherPayrollDeductionsStorageKey}=${encodeURIComponent(serialized)}; path=/; max-age=604800; SameSite=Lax`;
+        const request = new XMLHttpRequest();
+        request.open('POST', '/prototype/payroll-deductions', false);
+        request.setRequestHeader('Accept', 'application/json');
+        request.setRequestHeader('Content-Type', 'application/json');
+        request.setRequestHeader('X-CSRF-TOKEN', getCsrfToken());
+        request.send(JSON.stringify({ deductions: teacherPayrollDeductions }));
+    } catch (error) {
+        // Prototype remains usable if local storage is unavailable.
+    }
+}
 
 const teacherDocuments = [
     { title: 'Teaching Contract', category: 'Contract', type: 'PDF', updated: 'Jul 10, 2026', status: 'Approved' },
@@ -1471,7 +1572,7 @@ function renderTeacherPortal() {
 }
 
 function renderTeacherPortalHero(teacher, title, subtitle) {
-    return `<section class="teacher-portal-hero"><div><p class="eyebrow">TEACHER WORKSPACE</p><h2>${escapeHtml(title)}</h2><small>${escapeHtml(subtitle)}</small></div><span class="status status-active">${escapeHtml(teacher.status)}</span></section>`;
+    return '';
 }
 
 function renderTeacherPortalOverview(teacher) {
@@ -1534,6 +1635,7 @@ function renderTeacherPortalSchedule(teacher) {
                 <span><i class="legend-booked"></i>Assigned and Locked</span>
                 <span><i class="legend-closed"></i>Closed</span>
             </div>
+            ${renderTeacherScheduledClassesSummary(teacher)}
             <div class="teacher-open-slots-bar">
                 <div>
                     <strong>${stats.opened} opened availability slots · ${stats.open} available to assign · ${stats.assigned} assigned</strong>
@@ -1544,6 +1646,76 @@ function renderTeacherPortalSchedule(teacher) {
             <div class="teacher-weekly-calendar-wrap">
                 <table class="teacher-weekly-calendar teacher-portal-weekly-calendar">
                     ${renderTeacherPortalWeeklyCalendar(teacher)}
+                </table>
+            </div>
+        </section>
+    `;
+}
+
+function getTeacherScheduledClassRows(teacher) {
+    return Object.entries(getTeacherPortalBookings(teacher))
+        .map(([key, booking]) => {
+            const [day, time] = key.split('-');
+            return {
+                ...booking,
+                day,
+                time,
+                teacher,
+            };
+        })
+        .sort((a, b) => {
+            const dayOrder = teacherWeeklyCalendarDays.findIndex((item) => item.day === a.day) - teacherWeeklyCalendarDays.findIndex((item) => item.day === b.day);
+            if (dayOrder !== 0) return dayOrder;
+            return a.time.localeCompare(b.time);
+        });
+}
+
+function renderTeacherScheduledClassesSummary(teacher) {
+    const rows = getTeacherScheduledClassRows(teacher);
+    if (!rows.length) {
+        return `
+            <section class="teacher-scheduled-classes-card">
+                <div class="teacher-scheduled-classes-head">
+                    <div><h4>Scheduled Classes This Week</h4><p>No assigned classes yet for this weekly view.</p></div>
+                    <span>0 assigned</span>
+                </div>
+            </section>
+        `;
+    }
+
+    return `
+        <section class="teacher-scheduled-classes-card">
+            <div class="teacher-scheduled-classes-head">
+                <div>
+                    <h4>Scheduled Classes This Week</h4>
+                    <p>${rows.length} assigned class${rows.length === 1 ? '' : 'es'} reflected in the weekly calendar below.</p>
+                </div>
+                <span>${rows.filter((row) => row.status === 'Reassigned to me').length} reassigned to me · ${rows.filter((row) => row.status === 'Reassigned from me').length} reassigned from me</span>
+            </div>
+            <div class="table-wrap teacher-scheduled-classes-wrap">
+                <table class="teacher-scheduled-classes-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time</th>
+                            <th>Student</th>
+                            <th>Lesson</th>
+                            <th>Classroom</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row) => `
+                            <tr>
+                                <td><strong>${escapeHtml(row.day)}</strong><small>${escapeHtml(row.date || 'This week')}</small></td>
+                                <td>${escapeHtml(inputTimeToRange(row.time))}</td>
+                                <td><strong>${escapeHtml(row.student?.name || 'Student')}</strong><small>${escapeHtml(row.student?.id || '')} · Age ${escapeHtml(row.student?.age || '—')} · ${escapeHtml(row.student?.country || '')}</small></td>
+                                <td><strong>${escapeHtml(row.topic || 'Lesson')}</strong><small>${escapeHtml(row.duration || row.student?.schedule?.duration || '25 minutes')}</small></td>
+                                <td>${escapeHtml(row.platform || row.student?.schedule?.platform || 'Classroom')}</td>
+                                <td>${renderLessonOperationalStatus(row, 'teacher-scheduled-summary')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
                 </table>
             </div>
         </section>
@@ -1725,6 +1897,9 @@ function getTeacherPortalStudentLessonRows(teacher) {
     const topics = ['Past Tense Review', 'Free Conversation', 'Alphabet and Classroom Words', 'Grammar Practice', 'Speaking Confidence', 'Reading Fluency', 'Monthly Review', 'Listening Check'];
     const dates = ['Jul 30, 2026', 'Aug 1, 2026', 'Aug 3, 2026', 'Aug 5, 2026', 'Aug 7, 2026', 'Aug 6, 2026', 'Aug 10, 2026', 'Aug 12, 2026'];
     const statuses = ['Completed', 'Cancelled', 'Student is absent', 'Student is late', 'Reassigned to me', 'Reassigned from me', 'Pending', 'Completed'];
+    const teacherIndex = Math.max(0, teachers.findIndex((item) => item.id === teacher.id));
+    const fallbackFromTeacher = teachers[(teacherIndex + 1) % teachers.length]?.name || 'Previous teacher';
+    const fallbackToTeacher = teachers[(teacherIndex + 2) % teachers.length]?.name || 'Receiving teacher';
     return getTeacherPortalStudents().flatMap((student, studentIndex) => {
         const lessonCount = studentIndex < 3 ? 5 : 4;
         return Array.from({ length: lessonCount }, (_, lessonIndex) => {
@@ -1738,6 +1913,8 @@ function getTeacherPortalStudentLessonRows(teacher) {
             const videoUrl = ['Completed', 'Student is late'].includes(status) && (index % 3 !== 1)
                 ? `https://vlace.example/recordings/${student.id.toLowerCase()}-${lessonIndex + 1}`
                 : '';
+            const isReassignedToMe = status === 'Reassigned to me';
+            const isReassignedFromMe = status === 'Reassigned from me';
             return {
                 id,
                 student,
@@ -1754,6 +1931,18 @@ function getTeacherPortalStudentLessonRows(teacher) {
                 videoUrl,
                 module: ['Module 1 - Foundations', 'Module 2 - Guided Speaking', 'Module 3 - Grammar Control', 'Module 4 - Fluency Review'][index % 4],
                 objective: ['Accuracy', 'Conversation', 'Pronunciation', 'Confidence'][index % 4],
+                teacher: {
+                    id: teacher.id,
+                    name: teacher.name,
+                },
+                reassignment: (isReassignedToMe || isReassignedFromMe) ? {
+                    fromTeacher: isReassignedToMe ? fallbackFromTeacher : teacher.name,
+                    toTeacher: isReassignedToMe ? teacher.name : fallbackToTeacher,
+                    requestedBy: isReassignedToMe ? 'Angela Reyes' : 'Van Lester Acepcion',
+                    approvedBy: 'Academic Operations',
+                    reason: isReassignedToMe ? 'Coverage balancing for an assigned student lesson.' : 'Class moved to another available teacher.',
+                    note: isReassignedToMe ? 'This teacher owns the classroom and feedback for the reassigned class.' : 'Original teacher will not receive salary for this reassigned class.',
+                } : null,
             };
         });
     }).sort((a, b) => {
@@ -1768,7 +1957,43 @@ function parseTeacherPortalLessonDate(dateLabel) {
     return Number.isNaN(parsedDate) ? 0 : parsedDate;
 }
 
+function isLessonReassigned(row) {
+    return ['Reassigned to me', 'Reassigned from me'].includes(row?.status);
+}
+
+function getLessonReassignmentDetails(row) {
+    const teacherName = row?.teacher?.name || row?.teacherName || row?.student?.teacher || 'Assigned teacher';
+    const detail = row?.reassignment || {};
+    const isFromMe = row?.status === 'Reassigned from me';
+    return {
+        status: row?.status || 'Reassigned',
+        fromTeacher: detail.fromTeacher || (isFromMe ? teacherName : 'Previous teacher'),
+        toTeacher: detail.toTeacher || (isFromMe ? 'Receiving teacher' : teacherName),
+        requestedBy: detail.requestedBy || 'Academic Operations',
+        approvedBy: detail.approvedBy || 'Academic Operations',
+        reason: detail.reason || 'Class coverage was updated by operations.',
+        note: detail.note || (isFromMe ? 'Original teacher will not receive salary for this class.' : 'Receiving teacher owns the classroom and feedback for this class.'),
+    };
+}
+
+function renderReassignmentStatusButton(row, context = 'lesson') {
+    const details = getLessonReassignmentDetails(row);
+    const fromToLabel = `${details.fromTeacher} → ${details.toTeacher}`;
+    return `
+        <button class="reassignment-status-button status status-${String(row.status).toLowerCase().replaceAll(' ', '-')}" type="button" data-reassignment-detail="${escapeHtml(row.id)}" data-reassignment-context="${escapeHtml(context)}" title="${escapeHtml(fromToLabel)}" aria-label="${escapeHtml(`${row.status}: ${fromToLabel}. Click for details.`)}">
+            <span>${escapeHtml(row.status)}</span>
+        </button>
+    `;
+}
+
+function renderLessonOperationalStatus(row, context = 'lesson') {
+    return isLessonReassigned(row) ? renderReassignmentStatusButton(row, context) : marketingStatus(row.status);
+}
+
 function renderTeacherPortalStatusControl(row) {
+    if (isLessonReassigned(row)) {
+        return renderReassignmentStatusButton(row, 'teacher');
+    }
     const status = marketingStatus(row.status);
     const lockedReason = getTeacherPortalStatusLockedReason(row);
     if (lockedReason) {
@@ -1835,38 +2060,39 @@ function renderTeacherPortalPayroll(teacher) {
     return `
         ${renderTeacherPortalHero(teacher, 'Payroll', 'Review completed lessons, deductions, and net payroll using the same payroll calculation shown to Admin.')}
         <section class="teacher-payroll-workspace teacher-portal-payroll">
-            <div class="teacher-panel-head payroll-toolbar">
-                <div>
-                    <p class="detail-kicker">PAYROLL HISTORY</p>
-                    <h3>Teacher Payroll</h3>
-                    <p>Select any payroll period to view its complete daily calculation.</p>
+            <article class="teacher-payroll-history-card">
+                <div class="teacher-panel-head payroll-toolbar">
+                    <div>
+                        <p class="detail-kicker">PAYROLL HISTORY</p>
+                        <h3>Teacher Payroll</h3>
+                        <p>Select any payroll period to view its complete daily calculation.</p>
+                    </div>
+                    <label class="payroll-period-picker">
+                        <span>Payroll period</span>
+                        <select data-teacher-payroll-period>
+                            ${teacherPayrollPeriodNames.map((name) => `<option value="${escapeHtml(name)}" ${name === period ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
+                        </select>
+                    </label>
                 </div>
-                <label class="payroll-period-picker">
-                    <span>Payroll period</span>
-                    <select data-teacher-payroll-period>
-                        ${teacherPayrollPeriodNames.map((name) => `<option value="${escapeHtml(name)}" ${name === period ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
-                    </select>
-                </label>
-            </div>
-            <article class="payroll-table-panel teacher-payroll-history-panel">
-                <div class="table-wrap">
-                    <table class="payroll-history-table">
-                        <thead>
-                            <tr>
-                                <th>Payroll Period</th>
-                                <th>Lessons</th>
-                                <th>Hours</th>
-                                <th>Gross Pay</th>
-                                <th>Deductions</th>
-                                <th>Net Payroll</th>
-                                <th>Status</th>
-                                <th>Payslip</th>
-                                <th>Upload Receipt</th>
-                                <th>View Receipt</th>
-                            </tr>
-                        </thead>
-                        <tbody>${renderTeacherPortalPayrollHistoryRows(teacher, period)}</tbody>
-                    </table>
+                <div class="payroll-table-panel teacher-payroll-history-panel">
+                    <div class="table-wrap">
+                        <table class="payroll-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Payroll Period</th>
+                                    <th>Lessons</th>
+                                    <th>Hours</th>
+                                    <th>Gross Pay</th>
+                                    <th>Deductions</th>
+                                    <th>Net Payroll</th>
+                                    <th>Status</th>
+                                    <th>Payslip</th>
+                                    <th>View Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody>${renderTeacherPortalPayrollHistoryRows(teacher, period, { canUploadReceipt: false })}</tbody>
+                        </table>
+                    </div>
                 </div>
             </article>
             <div class="payroll-policy teacher-payroll-rules">
@@ -1972,8 +2198,12 @@ function renderTeacherPortalPayroll(teacher) {
         </section>`;
 }
 
-function renderTeacherPortalPayrollHistoryRows(teacher, selectedPeriod) {
-    return teacherPayrollPeriodNames.map((period, periodIndex) => {
+function renderTeacherPortalPayrollHistoryRows(teacher, selectedPeriod, options = {}) {
+    const canUploadReceipt = options.canUploadReceipt !== false;
+    const selectedIndex = Math.max(0, teacherPayrollPeriodNames.indexOf(selectedPeriod));
+    const period = teacherPayrollPeriodNames[selectedIndex] || teacherPayrollPeriodNames[0];
+    return [period].map((period) => {
+        const periodIndex = selectedIndex;
         const summary = getTeacherPayrollSummary(teacher, period);
         const status = period.startsWith('January') ? 'For Review' : 'Paid';
         const deduction = summary.deductionTotal ? `− ${formatPeso(summary.deductionTotal)}` : '—';
@@ -1995,7 +2225,7 @@ function renderTeacherPortalPayrollHistoryRows(teacher, selectedPeriod) {
                 <td class="pay-amount">${formatPeso(summary.net)}</td>
                 <td><span class="status-pill ${status === 'Paid' ? 'positive' : 'warning'}">${status}</span></td>
                 <td><button type="button" class="row-action" data-teacher-payroll-action="payslip" data-teacher-payroll-period-index="${periodIndex}">View</button></td>
-                <td><button type="button" class="row-action" data-teacher-payroll-action="upload-receipt" data-teacher-payroll-period-index="${periodIndex}">${receiptUploaded ? 'Replace Receipt' : 'Upload Receipt'}</button></td>
+                ${canUploadReceipt ? `<td><button type="button" class="row-action" data-teacher-payroll-action="upload-receipt" data-teacher-payroll-period-index="${periodIndex}">${receiptUploaded ? 'Replace Receipt' : 'Upload Receipt'}</button></td>` : ''}
                 <td><button type="button" class="row-action" data-teacher-payroll-action="view-receipt" data-teacher-payroll-period-index="${periodIndex}" ${receiptUploaded ? '' : 'disabled'}>${receiptUploaded ? 'View Receipt' : 'No Receipt'}</button></td>
             </tr>
         `;
@@ -2222,6 +2452,43 @@ function saveTeacherPortalPolicyAcknowledgements(teacher = getTeacherPortalTeach
     }
 }
 
+const teacherComputerSpecRecords = {
+    'T1-001': {
+        computer: 'MacBook Air M1 / 8GB RAM / 256GB SSD / HD webcam',
+        mainInternet: 'Fiber broadband · 200 Mbps',
+        dualMonitor: 'Yes',
+        backupInternet: '5G mobile hotspot · 80 Mbps',
+        backupElectricity: 'UPS · 4 hours backup',
+    },
+};
+
+const teacherBankInformationRecords = {
+    'T1-001': {
+        completeName: 'Maria Santos',
+        bankName: 'BDO Unibank',
+        accountNumber: '0088-1234-5678',
+    },
+};
+
+function getTeacherComputerSpecs(teacher) {
+    return teacherComputerSpecRecords[teacher?.id] || {
+        computer: 'Intel i5 / 16GB RAM / 256GB SSD / HD webcam',
+        mainInternet: 'Fiber broadband · 200 Mbps',
+        dualMonitor: 'Yes',
+        backupInternet: 'Mobile data hotspot · 50 Mbps',
+        backupElectricity: 'UPS + power bank backup',
+    };
+}
+
+function getTeacherBankInformation(teacher) {
+    const normalizedName = teacher?.name || 'Teacher Name';
+    return teacherBankInformationRecords[teacher?.id] || {
+        completeName: normalizedName,
+        bankName: 'Bank on file',
+        accountNumber: '•••• •••• 1234',
+    };
+}
+
 function getTeacherPortalPolicyCategories() {
     return ['All categories', ...new Set(companyPolicies.map((policy) => policy.category))];
 }
@@ -2364,6 +2631,8 @@ function renderTeacherPortalProfile(teacher) {
     const meetingLinks = teacher.links || {};
     const supervisor = getTeacherSupervisor(teacher);
     const supervisorStaff = staffMembers.find((staff) => staff.name === supervisor.name) || staffMembers[0];
+    const computerSpecs = getTeacherComputerSpecs(teacher);
+    const bankInfo = getTeacherBankInformation(teacher);
     return `
         ${renderTeacherPortalHero(teacher, 'My Profile', 'View your teacher profile, contact details, teaching assignment, meeting setup, and payroll information.')}
         <section class="teacher-portal-profile-dashboard">
@@ -2412,6 +2681,30 @@ function renderTeacherPortalProfile(teacher) {
                         <div><dt>Projected Salary</dt><dd>${formatPeso(payStats.monthlySalary)}</dd></div>
                         <div><dt>Completed This Month</dt><dd>${payStats.completedThisMonth}</dd></div>
                         <div><dt>Today’s Earnings</dt><dd>${formatPeso(payStats.todayEarnings)}</dd></div>
+                    </dl>
+                </article>
+            </section>
+
+            <section class="teacher-profile-overview teacher-portal-profile-overview teacher-equipment-bank-overview">
+                <article class="teacher-profile-info-card">
+                    <h4>Computer Specs</h4>
+                    <p>Workstation, internet, and continuity readiness</p>
+                    <dl>
+                        <div><dt>Computer Specs</dt><dd>${escapeHtml(computerSpecs.computer)}</dd></div>
+                        <div><dt>Main Internet &amp; Speed</dt><dd>${escapeHtml(computerSpecs.mainInternet)}</dd></div>
+                        <div><dt>Dual Monitor?</dt><dd>${escapeHtml(computerSpecs.dualMonitor)}</dd></div>
+                        <div><dt>Backup Internet &amp; Speed</dt><dd>${escapeHtml(computerSpecs.backupInternet)}</dd></div>
+                        <div><dt>Backup Electricity</dt><dd>${escapeHtml(computerSpecs.backupElectricity)}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card">
+                    <h4>Bank Information</h4>
+                    <p>Payroll account details on file</p>
+                    <dl>
+                        <div><dt>Complete Name</dt><dd>${escapeHtml(bankInfo.completeName)}</dd></div>
+                        <div><dt>Bank Name</dt><dd>${escapeHtml(bankInfo.bankName)}</dd></div>
+                        <div><dt>Bank Account Number</dt><dd>${escapeHtml(bankInfo.accountNumber)}</dd></div>
                     </dl>
                 </article>
             </section>
@@ -2551,6 +2844,76 @@ function getManagerLessonById(rowId) {
         .find((row) => row.id === rowId);
 }
 
+function getOperationalLessonById(rowId) {
+    const activeTeacher = getTeacherPortalTeacher?.();
+    const teacherRows = activeTeacher ? getTeacherPortalStudentLessonRows(activeTeacher) : [];
+    const activeStudent = getManagerSelectedStudent?.();
+    const studentRows = activeStudent ? getManagerStudentLessonRows(activeStudent) : [];
+    const managerRows = getManagerOverviewStats?.().todayLessons || [];
+    const allTeacherRows = teachers.flatMap((teacher) => getTeacherPortalStudentLessonRows(teacher));
+    return [...teacherRows, ...studentRows, ...managerRows, ...allTeacherRows].find((row) => row.id === rowId);
+}
+
+function openReassignmentDetailsModal(rowId) {
+    const row = getOperationalLessonById(rowId);
+    if (!row || !isLessonReassigned(row)) {
+        showSparkToast('No reassignment details found for this lesson.');
+        return;
+    }
+
+    const details = getLessonReassignmentDetails(row);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop reassignment-modal-backdrop';
+    overlay.innerHTML = `
+        <div class="modal reassignment-modal" role="dialog" aria-modal="true" aria-labelledby="reassignmentModalTitle">
+            <div class="modal-head">
+                <div>
+                    <p>LESSON REASSIGNMENT</p>
+                    <h3 id="reassignmentModalTitle">${escapeHtml(details.status)}</h3>
+                </div>
+                <button type="button" data-reassignment-close aria-label="Close">×</button>
+            </div>
+            <div class="reassignment-modal-body">
+                <section class="reassignment-flow">
+                    <article>
+                        <span>From Teacher</span>
+                        <strong>${escapeHtml(details.fromTeacher)}</strong>
+                    </article>
+                    <i data-lucide="arrow-right"></i>
+                    <article>
+                        <span>To Teacher</span>
+                        <strong>${escapeHtml(details.toTeacher)}</strong>
+                    </article>
+                </section>
+                <dl class="reassignment-detail-grid">
+                    <div><dt>Student</dt><dd>${escapeHtml(row.student?.name || 'Student')}</dd></div>
+                    <div><dt>Lesson</dt><dd>${escapeHtml(row.topic || 'Lesson')}</dd></div>
+                    <div><dt>Schedule</dt><dd>${escapeHtml(row.date || 'Scheduled')} · ${escapeHtml(inputTimeToRange(normalizeManagerScheduleTime(row.time)))}</dd></div>
+                    <div><dt>Classroom</dt><dd>${escapeHtml(row.platform || 'Classroom')}</dd></div>
+                    <div><dt>Requested By</dt><dd>${escapeHtml(details.requestedBy)}</dd></div>
+                    <div><dt>Approved By</dt><dd>${escapeHtml(details.approvedBy)}</dd></div>
+                </dl>
+                <section class="reassignment-note">
+                    <strong>Reason</strong>
+                    <p>${escapeHtml(details.reason)}</p>
+                    <strong>Operational Note</strong>
+                    <p>${escapeHtml(details.note)}</p>
+                </section>
+            </div>
+            <div class="modal-actions">
+                <button class="primary-button" type="button" data-reassignment-close>Done</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    refreshIcons();
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-reassignment-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
 function getManagerOverviewStats() {
     const country = managerOverviewCountry;
     const filteredTeachers = getManagerAssignedTeachers(country);
@@ -2565,6 +2928,7 @@ function getManagerOverviewStats() {
     const pendingDocuments = teacherDocuments.filter((item) => ['Pending Review', 'Expiring Soon'].includes(item.status));
     const expiringDocuments = teacherDocuments.filter((item) => item.status === 'Expiring Soon');
     const pendingFeedback = teacherFeedbackRecords.filter((record) => !record.acknowledged);
+    const pendingPayrollFlags = getManagerPayrollFlagAdjustments(period).filter((flag) => flag.status === 'Pending Admin Approval');
     const completedLessons = todayLessons.filter((row) => ['Completed', 'Student is late'].includes(row.status));
     const cancelledLessons = todayLessons.filter((row) => row.status === 'Cancelled');
     const transferredLessons = todayLessons.filter((row) => ['Reassigned to me', 'Reassigned from me'].includes(row.status));
@@ -2589,6 +2953,7 @@ function getManagerOverviewStats() {
         pendingDocuments,
         expiringDocuments,
         pendingFeedback,
+        pendingPayrollFlags,
         completedLessons,
         cancelledLessons,
         transferredLessons,
@@ -2599,7 +2964,7 @@ function getManagerOverviewStats() {
         teacherOnLeaveCount,
         assignedTeacherCount: filteredTeachers.length,
         classesToday: filteredTeachers.reduce((sum, teacher) => sum + Number(teacher.today || 0), 0),
-        pendingApprovalCount: pendingFeedback.length + pendingDocuments.length,
+        pendingApprovalCount: pendingFeedback.length + pendingDocuments.length + pendingPayrollFlags.length,
     };
 }
 
@@ -2870,6 +3235,8 @@ function getManagerTeacherPolicyAcknowledgements(teacher) {
 }
 
 function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payroll, supervisor) {
+    const computerSpecs = getTeacherComputerSpecs(teacher);
+    const bankInfo = getTeacherBankInformation(teacher);
     return `
         <div class="teacher-tab-panel active">
             <section class="teacher-profile-overview admin-teacher-profile-overview manager-admin-profile-overview">
@@ -2925,6 +3292,40 @@ function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payr
                     <h4>${escapeHtml(supervisor.name)}</h4>
                     <p>${escapeHtml(supervisor.role)}</p>
                     <small>Primary supervisor for teacher support, schedule coordination, and performance review.</small>
+                </article>
+            </section>
+
+            <section class="teacher-profile-overview admin-teacher-profile-overview manager-admin-profile-overview admin-teacher-equipment-bank-overview">
+                <article class="teacher-profile-info-card">
+                    <div class="teacher-links-card-head">
+                        <div>
+                            <h4>Computer Specs</h4>
+                            <p>Workstation, internet, and continuity readiness</p>
+                        </div>
+                        <button class="secondary-button" type="button" data-teacher-computer-edit="${escapeHtml(teacher.id)}">Edit</button>
+                    </div>
+                    <dl>
+                        <div><dt>Computer Specs</dt><dd>${escapeHtml(computerSpecs.computer)}</dd></div>
+                        <div><dt>Main Internet &amp; Speed</dt><dd>${escapeHtml(computerSpecs.mainInternet)}</dd></div>
+                        <div><dt>Dual Monitor?</dt><dd>${escapeHtml(computerSpecs.dualMonitor)}</dd></div>
+                        <div><dt>Backup Internet &amp; Speed</dt><dd>${escapeHtml(computerSpecs.backupInternet)}</dd></div>
+                        <div><dt>Backup Electricity</dt><dd>${escapeHtml(computerSpecs.backupElectricity)}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card">
+                    <div class="teacher-links-card-head">
+                        <div>
+                            <h4>Bank Information</h4>
+                            <p>Payroll account details on file</p>
+                        </div>
+                        <button class="secondary-button" type="button" data-teacher-bank-edit="${escapeHtml(teacher.id)}">Edit</button>
+                    </div>
+                    <dl>
+                        <div><dt>Complete Name</dt><dd>${escapeHtml(bankInfo.completeName)}</dd></div>
+                        <div><dt>Bank Name</dt><dd>${escapeHtml(bankInfo.bankName)}</dd></div>
+                        <div><dt>Bank Account Number</dt><dd>${escapeHtml(bankInfo.accountNumber)}</dd></div>
+                    </dl>
                 </article>
             </section>
 
@@ -3026,7 +3427,7 @@ function renderManagerTeacherTodayRows(teacher) {
                 <td><button class="lesson-pdf-link" type="button" data-manager-toast="${escapeHtml(row.topic)} material opened."><span>PDF</span>${escapeHtml(row.topic)}</button></td>
                 <td><strong>${escapeHtml(row.student.name)}</strong><small>${escapeHtml(row.student.id)} · Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)}</small></td>
                 <td>${escapeHtml(row.duration)}</td>
-                <td>${marketingStatus(row.status)}</td>
+                <td>${renderLessonOperationalStatus(row, 'manager-teacher')}</td>
                 <td>${classroomButton}</td>
                 <td>${row.status === 'Completed' ? `<button class="feedback-button recording-view-button" type="button" data-manager-toast="Recording opened for ${escapeHtml(row.topic)}.">View Recording</button>` : '<span class="lesson-link-unavailable">Not available</span>'}</td>
                 <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-manager-feedback-view="${escapeHtml(row.id)}">${feedbackReview.submitted ? 'View' : 'Preview'}</button><button class="feedback-button add-feedback-button" type="button" data-manager-feedback-submit="${escapeHtml(row.id)}">${feedbackLabel}</button></div></td>
@@ -3036,6 +3437,262 @@ function renderManagerTeacherTodayRows(teacher) {
             </tr>
         `;
     }).join('');
+}
+
+function getManagerStudentLessonRows(student) {
+    const schedule = student.schedule || { duration: '25 minutes', platform: 'Voov' };
+    const assignedTeacher = teachers.find((teacher) => teacher.name === student.teacher) || teachers[0];
+    const portalRows = [assignedTeacher]
+        .flatMap((teacher) => getTeacherPortalStudentLessonRows(teacher).map((row) => ({
+            ...row,
+            teacherName: teacher.name,
+            hasClassroom: row.hasClassroom || Boolean(getTeacherMeetingSource(teacher)[1]),
+        })))
+        .filter((row) => row.student?.id === student.id);
+    const addedRows = managerAddedClasses
+        .filter((item) => item.studentId === student.id)
+        .map((item, index) => {
+            const rowTeacher = teachers.find((teacher) => teacher.name === item.teacher) || assignedTeacher;
+            return {
+                id: `manager-added-${student.id}-${index}`,
+                student,
+                date: item.date,
+                day: item.day || item.date,
+                time: item.time,
+                topic: item.topic || `${student.level} English lesson`,
+                duration: schedule.duration,
+                platform: item.platform || schedule.platform,
+                status: 'Scheduled',
+                baseStatus: 'Scheduled',
+                isDue: false,
+                hasClassroom: Boolean(getTeacherMeetingSource(rowTeacher)[1]),
+                videoUrl: '',
+                teacherName: item.teacher || student.teacher,
+            };
+        });
+    const fallbackRows = [
+        ['Today', student.preferredTime, 'Pending', schedule.platform, `${student.level} English lesson`],
+        ['Last class', student.preferredTime, 'Completed', schedule.platform, `${student.level} English lesson`],
+        ['Next class', student.preferredTime, 'Scheduled', schedule.platform, `${student.level} English lesson`],
+    ].map(([date, time, status, platform, topic], index) => ({
+        id: `manager-student-${student.id}-${index}`,
+        student,
+        date,
+        day: date,
+        time,
+        topic,
+        duration: schedule.duration,
+        platform,
+        status,
+        baseStatus: status,
+        isDue: status !== 'Scheduled',
+        hasClassroom: Boolean(getTeacherMeetingSource(assignedTeacher)[1]),
+        videoUrl: status === 'Completed' ? `https://vlace.example/recordings/${student.id.toLowerCase()}-${index + 1}` : '',
+        teacherName: student.teacher,
+    }));
+
+    return [...addedRows, ...(portalRows.length ? portalRows : fallbackRows)].slice(0, 8);
+}
+
+function renderManagerLessonApprovalContent(row) {
+    const feedbackReview = managerLessonFeedbackReviews[row.id] || {};
+    const hasSubmittedFeedback = Boolean(feedbackReview.submitted) || ['Completed', 'Student is late'].includes(row.status);
+    if (feedbackReview.decision) {
+        return `<span class="feedback-decision-note ${feedbackReview.decision === 'Approved' ? 'approved' : 'rejected'}">${escapeHtml(feedbackReview.decision)} by Manager<small>${escapeHtml(feedbackReview.manager || managerAccount.id)}</small></span>`;
+    }
+    if (hasSubmittedFeedback) {
+        return `<div class="feedback-approval-actions"><button class="reject-feedback" type="button" data-manager-feedback-decision="Rejected" data-manager-feedback-row="${escapeHtml(row.id)}">Reject</button><button class="approve-feedback" type="button" data-manager-feedback-decision="Approved" data-manager-feedback-row="${escapeHtml(row.id)}">Approve</button></div>`;
+    }
+    return '<span class="feedback-decision-note">Awaiting teacher feedback</span>';
+}
+
+function renderManagerStudentLessonRows(student) {
+    const rows = getManagerStudentLessonRows(student);
+    if (!rows.length) {
+        return '<tr><td colspan="11" class="empty-row">No lessons are scheduled for this student.</td></tr>';
+    }
+
+    seedManagerFeedbackApprovalMock(rows);
+
+    return rows.map((row) => {
+        const savedVideoUrl = getTeacherPortalVideoUrl(row);
+        const feedbackReview = managerLessonFeedbackReviews[row.id] || {};
+        const classroomButton = row.hasClassroom
+            ? `<button class="enter-classroom-button" type="button" data-manager-toast="Opening ${escapeHtml(student.name)} classroom with ${escapeHtml(row.teacherName || student.teacher)}.">Enter Classroom</button>`
+            : '<span class="lesson-link-unavailable">Not ready</span>';
+        const feedbackLabel = feedbackReview.submitted ? 'View' : 'Add';
+        return `
+            <tr data-manager-feedback-row="${escapeHtml(row.id)}">
+                <td>${escapeHtml(row.date)}</td>
+                <td><button class="lesson-pdf-link" type="button" data-manager-toast="${escapeHtml(row.topic)} material opened."><span>PDF</span>${escapeHtml(row.topic)}</button></td>
+                <td><strong>${escapeHtml(row.teacherName || student.teacher)}</strong><small>${escapeHtml(row.platform)} · ${escapeHtml(row.time)}</small></td>
+                <td>${escapeHtml(row.duration)}</td>
+                <td>${renderLessonOperationalStatus(row, 'manager-student')}</td>
+                <td>${classroomButton}</td>
+                <td>${row.status === 'Completed' ? `<button class="feedback-button recording-view-button" type="button" data-manager-toast="Recording opened for ${escapeHtml(row.topic)}.">View Recording</button>` : '<span class="lesson-link-unavailable">Not available</span>'}</td>
+                <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-manager-feedback-view="${escapeHtml(row.id)}">${feedbackReview.submitted ? 'View' : 'Preview'}</button><button class="feedback-button add-feedback-button" type="button" data-manager-feedback-submit="${escapeHtml(row.id)}">${feedbackLabel}</button></div></td>
+                <td>${savedVideoUrl ? `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="${escapeHtml(savedVideoUrl)}">View Video</button>` : '<span class="lesson-link-unavailable">No URL yet</span>'}</td>
+                <td><button class="feedback-button meeting-link-button" type="button" data-manager-toast="Lesson action opened for ${escapeHtml(row.topic)}.">Action</button></td>
+                <td>${renderManagerLessonApprovalContent(row)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function normalizeManagerScheduleTime(value) {
+    if (!value) return '19:00';
+    if (/^\d{2}:\d{2}$/.test(value)) return value;
+    const match = String(value).match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
+    if (!match) return '19:00';
+    let hour = Number(match[1]);
+    const minute = match[2] || '00';
+    const period = match[3].toUpperCase();
+    if (period === 'PM' && hour < 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${minute}`;
+}
+
+function getManagerStudentPreferredDays(student) {
+    return (student.preferredDay || 'Wednesday & Sunday')
+        .split(/&|,/)
+        .map((day) => day.trim())
+        .filter(Boolean);
+}
+
+function getManagerStudentWeeklyScheduleMap(student) {
+    const schedule = student.schedule || { duration: '25 minutes', platform: 'Voov' };
+    const preferredDays = getManagerStudentPreferredDays(student);
+    const preferredTime = normalizeManagerScheduleTime(student.preferredTime);
+    const map = {};
+
+    preferredDays.forEach((day) => {
+        map[`${day}-${preferredTime}`] = {
+            state: 'preferred',
+            title: 'Preferred slot',
+            detail: `${student.teacher} · ${schedule.platform}`,
+        };
+    });
+
+    getManagerStudentLessonRows(student).forEach((row) => {
+        const key = `${row.day || preferredDays[0] || 'Monday'}-${normalizeManagerScheduleTime(row.time)}`;
+        map[key] = {
+            state: ['Completed', 'Student is late'].includes(row.status) ? 'completed' : 'booked',
+            title: row.topic,
+            detail: `${row.teacherName || student.teacher} · ${row.status}`,
+        };
+    });
+
+    return map;
+}
+
+function getManagerStudentBookedScheduleRows(student) {
+    const preferredDays = getManagerStudentPreferredDays(student);
+    return getManagerStudentLessonRows(student).map((row) => {
+        const day = row.day || preferredDays[0] || 'Monday';
+        return {
+            ...row,
+            day,
+            timeSlot: normalizeManagerScheduleTime(row.time),
+            state: ['Completed', 'Student is late'].includes(row.status) ? 'completed' : 'booked',
+        };
+    });
+}
+
+function renderManagerStudentBookedLessonsTable(student) {
+    const rows = getManagerStudentBookedScheduleRows(student);
+    if (!rows.length) {
+        return `
+            <section class="manager-booked-lessons-card">
+                <div><h4>Booked Lessons This Week</h4><p>No booked lessons yet. Use Add Class to create the first scheduled lesson.</p></div>
+            </section>
+        `;
+    }
+
+    return `
+        <section class="manager-booked-lessons-card">
+            <div class="manager-booked-lessons-head">
+                <div>
+                    <h4>Booked Lessons This Week</h4>
+                    <p>${rows.length} lesson${rows.length === 1 ? '' : 's'} reflected in the weekly visualization below.</p>
+                </div>
+                <span>${rows.filter((row) => row.state === 'booked').length} assigned · ${rows.filter((row) => row.state === 'completed').length} completed</span>
+            </div>
+            <div class="table-wrap manager-booked-lessons-wrap">
+                <table class="manager-booked-lessons-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time</th>
+                            <th>Lesson</th>
+                            <th>Teacher</th>
+                            <th>Classroom</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row) => `
+                            <tr>
+                                <td><strong>${escapeHtml(row.day)}</strong><small>${escapeHtml(row.date)}</small></td>
+                                <td>${escapeHtml(inputTimeToRange(row.timeSlot))}</td>
+                                <td><strong>${escapeHtml(row.topic)}</strong><small>${escapeHtml(row.duration)}</small></td>
+                                <td>${escapeHtml(row.teacherName || student.teacher)}</td>
+                                <td>${escapeHtml(row.platform)}</td>
+                                <td>${renderLessonOperationalStatus(row, 'manager-student-booked')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
+}
+
+function renderManagerStudentWeeklyCalendar(student) {
+    const scheduleMap = getManagerStudentWeeklyScheduleMap(student);
+    return `
+        <section class="teacher-weekly-calendar-card manager-student-weekly-card">
+            <div class="teacher-weekly-calendar-head">
+                <div>
+                    <h3>Weekly Schedule Visualization</h3>
+                    <p>30-minute view of preferred slots, assigned lessons, and open time across the week.</p>
+                </div>
+                <div class="manager-student-calendar-legend" aria-label="Schedule legend">
+                    <span><i class="legend-booked"></i>Assigned</span>
+                    <span><i class="legend-preferred"></i>Preferred</span>
+                    <span><i class="legend-completed"></i>Completed</span>
+                </div>
+            </div>
+            ${renderManagerStudentBookedLessonsTable(student)}
+            <div class="teacher-schedule-control-note manager-student-week-note">
+                <strong>Manager Weekly View</strong>
+                <span>Each row is a 30-minute increment. Use Add Class to place more lessons into this schedule.</span>
+            </div>
+            <div class="teacher-weekly-calendar-wrap manager-student-weekly-wrap">
+                <table class="teacher-weekly-calendar manager-student-weekly-calendar">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            ${teacherWeeklyCalendarDays.map((day) => `<th><strong>${escapeHtml(day.short)}</strong><span>${escapeHtml(day.date)}</span></th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${teacherWeeklyCalendarTimes.map((time) => `
+                            <tr>
+                                <th>${escapeHtml(inputTimeToRange(time))}</th>
+                                ${teacherWeeklyCalendarDays.map(({ day }) => {
+                                    const slot = scheduleMap[`${day}-${time}`];
+                                    if (!slot) {
+                                        return '<td class="teacher-calendar-slot closed manager-student-week-slot"><strong>Open</strong><span>No student lesson</span></td>';
+                                    }
+                                    return `<td class="teacher-calendar-slot ${escapeHtml(slot.state)} manager-student-week-slot"><strong>${escapeHtml(slot.title)}</strong><span>${escapeHtml(slot.detail)}</span></td>`;
+                                }).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
 }
 
 function seedManagerFeedbackApprovalMock(rows) {
@@ -3055,7 +3712,16 @@ function seedManagerFeedbackApprovalMock(rows) {
 
 function getManagerLessonFeedbackRow(rowId) {
     const teacher = teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
-    return getTeacherPortalStudentLessonRows(teacher).find((row) => row.id === rowId);
+    const activeTeacherRow = getTeacherPortalStudentLessonRows(teacher).find((row) => row.id === rowId);
+    if (activeTeacherRow) return activeTeacherRow;
+
+    const student = getManagerSelectedStudent();
+    const activeStudentRow = student ? getManagerStudentLessonRows(student).find((row) => row.id === rowId) : null;
+    if (activeStudentRow) return activeStudentRow;
+
+    return teachers
+        .flatMap((item) => getTeacherPortalStudentLessonRows(item).map((row) => ({ ...row, teacherName: item.name })))
+        .find((row) => row.id === rowId);
 }
 
 function submitManagerLessonFeedback(rowId) {
@@ -3176,8 +3842,7 @@ function renderManagerTeacherWeeklyTab(teacher, availability) {
                     <div class="teacher-open-slots-bar">
                         <div><strong>${slotCount} open time slot${slotCount === 1 ? '' : 's'}</strong><span>30-minute increments · 6:00 AM to 12:00 midnight</span></div>
                         <div class="manager-slot-actions">
-                            <button type="button" data-manager-teacher-add-class="${escapeHtml(teacher.id)}">Add Class</button>
-                            <button type="button" data-manager-toast="Close all slots requested for ${escapeHtml(teacher.name)}.">Close All</button>
+                            <button class="manager-add-class-button manager-add-class-button-compact" type="button" data-manager-teacher-add-class="${escapeHtml(teacher.id)}"><i data-lucide="calendar-plus"></i> Add Class</button>
                         </div>
                     </div>
                     <div class="teacher-weekly-calendar-wrap">
@@ -3229,7 +3894,7 @@ function renderManagerTeacherPayrollTab(teacher) {
                 <article class="payroll-table-panel">
                     <div class="directory-tools">
                         <div><span class="detail-kicker">SELECTED PAYROLL PERIOD</span><h3>Detailed Calculation</h3><p>Each class is converted to payable hours and multiplied by the teacher hourly rate.</p></div>
-                        <button type="button" class="secondary-button" data-manager-toast="Payroll download prepared for ${escapeHtml(teacher.name)}.">Download Payroll</button>
+                        <button type="button" class="secondary-button" data-manager-payroll-download="${escapeHtml(teacher.id)}">Download Payroll</button>
                     </div>
                     <div class="table-wrap">
                         <table class="student-table payroll-table payroll-table-with-deductions">
@@ -3664,7 +4329,7 @@ function renderManagerSchedule() {
                             <small>${escapeHtml(getManagerLessonTeacherName(row))} · Prepared lesson</small>
                         </div>
                         <span class="manager-classroom-chip"><i data-lucide="video"></i>${escapeHtml(row.platform)}</span>
-                        ${marketingStatus(followup ? 'Followed up' : row.status)}
+                        ${followup ? marketingStatus('Followed up') : renderLessonOperationalStatus(row, 'manager-schedule')}
                         <button class="manager-followup-button ${followup ? 'is-updated' : ''}" type="button" data-manager-followup="${escapeHtml(row.id)}">${followup ? 'Update' : 'Follow Up'} <i data-lucide="arrow-right"></i></button>
                     </article>
                 `;}).join('')}
@@ -3752,6 +4417,7 @@ function renderManagerTeachers() {
                 <div class="manager-review-list">
                     <button type="button" data-manager-portal-target="manager-feedback"><div><span>Feedback approval</span><small>Teacher feedback awaiting manager review</small></div><strong>${stats.pendingFeedback.length}</strong>${marketingStatus('For Review')}</button>
                     <button type="button" data-manager-portal-target="manager-documents"><div><span>Document approval</span><small>Pending review or expiring soon</small></div><strong>${stats.pendingDocuments.length}</strong>${marketingStatus('Pending')}</button>
+                    <button type="button" data-manager-portal-target="manager-payroll"><div><span>Payroll flags</span><small>Manager adjustments awaiting Admin approval</small></div><strong>${stats.pendingPayrollFlags.length}</strong>${marketingStatus('Pending')}</button>
                     <button type="button" data-manager-portal-target="manager-overview"><div><span>Missing meeting links</span><small>Teachers needing classroom URL / ID</small></div><strong>${stats.missingLinks.length}</strong>${marketingStatus(stats.missingLinks.length ? 'Needs review' : 'Complete')}</button>
                     <button type="button" data-manager-portal-target="manager-communication"><div><span>Unread email</span><small>Unread, not archived</small></div><strong>${stats.unreadEmails.length}</strong>${marketingStatus('Unread')}</button>
                 </div>
@@ -3894,11 +4560,12 @@ function renderManagerStudentProfile() {
     const addedClasses = managerAddedClasses.filter((item) => item.studentId === student.id);
     const tabs = [
         ['profile', 'Profile'],
-        ['package', 'Package'],
         ['lessons', 'Lessons'],
-        ['referrals', 'Referrals'],
         ['schedule', 'Schedule'],
     ];
+    if (!tabs.some(([id]) => id === activeManagerStudentProfileTab)) {
+        activeManagerStudentProfileTab = 'profile';
+    }
 
     return `
         <section class="manager-students-page student-page">
@@ -3913,8 +4580,7 @@ function renderManagerStudentProfile() {
                         </div>
                     </div>
                     <div class="student-profile-actions">
-                        <button class="secondary-button" type="button" data-manager-student-back><i data-lucide="arrow-left"></i> Back to Students</button>
-                        <button class="primary-button" type="button" data-manager-toast="Manager review opened for ${escapeHtml(student.name)}."><i data-lucide="clipboard-check"></i> Review Student</button>
+                        <button class="secondary-button" type="button" data-manager-student-back aria-label="Back"><i data-lucide="arrow-left"></i> Back</button>
                     </div>
                 </header>
 
@@ -3993,52 +4659,60 @@ function renderManagerStudentProfile() {
                     </section>
                 </div>
 
-                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'package' ? 'active' : ''}" data-manager-student-tab-panel="package">
-                    <article class="panel student-record-panel">
-                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Package</h3><p>Package progress and manager-safe billing state.</p></div>${remaining <= 5 ? marketingStatus('Needs Follow-up') : marketingStatus('Healthy')}</div>
-                        <div class="manager-student-profile-cards">
-                            <article><span>Lessons Used</span><strong>${escapeHtml(student.lessons)}</strong><small>${remaining} lessons left</small></article>
-                            <article><span>Package Access</span><strong>${escapeHtml(student.payment === 'Paid' ? 'Cleared' : 'Review')}</strong><small>Finance details hidden</small></article>
-                            <article><span>Teacher</span><strong>${escapeHtml(student.teacher)}</strong><small>Assigned teacher</small></article>
-                        </div>
-                    </article>
-                </div>
-
                 <div class="student-tab-panel ${activeManagerStudentProfileTab === 'lessons' ? 'active' : ''}" data-manager-student-tab-panel="lessons">
                     <article class="panel student-record-panel">
-                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Lessons</h3><p>Recent and upcoming operational lesson records.</p></div><button type="button" data-manager-student-add-class="${escapeHtml(student.id)}"><i data-lucide="calendar-plus"></i> Add Class</button></div>
-                        <div class="teacher-lesson-list manager-student-lesson-list">
-                            ${[
-                                ...addedClasses.map((item) => [item.date, item.time, 'Scheduled', item.platform, item.topic, item.teacher]),
-                                ['Today', student.preferredTime, 'Pending', schedule.platform],
-                                ['Last class', student.preferredTime, 'Completed', schedule.platform],
-                                ['Next class', student.preferredTime, 'Scheduled', schedule.platform],
-                            ].map(([date, time, status, platform, topic = `${student.level} English lesson`, teacherName = student.teacher]) => `<article><div><strong>${escapeHtml(date)} · ${escapeHtml(time)}</strong><small>${escapeHtml(platform)} · ${escapeHtml(teacherName)}</small></div><span>${escapeHtml(topic)}</span>${marketingStatus(status)}<button type="button" data-manager-toast="Lesson details opened.">View</button></article>`).join('')}
+                        <div class="student-record-head">
+                            <div>
+                                <h3>${escapeHtml(student.name)}'s Lessons</h3>
+                                <p>Completed, scheduled, and remaining lessons with student-facing teacher feedback.</p>
+                            </div>
+                            <button class="manager-add-class-button" type="button" data-manager-student-add-class="${escapeHtml(student.id)}"><i data-lucide="calendar-plus"></i> Add Class</button>
                         </div>
+                        <div class="lesson-access-banner">
+                            <div class="lesson-access-icon"><i data-lucide="video"></i></div>
+                            <div>
+                                <strong>Secure lesson access</strong>
+                                <span>Lesson rows use the same operational details shown in Admin. Teacher feedback requires Admin or Manager approval before publishing.</span>
+                            </div>
+                            <span class="status-pill positive">Manager view</span>
+                        </div>
+                        <div class="table-wrap manager-student-lessons-table-wrap">
+                            <table class="student-lessons-table manager-student-lessons-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Topic</th>
+                                        <th>Teacher</th>
+                                        <th>Duration</th>
+                                        <th>Lesson Status</th>
+                                        <th>Student Classroom</th>
+                                        <th>Class Recording</th>
+                                        <th>Teacher Feedback</th>
+                                        <th>Video URL</th>
+                                        <th>Action</th>
+                                        <th>Feedback Approval</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${renderManagerStudentLessonRows(student)}</tbody>
+                            </table>
+                        </div>
+                        <footer class="payment-history-foot">
+                            Lesson records match Admin's student Lessons tab. Managers can upload follow-up feedback and approve teacher-submitted feedback; Admin keeps edit and delete control.
+                        </footer>
                     </article>
                     ${renderPreviousPackageLessons(student, 'manager')}
                 </div>
 
-                <div class="student-tab-panel ${activeManagerStudentProfileTab === 'referrals' ? 'active' : ''}" data-manager-student-tab-panel="referrals">
-                    <article class="panel student-record-panel">
-                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Referrals</h3><p>Referral activity visible to manager operations.</p></div><button type="button" data-manager-toast="Referral follow-up queued.">Follow Up</button></div>
-                        <div class="manager-student-profile-cards">
-                            <article><span>Total Referrals</span><strong>${referrals.total}</strong><small>Shared code: ${escapeHtml(student.referralCode)}</small></article>
-                            <article><span>Converted</span><strong>${referrals.converted}</strong><small>Successful enrollments</small></article>
-                            <article><span>Credits Earned</span><strong>${referrals.credits}</strong><small>${escapeHtml(referrals.discount)} discount flag</small></article>
-                        </div>
-                    </article>
-                </div>
-
                 <div class="student-tab-panel ${activeManagerStudentProfileTab === 'schedule' ? 'active' : ''}" data-manager-student-tab-panel="schedule">
                     <article class="panel student-record-panel">
-                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Schedule</h3><p>Preferred class timing and classroom assignment.</p></div><button type="button" data-manager-student-add-class="${escapeHtml(student.id)}"><i data-lucide="calendar-plus"></i> Add Class</button></div>
+                        <div class="student-record-head"><div><h3>${escapeHtml(student.name)}'s Schedule</h3><p>Preferred class timing and classroom assignment.</p></div><button class="manager-add-class-button" type="button" data-manager-student-add-class="${escapeHtml(student.id)}"><i data-lucide="calendar-plus"></i> Add Class</button></div>
                         <section class="student-profile-grid manager-student-schedule-grid">
                             <article><div class="profile-card-head"><i data-lucide="calendar"></i><div><h4>Preference</h4><p>Requested schedule</p></div></div><dl><div><dt>Preferred Day</dt><dd>${escapeHtml(student.preferredDay)}</dd></div><div><dt>Preferred Time</dt><dd>${escapeHtml(student.preferredTime)}</dd></div></dl></article>
                             <article><div class="profile-card-head"><i data-lucide="video"></i><div><h4>Classroom</h4><p>Platform and duration</p></div></div><dl><div><dt>Platform</dt><dd>${escapeHtml(schedule.platform)}</dd></div><div><dt>Duration</dt><dd>${escapeHtml(schedule.duration)}</dd></div><div><dt>Frequency</dt><dd>${escapeHtml(schedule.frequency)}</dd></div></dl></article>
                             <article><div class="profile-card-head"><i data-lucide="user-check"></i><div><h4>Teacher</h4><p>Current assignment</p></div></div><dl><div><dt>Teacher</dt><dd>${escapeHtml(student.teacher)}</dd></div><div><dt>Status</dt><dd>${escapeHtml(student.status)}</dd></div><div><dt>Added Classes</dt><dd>${addedClasses.length}</dd></div></dl></article>
                         </section>
                         ${addedClasses.length ? `<div class="manager-added-class-list">${addedClasses.map((item) => `<article><strong>${escapeHtml(item.date)} · ${escapeHtml(item.time)}</strong><span>${escapeHtml(item.teacher)} · ${escapeHtml(item.topic)} · ${escapeHtml(item.platform)}</span>${marketingStatus('Scheduled')}</article>`).join('')}</div>` : ''}
+                        ${renderManagerStudentWeeklyCalendar(student)}
                     </article>
                 </div>
             </article>
@@ -4092,17 +4766,492 @@ function renderManagerPayroll() {
             <article><span>Completed Lessons</span><strong>${lessons}</strong><small>${hours} payable hours</small></article>
             <article><span>Net Payroll</span><strong>${formatPeso(total)}</strong><small>Manager review total</small></article>
         </section>
-        <article class="teacher-portal-panel">
-            <div class="teacher-panel-head"><div><h3>Teacher Payroll Summary</h3><p>Managers can review, flag, and prepare notes. Admin approves final adjustments.</p></div><button type="button" data-manager-toast="Payroll review note prepared.">Flag Adjustment</button></div>
-            <div class="table-wrap teacher-student-lessons-table manager-wide-table">
-                <table>
-                    <thead><tr><th>Teacher</th><th>Country</th><th>Lessons</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Deductions</th><th>Net Payroll</th><th>Status</th></tr></thead>
+        <article class="teacher-portal-panel manager-payroll-panel">
+            <div class="teacher-panel-head manager-payroll-head">
+                <div><h3>Teacher Payroll Summary</h3><p>Managers can review, flag, and prepare notes. Admin approves final adjustments.</p></div>
+                <button type="button" class="secondary-button" data-manager-payroll-flag="${escapeHtml(period)}">Flag Adjustment</button>
+            </div>
+            <div class="table-wrap manager-payroll-table-wrap">
+                <table class="manager-payroll-table">
+                    <thead>
+                        <tr>
+                            <th>Teacher</th>
+                            <th>Country</th>
+                            <th>Lessons</th>
+                            <th>Hours</th>
+                            <th>Rate</th>
+                            <th>Gross</th>
+                            <th>Deductions</th>
+                            <th>Net Payroll</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        ${summaries.map(({ teacher, summary }) => `<tr><td><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></td><td>${escapeHtml(teacher.country)}</td><td>${summary.records.length}</td><td>${summary.hours}</td><td>${formatPeso(summary.rate)}/hr</td><td>${formatPeso(summary.gross)}</td><td class="${summary.deductionTotal ? 'deduction-amount' : ''}">${summary.deductionTotal ? `− ${formatPeso(summary.deductionTotal)}` : '—'}</td><td class="pay-amount">${formatPeso(summary.net)}</td><td>${marketingStatus('For Review')}</td></tr>`).join('')}
+                        ${summaries.map(({ teacher, summary }) => `
+                            <tr>
+                                <td>
+                                    <div class="manager-payroll-person">
+                                        <span class="user-photo-avatar ${escapeHtml(getTeacherFaceClass(teacher))}" role="img" aria-label="${escapeHtml(teacher.name)} mock profile photo"></span>
+                                        <div><strong>${escapeHtml(teacher.name)}</strong><small>${escapeHtml(teacher.id)}</small></div>
+                                    </div>
+                                </td>
+                                <td>${escapeHtml(teacher.country)}</td>
+                                <td class="manager-payroll-number">${summary.records.length}</td>
+                                <td class="manager-payroll-number">${summary.hours}</td>
+                                <td>${formatPeso(summary.rate)}<small>/hr</small></td>
+                                <td class="manager-payroll-money">${formatPeso(summary.gross)}</td>
+                                <td class="manager-payroll-money ${summary.deductionTotal ? 'deduction-amount' : ''}">${summary.deductionTotal ? `− ${formatPeso(summary.deductionTotal)}` : '—'}</td>
+                                <td class="manager-payroll-money pay-amount">${formatPeso(summary.net)}</td>
+                                <td><span class="status-pill warning">For Review</span></td>
+                                <td><button type="button" class="row-action" data-manager-payroll-download="${escapeHtml(teacher.id)}" data-manager-payroll-period="${escapeHtml(period)}">View</button></td>
+                            </tr>
+                        `).join('')}
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">Review Total</td>
+                            <td class="manager-payroll-number">${lessons}</td>
+                            <td class="manager-payroll-number">${hours}</td>
+                            <td></td>
+                            <td class="manager-payroll-money">${formatPeso(summaries.reduce((sum, item) => sum + item.summary.gross, 0))}</td>
+                            <td class="manager-payroll-money">${summaries.reduce((sum, item) => sum + item.summary.deductionTotal, 0) ? `− ${formatPeso(summaries.reduce((sum, item) => sum + item.summary.deductionTotal, 0))}` : '—'}</td>
+                            <td class="manager-payroll-money pay-amount">${formatPeso(total)}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
+            ${renderManagerPayrollFlagAdjustments(period)}
         </article>`;
+}
+
+function getManagerPayrollFlagAdjustments(period = teacherPayrollPeriodNames[0]) {
+    return teacherPayrollDeductions
+        .filter((item) => item.period === period && item.source === 'Manager Flag')
+        .map((item) => ({
+            ...item,
+            teacher: teachers.find((teacher) => teacher.id === item.teacherId),
+        }))
+        .filter((item) => item.teacher);
+}
+
+function renderManagerPayrollFlagAdjustments(period = teacherPayrollPeriodNames[0]) {
+    const flags = getManagerPayrollFlagAdjustments(period);
+    return `
+        <section class="manager-payroll-flags">
+            <div class="manager-payroll-flags-head">
+                <div>
+                    <span>MANAGER FLAGS</span>
+                    <h4>Flagged Adjustments</h4>
+                    <p>All manager-created payroll adjustments for this review period.</p>
+                </div>
+                <strong>${flags.length} flag${flags.length === 1 ? '' : 's'}</strong>
+            </div>
+            <div class="manager-payroll-flag-list">
+                ${flags.length ? flags.map((flag) => `
+                    <article>
+                        <div class="manager-payroll-person">
+                            <span class="user-photo-avatar ${escapeHtml(getTeacherFaceClass(flag.teacher))}" role="img" aria-label="${escapeHtml(flag.teacher.name)} mock profile photo"></span>
+                            <div><strong>${escapeHtml(flag.teacher.name)}</strong><small>${escapeHtml(flag.teacher.id)} · ${escapeHtml(flag.teacher.country)}</small></div>
+                        </div>
+                        <div><span>Reason</span><strong>${escapeHtml(flag.reason)}</strong><small>${escapeHtml(flag.note)}</small></div>
+                        <div><span>Amount</span><strong class="deduction-amount">− ${formatPeso(flag.amount)}</strong><small>${escapeHtml(flag.addedAt)}</small></div>
+                        <div><span>Status</span><strong>${escapeHtml(flag.status)}</strong><small>Visible to Admin approval tasks</small></div>
+                    </article>
+                `).join('') : `
+                    <article class="is-empty">
+                        <div><span>No manager flags yet</span><strong>No flagged adjustments for ${escapeHtml(period)}</strong><small>Use Flag Adjustment when a payroll row needs Admin review.</small></div>
+                    </article>
+                `}
+            </div>
+        </section>
+    `;
+}
+
+function renderAdminPayrollApprovalTasks() {
+    loadTeacherPayrollDeductions();
+    const period = teacherPayrollPeriodNames[0];
+    const flags = getManagerPayrollFlagAdjustments(period);
+    const target = document.getElementById('adminPayrollApprovalTasks');
+    if (!target) return;
+
+    target.innerHTML = `
+        <div class="admin-payroll-approval-head">
+            <div>
+                <span>ADMIN APPROVAL TASKS</span>
+                <h2>Manager Payroll Flags</h2>
+                <p>Payroll adjustments submitted by managers for final Admin approval.</p>
+            </div>
+            <strong>${flags.filter((flag) => flag.status === 'Pending Admin Approval').length} pending</strong>
+        </div>
+        <div class="admin-payroll-approval-list">
+            ${flags.length ? flags.map((flag) => `
+                <article>
+                    <div class="manager-payroll-person">
+                        <span class="user-photo-avatar ${escapeHtml(getTeacherFaceClass(flag.teacher))}" role="img" aria-label="${escapeHtml(flag.teacher.name)} mock profile photo"></span>
+                        <div><strong>${escapeHtml(flag.teacher.name)}</strong><small>${escapeHtml(flag.teacher.id)} · ${escapeHtml(flag.period)}</small></div>
+                    </div>
+                    <div><span>Manager flag</span><strong>${escapeHtml(flag.reason)}</strong><small>${escapeHtml(flag.note)}</small></div>
+                    <div><span>Amount</span><strong class="deduction-amount">− ${formatPeso(flag.amount)}</strong><small>Submitted by ${escapeHtml(flag.addedBy)}</small></div>
+                    <div><span>Status</span><strong>${escapeHtml(flag.status)}</strong><small>${escapeHtml(flag.addedAt)}</small></div>
+                    <div class="admin-payroll-approval-actions">
+                        ${flag.status === 'Pending Admin Approval' ? `
+                            <button type="button" class="approve-deduction" data-admin-payroll-flag-action="approve" data-admin-payroll-flag="${escapeHtml(flag.id)}">Approve</button>
+                            <button type="button" class="reject-feedback" data-admin-payroll-flag-action="reject" data-admin-payroll-flag="${escapeHtml(flag.id)}">Reject</button>
+                        ` : `<span class="status-pill ${flag.status === 'Approved' ? 'positive' : 'neutral'}">${escapeHtml(flag.status)}</span>`}
+                    </div>
+                </article>
+            `).join('') : `
+                <article class="is-empty">
+                    <div><span>No payroll flags</span><strong>No manager-created payroll adjustments need approval.</strong><small>New manager flags will appear here automatically.</small></div>
+                </article>
+            `}
+        </div>
+    `;
+}
+
+const adminApprovalRequestStatus = {};
+
+const adminManualApprovalRequests = [
+    {
+        id: 'REQ-SCH-001',
+        type: 'Schedule Change',
+        sourceRole: 'Manager',
+        submittedBy: 'Angela Reyes',
+        area: 'Students',
+        subject: 'Add recurring class for Liam Chen',
+        detail: 'Manager requested Wednesday and Sunday at 7:00 PM with Maria Santos using the active package balance.',
+        submittedAt: 'Today · 1:40 PM PHT',
+        priority: 'High',
+    },
+    {
+        id: 'REQ-DOC-001',
+        type: 'Document Review',
+        sourceRole: 'Staff',
+        submittedBy: 'Nina Flores',
+        area: 'Documents',
+        subject: 'Verify TESOL Certificate upload',
+        detail: 'Staff uploaded a teacher document that needs Admin verification before it is marked approved.',
+        submittedAt: 'Today · 12:15 PM PHT',
+        priority: 'Normal',
+    },
+    {
+        id: 'REQ-COM-001',
+        type: 'Communication Approval',
+        sourceRole: 'Manager',
+        submittedBy: 'Carlo Mendoza',
+        area: 'Communication',
+        subject: 'Approve parent follow-up message',
+        detail: 'Manager prepared a student follow-up message for Admin review before sending to the guardian.',
+        submittedAt: 'Today · 10:45 AM PHT',
+        priority: 'Normal',
+    },
+    {
+        id: 'REQ-POL-001',
+        type: 'Policy Acknowledgment',
+        sourceRole: 'Staff',
+        submittedBy: 'Angela Reyes',
+        area: 'Policies',
+        subject: 'Approve corrected policy acknowledgment note',
+        detail: 'Staff submitted a corrected acknowledgement response for the Company Policy Manual activity log.',
+        submittedAt: 'Yesterday · 5:30 PM PHT',
+        priority: 'Low',
+    },
+];
+
+function getAdminApprovalRequests() {
+    const payrollRequests = teacherPayrollDeductions
+        .filter((item) => item.source === 'Manager Flag')
+        .map((flag) => {
+            const teacher = teachers.find((item) => item.id === flag.teacherId);
+            return {
+                id: flag.id,
+                type: 'Payroll Adjustment',
+                sourceRole: 'Manager',
+                submittedBy: flag.addedBy || 'Manager',
+                area: 'Payroll',
+                subject: `${flag.reason} · ${teacher?.name || flag.teacherId}`,
+                detail: `${flag.note} Amount: − ${formatPeso(flag.amount)} for ${flag.period}.`,
+                submittedAt: flag.addedAt,
+                priority: 'High',
+                status: flag.status === 'Waived' ? 'Rejected' : flag.status,
+                isPayrollFlag: true,
+            };
+        });
+
+    const manualRequests = adminManualApprovalRequests.map((request) => ({
+        ...request,
+        status: adminApprovalRequestStatus[request.id] || 'Pending Admin Approval',
+    }));
+
+    return [...payrollRequests, ...manualRequests];
+}
+
+function renderAdminApprovalRequests() {
+    const root = document.getElementById('adminApprovalRequests');
+    if (!root) return;
+
+    const requests = getAdminApprovalRequests();
+    const pending = requests.filter((request) => request.status === 'Pending Admin Approval');
+    const approved = requests.filter((request) => request.status === 'Approved');
+    const rejected = requests.filter((request) => ['Rejected', 'Waived'].includes(request.status));
+    const managerCount = requests.filter((request) => request.sourceRole === 'Manager').length;
+    const staffCount = requests.filter((request) => request.sourceRole === 'Staff').length;
+    setText('#approvalRequestNavCount', String(pending.length));
+
+    root.innerHTML = `
+        <section class="approval-requests-hero">
+            <div>
+                <p class="eyebrow">ADMIN REVIEW QUEUE</p>
+                <h2>Approval Requests</h2>
+                <span>Requests submitted by managers and staff appear here for final Admin decision.</span>
+            </div>
+            <strong>${pending.length} pending</strong>
+        </section>
+        <section class="approval-request-summary">
+            <article><span>Pending Requests</span><strong>${pending.length}</strong><small>Need Admin action</small></article>
+            <article><span>Approved</span><strong>${approved.length}</strong><small>Cleared in this prototype</small></article>
+            <article><span>Rejected</span><strong>${rejected.length}</strong><small>Returned or waived</small></article>
+            <article><span>Submitted By</span><strong>${managerCount} / ${staffCount}</strong><small>Managers / Staff</small></article>
+        </section>
+        <section class="approval-request-workspace">
+            <div class="approval-request-head">
+                <div>
+                    <h3>Request Queue</h3>
+                    <p>Review the operational request, source, priority, and status before approving or rejecting.</p>
+                </div>
+                <span>Newest requests first</span>
+            </div>
+            <div class="approval-request-list">
+                ${requests.map((request) => renderAdminApprovalRequestRow(request)).join('')}
+            </div>
+        </section>
+    `;
+    refreshIcons();
+}
+
+function renderAdminApprovalRequestRow(request) {
+    const isPending = request.status === 'Pending Admin Approval';
+    const statusClass = request.status === 'Approved' ? 'positive' : isPending ? 'warning' : 'neutral';
+    return `
+        <article class="approval-request-row ${isPending ? 'is-pending' : 'is-resolved'}" role="button" tabindex="0" data-admin-request-review="${escapeHtml(request.id)}" aria-label="Review ${escapeHtml(request.subject)}">
+            <div class="approval-request-type">
+                <span>${escapeHtml(request.area)}</span>
+                <strong>${escapeHtml(request.type)}</strong>
+                <small>${escapeHtml(request.priority)} priority</small>
+            </div>
+            <div class="approval-request-main">
+                <strong>${escapeHtml(request.subject)}</strong>
+                <p>${escapeHtml(request.detail)}</p>
+            </div>
+            <div class="approval-request-source">
+                <span>${escapeHtml(request.sourceRole)}</span>
+                <strong>${escapeHtml(request.submittedBy)}</strong>
+                <small>${escapeHtml(request.submittedAt)}</small>
+            </div>
+            <div class="approval-request-status">
+                <span class="status-pill ${statusClass}">${escapeHtml(request.status === 'Pending Admin Approval' ? 'Pending' : request.status)}</span>
+            </div>
+            <div class="approval-request-actions">
+                ${isPending ? `
+                    <button class="secondary-button" type="button" data-admin-request-review-button="${escapeHtml(request.id)}">Review</button>
+                    <button class="approve-deduction" type="button" data-admin-request-action="approve" data-admin-request-id="${escapeHtml(request.id)}">Approve</button>
+                    <button class="reject-feedback" type="button" data-admin-request-action="reject" data-admin-request-id="${escapeHtml(request.id)}">Reject</button>
+                ` : `<button class="secondary-button" type="button" data-admin-request-review-button="${escapeHtml(request.id)}">View Details</button>`}
+            </div>
+        </article>
+    `;
+}
+
+function resolveAdminApprovalRequest(requestId, action) {
+    const payrollFlag = teacherPayrollDeductions.find((item) => item.id === requestId && item.source === 'Manager Flag');
+    if (payrollFlag) {
+        resolveAdminPayrollFlag(requestId, action);
+        renderAdminApprovalRequests();
+        return;
+    }
+
+    adminApprovalRequestStatus[requestId] = action === 'approve' ? 'Approved' : 'Rejected';
+    renderAdminApprovalRequests();
+    showSparkToast(`Approval request ${action === 'approve' ? 'approved' : 'rejected'} by Admin.`);
+}
+
+function openAdminApprovalRequestReview(requestId) {
+    const request = getAdminApprovalRequests().find((item) => item.id === requestId);
+    if (!request) {
+        showSparkToast('Approval request could not be found.');
+        return;
+    }
+
+    document.getElementById('adminApprovalReviewModal')?.remove();
+    const isPending = request.status === 'Pending Admin Approval';
+    const statusClass = request.status === 'Approved' ? 'positive' : isPending ? 'warning' : 'neutral';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop admin-approval-review-backdrop';
+    overlay.id = 'adminApprovalReviewModal';
+    overlay.innerHTML = `
+        <section class="modal admin-approval-review-modal" role="dialog" aria-modal="true" aria-labelledby="adminApprovalReviewTitle">
+            <div class="modal-head">
+                <div>
+                    <p>ADMIN APPROVAL REVIEW</p>
+                    <h3 id="adminApprovalReviewTitle">${escapeHtml(request.subject)}</h3>
+                    <small>${escapeHtml(request.id)} · ${escapeHtml(request.area)}</small>
+                </div>
+                <button type="button" data-admin-approval-review-close aria-label="Close approval review">×</button>
+            </div>
+            <div class="admin-approval-review-body">
+                <div class="admin-approval-review-summary">
+                    <span class="status-pill ${statusClass}">${escapeHtml(isPending ? 'Pending' : request.status)}</span>
+                    <strong>${escapeHtml(request.type)}</strong>
+                    <p>${escapeHtml(request.detail)}</p>
+                </div>
+                <div class="admin-approval-review-grid">
+                    <article><span>Submitted by</span><strong>${escapeHtml(request.submittedBy)}</strong><small>${escapeHtml(request.sourceRole)}</small></article>
+                    <article><span>Submitted at</span><strong>${escapeHtml(request.submittedAt)}</strong><small>Philippine Time</small></article>
+                    <article><span>Priority</span><strong>${escapeHtml(request.priority)}</strong><small>${escapeHtml(request.area)} request</small></article>
+                    <article><span>Admin decision</span><strong>${escapeHtml(isPending ? 'Needs review' : request.status)}</strong><small>${isPending ? 'Approve or reject this request.' : 'This request has already been reviewed.'}</small></article>
+                </div>
+                <div class="admin-approval-review-note">
+                    <span>Review path</span>
+                    <p>Open request details, verify the submitted change, then choose the final Admin action. The queue updates immediately after approval or rejection.</p>
+                </div>
+            </div>
+            <footer class="admin-approval-review-actions">
+                <button type="button" class="secondary-button" data-admin-approval-review-close>Close</button>
+                ${isPending ? `
+                    <button type="button" class="reject-feedback" data-admin-request-modal-action="reject" data-admin-request-id="${escapeHtml(request.id)}">Reject</button>
+                    <button type="button" class="primary-button" data-admin-request-modal-action="approve" data-admin-request-id="${escapeHtml(request.id)}">Approve Request</button>
+                ` : ''}
+            </footer>
+        </section>
+    `;
+
+    document.body.appendChild(overlay);
+    refreshIcons();
+
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-admin-approval-review-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelectorAll('[data-admin-request-modal-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.adminRequestModalAction;
+            const id = button.dataset.adminRequestId;
+            close();
+            resolveAdminApprovalRequest(id, action);
+        });
+    });
+}
+
+function openManagerPayrollFlagAdjustment(period = teacherPayrollPeriodNames[0]) {
+    document.getElementById('managerPayrollFlagModal')?.remove();
+    const safePeriod = teacherPayrollPeriodNames.includes(period) ? period : teacherPayrollPeriodNames[0];
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop manager-payroll-flag-backdrop';
+    overlay.id = 'managerPayrollFlagModal';
+    overlay.innerHTML = `
+        <section class="modal manager-payroll-flag-modal" role="dialog" aria-modal="true" aria-labelledby="managerPayrollFlagTitle">
+            <div class="modal-head">
+                <div>
+                    <p>MANAGER PAYROLL REVIEW</p>
+                    <h3 id="managerPayrollFlagTitle">Flag Payroll Adjustment</h3>
+                    <small>${escapeHtml(safePeriod)}</small>
+                </div>
+                <button type="button" data-manager-payroll-flag-close aria-label="Close payroll adjustment">×</button>
+            </div>
+            <form class="manager-payroll-flag-form" id="managerPayrollFlagForm">
+                <label>Teacher
+                    <select id="managerPayrollFlagTeacher" required>
+                        ${teachers.map((teacher) => `<option value="${escapeHtml(teacher.id)}">${escapeHtml(teacher.name)} · ${escapeHtml(teacher.country)}</option>`).join('')}
+                    </select>
+                </label>
+                <label>Reason
+                    <select id="managerPayrollFlagReason" required>
+                        <option>Incorrect lesson count</option>
+                        <option>Teacher absence deduction</option>
+                        <option>Duplicate payroll entry</option>
+                        <option>Missing completed lesson</option>
+                        <option>Other payroll correction</option>
+                    </select>
+                </label>
+                <label>Adjustment amount
+                    <input id="managerPayrollFlagAmount" type="number" min="1" step="1" value="115" required>
+                    <small>Entered as a peso deduction pending Admin final approval.</small>
+                </label>
+                <label class="full">Manager note
+                    <textarea id="managerPayrollFlagNote" required placeholder="Add the reason, lesson date, or correction details for Admin review."></textarea>
+                </label>
+                <div class="manager-payroll-flag-preview">
+                    <span>Current period</span>
+                    <strong>${escapeHtml(safePeriod)}</strong>
+                    <small>Saved flags update the manager review totals in this prototype.</small>
+                </div>
+                <footer>
+                    <button type="button" class="secondary-button" data-manager-payroll-flag-close>Cancel</button>
+                    <button type="submit" class="primary-button">Save Flag</button>
+                </footer>
+            </form>
+        </section>
+    `;
+
+    document.body.appendChild(overlay);
+    refreshIcons();
+
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-manager-payroll-flag-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('#managerPayrollFlagForm')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submitManagerPayrollFlagAdjustment(safePeriod);
+    });
+}
+
+function submitManagerPayrollFlagAdjustment(period) {
+    const teacherId = document.getElementById('managerPayrollFlagTeacher')?.value;
+    const teacher = teachers.find((item) => item.id === teacherId);
+    const amount = Number(document.getElementById('managerPayrollFlagAmount')?.value);
+    const reason = document.getElementById('managerPayrollFlagReason')?.value.trim() || 'Payroll correction';
+    const note = document.getElementById('managerPayrollFlagNote')?.value.trim();
+    if (!teacher || !amount || amount < 1 || !note) {
+        showSparkToast('Choose a teacher, amount, and manager note before saving the flag.');
+        return;
+    }
+
+    teacherPayrollDeductions.push({
+        id: `DED-${String(teacherPayrollDeductions.length + 1).padStart(3, '0')}`,
+        teacherId: teacher.id,
+        period,
+        reason,
+        amount,
+        note,
+        relatedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        addedBy: managerAccount.name || 'Manager',
+        addedAt: `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${formatPhtTime()} PHT`,
+        source: 'Manager Flag',
+        status: 'Pending Admin Approval',
+    });
+    saveTeacherPayrollDeductions();
+
+    document.getElementById('managerPayrollFlagModal')?.remove();
+    renderManagerPortal();
+    showSparkToast(`Payroll adjustment flagged for ${teacher.name}.`);
+}
+
+function resolveAdminPayrollFlag(flagId, action) {
+    const flag = teacherPayrollDeductions.find((item) => item.id === flagId && item.source === 'Manager Flag');
+    if (!flag) return;
+    flag.status = action === 'approve' ? 'Approved' : 'Waived';
+    flag.adminReviewedBy = 'Van Lester Acepcion';
+    flag.adminReviewedAt = `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ${formatPhtTime()} PHT`;
+    saveTeacherPayrollDeductions();
+    updateOverview();
+    if (activeManagerPortalSection === 'manager-payroll') renderManagerPortal();
+    renderAdminApprovalRequests();
+    showSparkToast(`Payroll adjustment ${action === 'approve' ? 'approved' : 'rejected'} by Admin.`);
 }
 
 function renderManagerDocuments() {
@@ -4309,6 +5458,25 @@ function bindManagerPortalEvents(root) {
             if (action === 'view-receipt') openPayrollReceiptView(teacher, period);
         });
     });
+    root.querySelectorAll('[data-manager-payroll-download]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const teacher = teachers.find((item) => item.id === button.dataset.managerPayrollDownload)
+                || teachers.find((item) => item.id === activeManagerTeacherProfileId)
+                || getSelectedTeacher();
+            if (!teacher) return;
+            const requestedPeriod = button.dataset.managerPayrollPeriod || activeManagerTeacherPayrollPeriod;
+            let period = teacherPayrollPeriodNames[0];
+            if (teacherPayrollPeriodNames.includes(requestedPeriod)) {
+                period = requestedPeriod;
+            } else if (teacherPayrollPeriodNames.includes(activeManagerTeacherPayrollPeriod)) {
+                period = activeManagerTeacherPayrollPeriod;
+            }
+            openTeacherPayslip(teacher, period);
+        });
+    });
+    root.querySelector('[data-manager-payroll-flag]')?.addEventListener('click', (event) => {
+        openManagerPayrollFlagAdjustment(event.currentTarget.dataset.managerPayrollFlag);
+    });
     root.querySelector('#managerOverviewCountry')?.addEventListener('change', (event) => {
         managerOverviewCountry = event.target.value;
         activeManagerTeacherProfileId = '';
@@ -4395,6 +5563,15 @@ function bindManagerPortalEvents(root) {
     });
     root.querySelectorAll('[data-manager-toast]').forEach((button) => {
         button.addEventListener('click', () => showSparkToast(button.dataset.managerToast));
+    });
+    root.querySelectorAll('[data-teacher-computer-edit]').forEach((button) => {
+        button.addEventListener('click', () => openTeacherComputerSpecsEditor(button.dataset.teacherComputerEdit));
+    });
+    root.querySelectorAll('[data-teacher-bank-edit]').forEach((button) => {
+        button.addEventListener('click', () => openTeacherBankInformationEditor(button.dataset.teacherBankEdit));
+    });
+    root.querySelectorAll('[data-reassignment-detail]').forEach((button) => {
+        button.addEventListener('click', () => openReassignmentDetailsModal(button.dataset.reassignmentDetail));
     });
     root.querySelectorAll('[data-manager-followup]').forEach((button) => {
         button.addEventListener('click', () => openManagerScheduleFollowup(button.dataset.managerFollowup));
@@ -4520,6 +5697,9 @@ function bindTeacherPortalEvents(root) {
     });
     root.querySelectorAll('[data-teacher-status-locked]').forEach((button) => {
         button.addEventListener('click', () => openTeacherPortalLockedStatusInfo(button.dataset.teacherStatusLocked));
+    });
+    root.querySelectorAll('[data-reassignment-detail]').forEach((button) => {
+        button.addEventListener('click', () => openReassignmentDetailsModal(button.dataset.reassignmentDetail));
     });
     root.querySelectorAll('[data-teacher-classroom-day][data-teacher-classroom-time]').forEach((button) => {
         button.addEventListener('click', (event) => {
@@ -5226,6 +6406,7 @@ function updateOverview() {
     setText('#todayNetUsd', usdFormatter.format(netIncomeUsd));
     setText('#todayNetPhp', `PHP ₱${phpFormatter.format(netIncomeUsd * phpPerUsd)}`);
     setText('#incomeFormulaNote', `Teacher cost uses the assigned teacher’s hourly rate. A 25-minute class is paid as 30 minutes; a 50-minute class is paid as one hour. USD conversion shown at ₱${phpPerUsd.toFixed(2)} per US dollar.`);
+    renderAdminPayrollApprovalTasks();
 
     setText('#exchangeExamplePhp', `Philippines PHP ₱${phpPerUsd.toFixed(2)}`);
     setText('#monthlyPeriod', getMonthlyPeriod(country));
@@ -6393,6 +7574,10 @@ function activateSection(section) {
 
     if (section === 'finance') {
         renderFinanceModule();
+    }
+
+    if (section === 'approvals') {
+        renderAdminApprovalRequests();
     }
 
     if (section === 'marketing') {
@@ -9074,11 +10259,6 @@ function renderAdminSecuritySettings() {
             </div>
         </section>
         ${adminSecurityState.notice ? `<div class="success-notice settings-notice">${escapeHtml(adminSecurityState.notice)}<button type="button" data-settings-notice-close>×</button></div>` : ''}
-        <section class="security-overview-row">
-            <article><span>●</span><div><strong>Password</strong><small>Configured</small></div>${adminSettingsStatus('Active')}</article>
-            <article><span>✉</span><div><strong>Login & Recovery Email</strong><small>${escapeHtml(adminSecurityState.linkedEmail)}</small></div>${adminSettingsStatus(adminSecurityState.emailVerified ? 'Verified' : 'Pending')}</article>
-            <article><span>⌁</span><div><strong>Google Authenticator</strong><small>${adminSecurityState.twoFactorEnabled ? 'Required at sign-in' : 'Not yet enabled'}</small></div>${adminSettingsStatus(adminSecurityState.twoFactorEnabled ? 'Active' : 'Setup Required')}</article>
-        </section>
         <section class="admin-settings-layout">
             <div class="admin-settings-main">
                 <article class="panel company-branding-card">
@@ -10158,6 +11338,18 @@ function openTeacherProfile(teacherId) {
     setText('#teacherDetailSupervisorName', teacherDetailSupervisor.name);
     setText('#teacherDetailSupervisorRole', teacherDetailSupervisor.role);
 
+    const computerSpecs = getTeacherComputerSpecs(teacher);
+    setText('#teacherComputerSpecs', computerSpecs.computer);
+    setText('#teacherMainInternet', computerSpecs.mainInternet);
+    setText('#teacherDualMonitor', computerSpecs.dualMonitor);
+    setText('#teacherBackupInternet', computerSpecs.backupInternet);
+    setText('#teacherBackupElectricity', computerSpecs.backupElectricity);
+
+    const bankInfo = getTeacherBankInformation(teacher);
+    setText('#teacherBankCompleteName', bankInfo.completeName);
+    setText('#teacherBankName', bankInfo.bankName);
+    setText('#teacherBankAccountNumber', bankInfo.accountNumber);
+
     const contact = teacherContacts[teacher.name] || {};
     setText('#teacherPrimaryPhone', contact.primary || 'Not provided');
     setText('#teacherSecondaryPhone', contact.secondary || 'Not provided');
@@ -10577,9 +11769,10 @@ function renderTeacherFeedbackDetailsItems(record) {
 function updateTeacherFeedbackAckProgress() {
     const buttons = Array.from(document.querySelectorAll('#teacherFeedbackDetailsItems [data-teacher-feedback-ack]'));
     const acknowledgedCount = buttons.filter((button) => button.classList.contains('acknowledged')).length;
+    const teacherResponse = document.getElementById('teacherFeedbackEmployeeNote')?.value.trim() || '';
     setText('#teacherFeedbackAckProgress', `${acknowledgedCount} of ${buttons.length}`);
     const complete = document.getElementById('teacherFeedbackAcknowledge');
-    if (complete) complete.disabled = buttons.length > 0 && acknowledgedCount !== buttons.length;
+    if (complete) complete.disabled = (buttons.length > 0 && acknowledgedCount !== buttons.length) || !teacherResponse;
 }
 
 function openTeacherFeedbackDetails(index, teacher = getSelectedTeacher()) {
@@ -10622,6 +11815,12 @@ function completeTeacherFeedbackAcknowledgment() {
     const buttons = Array.from(document.querySelectorAll('#teacherFeedbackDetailsItems [data-teacher-feedback-ack]'));
     if (buttons.some((button) => !button.classList.contains('acknowledged'))) {
         showSparkToast('Please acknowledge each feedback item before completing.');
+        return;
+    }
+    const teacherResponse = document.getElementById('teacherFeedbackEmployeeNote')?.value.trim() || '';
+    if (!teacherResponse) {
+        showSparkToast('Please add your teacher response before completing the acknowledgment.');
+        updateTeacherFeedbackAckProgress();
         return;
     }
 
@@ -10904,7 +12103,7 @@ function getTeacherPayrollPeriod() {
 function getTeacherPayrollSummary(teacher, period) {
     const rate = getTeacherHourlyRate(teacher);
     const records = teacherPayrollRecords[period] || [];
-    const deductions = teacherPayrollDeductions.filter((item) => item.period === period);
+    const deductions = teacherPayrollDeductions.filter((item) => item.period === period && (!item.teacherId || item.teacherId === teacher.id));
     const appliedDeductions = deductions.filter((item) => item.status !== 'Waived');
     const hours = records.reduce((sum, lesson) => sum + getPayableHours(lesson.actualMinutes), 0);
     const gross = records.reduce((sum, lesson) => (
@@ -11921,6 +13120,14 @@ function editTeacherInformation() {
         teacherPortalProfilePictures[nextId] = teacherPortalProfilePictures[previousId];
         delete teacherPortalProfilePictures[previousId];
     }
+    if (previousId !== nextId && teacherComputerSpecRecords[previousId]) {
+        teacherComputerSpecRecords[nextId] = teacherComputerSpecRecords[previousId];
+        delete teacherComputerSpecRecords[previousId];
+    }
+    if (previousId !== nextId && teacherBankInformationRecords[previousId]) {
+        teacherBankInformationRecords[nextId] = teacherBankInformationRecords[previousId];
+        delete teacherBankInformationRecords[previousId];
+    }
     if (previousName !== nextName && teacherContacts[previousName]) {
         teacherContacts[nextName] = teacherContacts[previousName];
         delete teacherContacts[previousName];
@@ -11953,6 +13160,130 @@ function editTeacherAssignment() {
 
     refreshTeacherDetailAfterEdit(teacher);
     showSparkToast('Teaching assignment updated.');
+}
+
+function getEditableTeacherById(teacherId = selectedTeacherId) {
+    return teachers.find((teacher) => teacher.id === teacherId) || getSelectedTeacher();
+}
+
+function openTeacherComputerSpecsEditor(teacherId = selectedTeacherId) {
+    const teacher = getEditableTeacherById(teacherId);
+    if (!teacher) return;
+    selectedTeacherId = teacher.id;
+    const specs = getTeacherComputerSpecs(teacher);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop teacher-profile-edit-backdrop';
+    overlay.innerHTML = `
+        <div class="modal teacher-profile-edit-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+                <div>
+                    <p>TEACHER PROFILE</p>
+                    <h3>Edit Computer Specs</h3>
+                    <span>${escapeHtml(teacher.name)} · ${escapeHtml(teacher.id)}</span>
+                </div>
+                <button type="button" data-teacher-profile-edit-close aria-label="Close">×</button>
+            </div>
+            <form class="teacher-profile-edit-form" data-teacher-computer-form>
+                <label>Computer Specs
+                    <input name="computer" value="${escapeHtml(specs.computer)}">
+                </label>
+                <label>Main Internet & Speed
+                    <input name="mainInternet" value="${escapeHtml(specs.mainInternet)}">
+                </label>
+                <label>Dual Monitor?
+                    <select name="dualMonitor">
+                        ${['Yes', 'No'].map((value) => `<option value="${value}" ${specs.dualMonitor === value ? 'selected' : ''}>${value}</option>`).join('')}
+                    </select>
+                </label>
+                <label>Backup Internet & Speed
+                    <input name="backupInternet" value="${escapeHtml(specs.backupInternet)}">
+                </label>
+                <label>Backup Electricity
+                    <input name="backupElectricity" value="${escapeHtml(specs.backupElectricity)}">
+                </label>
+                <div class="modal-actions">
+                    <button class="secondary-button" type="button" data-teacher-profile-edit-close>Cancel</button>
+                    <button class="primary-button" type="submit">Save Computer Specs</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-teacher-profile-edit-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('[data-teacher-computer-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        teacherComputerSpecRecords[teacher.id] = {
+            computer: formData.get('computer')?.toString().trim() || 'Not provided',
+            mainInternet: formData.get('mainInternet')?.toString().trim() || 'Not provided',
+            dualMonitor: formData.get('dualMonitor')?.toString().trim() || 'No',
+            backupInternet: formData.get('backupInternet')?.toString().trim() || 'Not provided',
+            backupElectricity: formData.get('backupElectricity')?.toString().trim() || 'Not provided',
+        };
+        close();
+        refreshTeacherDetailAfterEdit(teacher);
+        if (activeManagerTeacherProfileId === teacher.id) renderManagerPortal();
+        showSparkToast('Computer specs updated.');
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
+function openTeacherBankInformationEditor(teacherId = selectedTeacherId) {
+    const teacher = getEditableTeacherById(teacherId);
+    if (!teacher) return;
+    selectedTeacherId = teacher.id;
+    const bank = getTeacherBankInformation(teacher);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop teacher-profile-edit-backdrop';
+    overlay.innerHTML = `
+        <div class="modal teacher-profile-edit-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+                <div>
+                    <p>TEACHER PROFILE</p>
+                    <h3>Edit Bank Information</h3>
+                    <span>${escapeHtml(teacher.name)} · ${escapeHtml(teacher.id)}</span>
+                </div>
+                <button type="button" data-teacher-profile-edit-close aria-label="Close">×</button>
+            </div>
+            <form class="teacher-profile-edit-form" data-teacher-bank-form>
+                <label>Complete Name
+                    <input name="completeName" value="${escapeHtml(bank.completeName)}">
+                </label>
+                <label>Bank Name
+                    <input name="bankName" value="${escapeHtml(bank.bankName)}">
+                </label>
+                <label>Bank Account Number
+                    <input name="accountNumber" value="${escapeHtml(bank.accountNumber)}">
+                </label>
+                <div class="modal-actions">
+                    <button class="secondary-button" type="button" data-teacher-profile-edit-close>Cancel</button>
+                    <button class="primary-button" type="submit">Save Bank Information</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-teacher-profile-edit-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('[data-teacher-bank-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        teacherBankInformationRecords[teacher.id] = {
+            completeName: formData.get('completeName')?.toString().trim() || teacher.name,
+            bankName: formData.get('bankName')?.toString().trim() || 'Not provided',
+            accountNumber: formData.get('accountNumber')?.toString().trim() || 'Not provided',
+        };
+        close();
+        refreshTeacherDetailAfterEdit(teacher);
+        if (activeManagerTeacherProfileId === teacher.id) renderManagerPortal();
+        showSparkToast('Bank information updated.');
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
 }
 
 function editTeacherSupervisor() {
@@ -12035,6 +13366,7 @@ function addTeacherPayrollAdjustment() {
     const note = window.prompt('Reason / internal payroll note', 'Manual payroll adjustment') || 'Manual payroll adjustment';
     teacherPayrollDeductions.push({
         id: `DED-${String(teacherPayrollDeductions.length + 1).padStart(3, '0')}`,
+        teacherId: teacher.id,
         period: getTeacherPayrollPeriod(),
         reason: 'Duplicate or incorrect payroll entry',
         amount,
@@ -12045,6 +13377,7 @@ function addTeacherPayrollAdjustment() {
         source: 'Manual',
         status: 'Applied',
     });
+    saveTeacherPayrollDeductions();
     renderTeacherPayroll(teacher);
     showSparkToast(`Manual payroll adjustment added for ${teacher.name}.`);
 }
@@ -14384,6 +15717,7 @@ function toggleMenu(groupName) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadTeacherPayrollDeductions();
     refreshIcons();
     setupPremiumLoginMotion();
     updateOverviewTimes();
@@ -14403,6 +15737,37 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('refreshRates')?.addEventListener('click', () => {
         updateExchangeRateTime();
         updateOverview();
+    });
+    document.getElementById('adminPayrollApprovalTasks')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-admin-payroll-flag-action]');
+        if (!button) return;
+        resolveAdminPayrollFlag(button.dataset.adminPayrollFlag, button.dataset.adminPayrollFlagAction);
+    });
+    document.getElementById('adminApprovalRequests')?.addEventListener('click', (event) => {
+        const reviewButton = event.target.closest('[data-admin-request-review-button]');
+        if (reviewButton) {
+            event.stopPropagation();
+            openAdminApprovalRequestReview(reviewButton.dataset.adminRequestReviewButton);
+            return;
+        }
+
+        const button = event.target.closest('[data-admin-request-action]');
+        if (button) {
+            event.stopPropagation();
+            resolveAdminApprovalRequest(button.dataset.adminRequestId, button.dataset.adminRequestAction);
+            return;
+        }
+
+        const row = event.target.closest('[data-admin-request-review]');
+        if (!row) return;
+        openAdminApprovalRequestReview(row.dataset.adminRequestReview);
+    });
+    document.getElementById('adminApprovalRequests')?.addEventListener('keydown', (event) => {
+        if (!['Enter', ' '].includes(event.key)) return;
+        const row = event.target.closest('[data-admin-request-review]');
+        if (!row) return;
+        event.preventDefault();
+        openAdminApprovalRequestReview(row.dataset.adminRequestReview);
     });
 
     document.getElementById('analyticsRefresh')?.addEventListener('click', () => {
@@ -14529,6 +15894,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('teacherInfoPanelEdit')?.addEventListener('click', editTeacherInformation);
     document.getElementById('teacherAssignmentPanelEdit')?.addEventListener('click', editTeacherAssignment);
     document.getElementById('teacherSupervisorPanelEdit')?.addEventListener('click', editTeacherSupervisor);
+    document.getElementById('teacherComputerPanelEdit')?.addEventListener('click', () => openTeacherComputerSpecsEditor());
+    document.getElementById('teacherBankPanelEdit')?.addEventListener('click', () => openTeacherBankInformationEditor());
     document.getElementById('teacherEditContactDetails')?.addEventListener('click', openTeacherContactDrawer);
     document.getElementById('teacherAddNote')?.addEventListener('click', openTeacherNoteModal);
     document.getElementById('teacherUploadDocument')?.addEventListener('click', openTeacherDocumentUpload);
@@ -14577,6 +15944,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('teacherFeedbackDetailsEdit')?.addEventListener('click', () => {
         showSparkToast('Admin edit controls are represented in this prototype. The saved record remains audit-protected.');
     });
+    document.getElementById('teacherFeedbackEmployeeNote')?.addEventListener('input', updateTeacherFeedbackAckProgress);
     document.getElementById('teacherFeedbackAcknowledge')?.addEventListener('click', completeTeacherFeedbackAcknowledgment);
     document.getElementById('teacherAddFeedbackClose')?.addEventListener('click', closeTeacherAddFeedback);
     document.getElementById('teacherAddFeedbackCancel')?.addEventListener('click', closeTeacherAddFeedback);
@@ -14621,17 +15989,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('teacherPayrollAddDeduction')?.addEventListener('click', addTeacherPayrollAdjustment);
     document.getElementById('teacherWeekPrevious')?.addEventListener('click', () => moveTeacherWeek(-1));
     document.getElementById('teacherWeekNext')?.addEventListener('click', () => moveTeacherWeek(1));
-    document.getElementById('teacherCloseAllSlots')?.addEventListener('click', () => {
-        document.querySelectorAll('#teacherWeeklyCalendarBody .teacher-calendar-slot.open').forEach((slot) => {
-            slot.classList.remove('open');
-            slot.classList.add('closed');
-            slot.dataset.slotState = 'closed';
-            slot.querySelector('strong').textContent = 'Closed';
-            slot.querySelector('span').textContent = 'Teacher is not available';
-        });
-        updateTeacherOpenSlotCount();
-        showSparkToast('All unbooked weekly slots closed in prototype mode.');
-    });
     document.getElementById('teacherWeeklyCalendarBody')?.addEventListener('click', (event) => {
         const slot = event.target.closest('.teacher-calendar-slot');
         if (!slot) return;
@@ -14890,6 +16247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Signing In...';
             const data = await submitLogin(email.value.trim(), passwordInput.value, remember);
             passwordInput.value = '';
+            loadTeacherPayrollDeductions();
             showAuthenticatedDashboard(data.user);
         } catch (error) {
             if (loginError) loginError.textContent = 'This email or password is not registered as an approved VLACE account.';
@@ -15010,6 +16368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMarketingWorkspace();
     renderUserManagement();
     renderCompanyPolicyManual();
+    renderAdminApprovalRequests();
     renderAdminSecuritySettings();
 
     document.querySelectorAll('[data-group-toggle]').forEach((button) => {
