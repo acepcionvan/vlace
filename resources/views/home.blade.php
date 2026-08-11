@@ -11,8 +11,9 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=renewal-watch-filter-controls-20260810">
-    <script src="{{ asset('js/app.js') }}?v=renewal-watch-filter-controls-20260810" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=commerce-sync-20260811">
+    <script src="{{ asset('js/speakryt-commerce.js') }}?v=commerce-sync-20260811"></script>
+    <script src="{{ asset('js/app.js') }}?v=commerce-sync-20260811" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">

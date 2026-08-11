@@ -66,6 +66,8 @@ a {
 .header-cta,
 .hero-actions a,
 .pricing-grid a,
+.pricing-grid button,
+.commerce-primary,
 .contact-section a {
     display: inline-flex;
     align-items: center;
@@ -77,6 +79,21 @@ a {
     color: white;
     font-weight: 900;
     box-shadow: 0 14px 30px rgba(23, 100, 195, .22);
+}
+
+.pricing-grid button,
+.commerce-primary {
+    width: 100%;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+}
+
+.commerce-primary:disabled {
+    cursor: not-allowed;
+    background: #d9e5f0;
+    color: #71869a;
+    box-shadow: none;
 }
 
 .hero-section {
@@ -402,6 +419,203 @@ h1 {
     box-shadow: 0 24px 50px rgba(23, 100, 195, .14);
 }
 
+.pricing-toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) 1fr;
+    gap: 18px;
+    align-items: end;
+    margin: 0 0 22px;
+    padding: 18px;
+    border: 1px solid #b8d5ed;
+    border-radius: 14px;
+    background: #f7fbff;
+}
+
+.pricing-toolbar label,
+.checkout-panel label {
+    display: grid;
+    gap: 8px;
+    color: #31536f;
+    font-size: 12px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.pricing-toolbar select,
+.checkout-panel select,
+.checkout-panel input {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid #cfe0ef;
+    border-radius: 10px;
+    padding: 0 14px;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 850;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.checkout-panel input.is-invalid {
+    border-color: #e65f58;
+    box-shadow: 0 0 0 4px rgba(230, 95, 88, .12);
+}
+
+.pricing-toolbar strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 18px;
+    font-weight: 950;
+}
+
+.pricing-toolbar span:last-child {
+    color: var(--muted);
+    font-weight: 750;
+}
+
+.commerce-pricing-grid article {
+    position: relative;
+    overflow: hidden;
+}
+
+.commerce-pricing-grid article::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 5px;
+    background: linear-gradient(90deg, var(--blue), var(--mint));
+}
+
+.commerce-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, .9fr) minmax(320px, 1.1fr);
+    gap: 20px;
+    margin-top: 24px;
+}
+
+.checkout-panel,
+.coupon-panel {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 18px 42px rgba(22, 59, 91, .08);
+}
+
+.checkout-panel h3,
+.coupon-panel h3 {
+    margin-bottom: 8px;
+    font-size: 26px;
+    font-weight: 950;
+}
+
+.checkout-panel p,
+.coupon-panel p {
+    color: var(--muted);
+    line-height: 1.55;
+    font-weight: 750;
+}
+
+.checkout-total {
+    display: grid;
+    gap: 4px;
+    padding: 18px;
+    border: 1px solid #bfe6d7;
+    border-radius: 12px;
+    background: #effbf6;
+}
+
+.checkout-total span,
+.checkout-total small,
+.sync-note,
+.payment-feed small {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.checkout-total strong {
+    color: #0c7d51;
+    font-size: 36px;
+    font-weight: 950;
+}
+
+.coupon-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.coupon-list button {
+    display: grid;
+    gap: 5px;
+    padding: 16px;
+    border: 1px solid #cfe0ef;
+    border-radius: 12px;
+    background: #f7fbff;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.coupon-list span {
+    color: var(--blue);
+    font-weight: 950;
+}
+
+.coupon-list strong {
+    font-size: 22px;
+    font-weight: 950;
+}
+
+.coupon-list small {
+    color: var(--muted);
+    line-height: 1.35;
+    font-weight: 750;
+}
+
+.payment-feed {
+    display: grid;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+
+.payment-feed h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.payment-feed > div {
+    display: grid;
+    gap: 10px;
+}
+
+.payment-feed > div > div {
+    display: grid;
+    gap: 3px;
+    padding: 14px;
+    border: 1px solid #d9e5f0;
+    border-radius: 10px;
+    background: #fbfdff;
+}
+
+.payment-feed strong {
+    font-weight: 950;
+}
+
+.payment-feed span {
+    color: #31536f;
+    font-size: 14px;
+    font-weight: 800;
+}
+
 .testimonial-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -516,6 +730,8 @@ h1 {
     .testimonial-grid,
     .teacher-layout,
     .mission-band,
+    .pricing-toolbar,
+    .commerce-layout,
     .contact-section {
         grid-template-columns: 1fr;
     }
@@ -561,6 +777,10 @@ h1 {
     }
 
     .site-footer {
+        grid-template-columns: 1fr;
+    }
+
+    .coupon-list {
         grid-template-columns: 1fr;
     }
 }

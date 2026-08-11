@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="{{ asset('css/speakryt.css') }}?v=website-first-pass-20260811">
+    <link rel="stylesheet" href="{{ asset('css/speakryt.css') }}?v=china-commerce-20260811">
+    <script src="{{ asset('js/speakryt-commerce.js') }}?v=china-commerce-20260811"></script>
 </head>
 <body>
     <header class="site-header">
@@ -102,30 +103,67 @@
 
         <section class="section-shell" id="pricing" aria-labelledby="pricing-title">
             <div class="section-heading compact">
-                <p class="eyebrow">Simple plans</p>
-                <h2 id="pricing-title">Start small, then continue with the package that fits.</h2>
+                <p class="eyebrow">China pricing</p>
+                <h2 id="pricing-title">Packages matched to the dashboard.</h2>
+                <p>These China packages, coupons, and payment records use the same prototype commerce data shown inside Admin Packages &amp; Prices.</p>
             </div>
-            <div class="pricing-grid">
-                <article>
-                    <p>Trial Class</p>
-                    <h3>Try the method</h3>
-                    <strong>1 lesson</strong>
-                    <ul><li>Level check</li><li>Teacher recommendation</li><li>Learning plan preview</li></ul>
-                    <a href="#contact">Book trial</a>
+            <div class="pricing-toolbar" aria-label="Pricing market controls">
+                <label>
+                    <span>Country</span>
+                    <select id="pricingCountrySelect">
+                        <option selected>China</option>
+                    </select>
+                </label>
+                <div>
+                    <strong id="pricingPublishedCount">6 published packages</strong>
+                    <span>Adults: 50-minute lessons · Kids: 25-minute lessons</span>
+                </div>
+            </div>
+            <div class="pricing-grid commerce-pricing-grid" id="chinaPricingGrid"></div>
+
+            <div class="commerce-layout" aria-label="Website checkout and coupon synchronization">
+                <article class="checkout-panel">
+                    <div>
+                        <p class="eyebrow">Website checkout</p>
+                        <h3>Apply a dashboard coupon</h3>
+                        <p>Choose a China package, apply an active coupon, and record a prototype payment that appears in the dashboard payment history.</p>
+                    </div>
+                    <label>Student
+                        <select id="checkoutStudent">
+                            <option value="S1-001">Liam Chen · S1-001</option>
+                            <option value="S1-003">Eddie Zhang · S1-003</option>
+                            <option value="S1-006">Grace Liu · S1-006</option>
+                            <option value="S1-011">Soo-jin Kim · S1-011</option>
+                        </select>
+                    </label>
+                    <label>Authorized phone number
+                        <input id="checkoutPhone" inputmode="tel" autocomplete="tel" placeholder="+639273028515">
+                    </label>
+                    <label>Package
+                        <select id="checkoutPackage"></select>
+                    </label>
+                    <label>Coupon code
+                        <input id="checkoutCoupon" placeholder="Try WELCOME10 or KIDS15">
+                    </label>
+                    <div class="checkout-total">
+                        <span>Estimated total</span>
+                        <strong id="checkoutTotal">$0.00</strong>
+                        <small id="checkoutDiscountNote">No coupon applied</small>
+                    </div>
+                    <button class="commerce-primary" type="button" id="recordWebsitePayment" disabled>Record Website Payment</button>
+                    <p class="sync-note" id="checkoutSyncNote">Enter the authorized phone number to continue.</p>
                 </article>
-                <article class="featured-plan">
-                    <p>Most Flexible</p>
-                    <h3>Starter Package</h3>
-                    <strong>15 lessons</strong>
-                    <ul><li>Private 1-on-1 classes</li><li>Progress feedback</li><li>Flexible schedule support</li></ul>
-                    <a href="#contact">Ask for schedule</a>
-                </article>
-                <article>
-                    <p>Best Value</p>
-                    <h3>Growth Package</h3>
-                    <strong>30 lessons</strong>
-                    <ul><li>Longer progress runway</li><li>Teacher continuity</li><li>Renewal support</li></ul>
-                    <a href="#contact">Get started</a>
+
+                <article class="coupon-panel">
+                    <div>
+                        <p class="eyebrow">Active coupons</p>
+                        <h3>Dashboard-controlled discounts</h3>
+                    </div>
+                    <div class="coupon-list" id="websiteCouponList"></div>
+                    <div class="payment-feed">
+                        <h4>Recent website payments</h4>
+                        <div id="websitePaymentFeed"></div>
+                    </div>
                 </article>
             </div>
         </section>
@@ -181,5 +219,6 @@
     <script>
         lucide.createIcons();
     </script>
+    <script src="{{ asset('js/speakryt-site.js') }}?v=china-commerce-20260811"></script>
 </body>
 </html>
