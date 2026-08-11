@@ -34,4 +34,42 @@ Route::post('/prototype/payroll-deductions', function (Request $request) {
 
     return response()->json(['saved' => true]);
 })->middleware('auth')->name('prototype.payroll-deductions.store');
+Route::get('/prototype/commerce', function () {
+    $storedPath = storage_path('app/prototype-commerce.json');
+    $defaultPath = public_path('speakryt-commerce.json');
+    $path = is_file($storedPath) ? $storedPath : $defaultPath;
+    $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : [];
+
+    return response()
+        ->json($data)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Accept');
+})->name('prototype.commerce.index');
+Route::options('/prototype/commerce', function () {
+    return response('', 204)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Accept');
+});
+Route::post('/prototype/commerce', function (Request $request) {
+    $path = storage_path('app/prototype-commerce.json');
+    $directory = dirname($path);
+
+    if (! is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
+
+    $data = $request->validate([
+        'serviceCountries' => ['array'],
+        'packages' => ['array'],
+        'coupons' => ['array'],
+        'couponUsage' => ['array'],
+        'studentPayments' => ['array'],
+    ]);
+
+    file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT));
+
+    return response()->json(['saved' => true]);
+})->middleware('auth')->name('prototype.commerce.store');
 Route::post('/generate', [HomeController::class, 'generate'])->name('generate');

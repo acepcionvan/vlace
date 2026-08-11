@@ -7921,7 +7921,7 @@ const serviceCountries = sharedCommerceData.serviceCountries || [
     { name: 'Israel', currency: 'ILS', status: 'Active', serviceArea: 'Nationwide' },
 ];
 
-const websitePackages = sharedCommerceData.packages || [
+let websitePackages = sharedCommerceData.packages || [
     { id: 'CN-A-S', market: 'China', audience: 'Adults', duration: '50 minutes', name: 'Silver', lessons: '15', price: '165', visibility: 'Published' },
     { id: 'CN-A-G', market: 'China', audience: 'Adults', duration: '50 minutes', name: 'Gold', lessons: '30', price: '314', visibility: 'Published' },
     { id: 'CN-A-B', market: 'China', audience: 'Adults', duration: '50 minutes', name: 'Black Diamond', lessons: '45', price: '456', visibility: 'Published' },
@@ -7930,23 +7930,89 @@ const websitePackages = sharedCommerceData.packages || [
     { id: 'CN-K-P', market: 'China', audience: 'Kids', duration: '25 minutes', name: 'Platinum', lessons: '45', price: '249', visibility: 'Published' },
 ];
 
-const websiteCoupons = sharedCommerceData.coupons || [
+let websiteCoupons = sharedCommerceData.coupons || [
     { id: 'CPN-001', code: 'WELCOME10', discount: 10, validFrom: 'Aug 1, 2026', validUntil: 'Sep 30, 2026', usageLimit: 100, used: 18, status: 'Active', websiteSync: 'Ready for checkout' },
     { id: 'CPN-002', code: 'KIDS15', discount: 15, validFrom: 'Aug 10, 2026', validUntil: 'Oct 15, 2026', usageLimit: 50, used: 7, status: 'Active', websiteSync: 'Ready for checkout' },
     { id: 'CPN-003', code: 'RENEWAL5', discount: 5, validFrom: 'Jul 1, 2026', validUntil: 'Dec 31, 2026', usageLimit: 200, used: 42, status: 'Active', websiteSync: 'Renewal only' },
     { id: 'CPN-004', code: 'SUMMER20', discount: 20, validFrom: 'Jun 1, 2026', validUntil: 'Jul 31, 2026', usageLimit: 40, used: 40, status: 'Expired', websiteSync: 'Disabled' },
 ];
 
-const couponUsageRecords = sharedCommerceData.couponUsage || [
+let couponUsageRecords = sharedCommerceData.couponUsage || [
     { student: 'Liam Chen', studentId: 'S1-001', coupon: 'WELCOME10', timesUsed: 1, appliedAt: 'Aug 8, 2026', packageName: 'Kids Gold · 30 lessons', discountApplied: '10%', status: 'Applied' },
     { student: 'Eddie Zhang', studentId: 'S1-003', coupon: 'KIDS15', timesUsed: 1, appliedAt: 'Aug 6, 2026', packageName: 'Kids Silver · 15 lessons', discountApplied: '15%', status: 'Applied' },
     { student: 'Grace Liu', studentId: 'S1-006', coupon: 'RENEWAL5', timesUsed: 2, appliedAt: 'Aug 5, 2026', packageName: 'Adults Gold · 30 lessons', discountApplied: '5%', status: 'Renewal' },
     { student: 'Soo-jin Kim', studentId: 'S1-011', coupon: 'WELCOME10', timesUsed: 1, appliedAt: 'Aug 2, 2026', packageName: 'Adults Silver · 15 lessons', discountApplied: '10%', status: 'Applied' },
 ];
 
-const websiteStudentPayments = sharedCommerceData.studentPayments || [];
+let websiteStudentPayments = sharedCommerceData.studentPayments || [];
 
 let activePackageMarket = 'All Markets';
+let commerceSyncLoaded = false;
+
+function getCommercePayload() {
+    return {
+        serviceCountries,
+        packages: websitePackages,
+        coupons: websiteCoupons,
+        couponUsage: couponUsageRecords,
+        studentPayments: websiteStudentPayments,
+    };
+}
+
+function getMarketCurrency(market) {
+    const normalizedMarket = String(market).toLowerCase().replace(/^united arab emirates$/, 'uae');
+    return serviceCountries.find((country) => String(country.name).toLowerCase().replace(/^united arab emirates$/, 'uae') === normalizedMarket)?.currency || 'USD';
+}
+
+function formatWebsitePackagePrice(pkg) {
+    const currency = getMarketCurrency(pkg.market);
+    const amount = Number(String(pkg.price).replace(/,/g, ''));
+    const value = Number.isFinite(amount)
+        ? amount.toLocaleString('en-US', { maximumFractionDigits: 2 })
+        : escapeHtml(String(pkg.price));
+
+    return currency === 'USD' ? `$${value} USD` : `${currency} ${value}`;
+}
+
+async function loadCommerceSync() {
+    try {
+        const response = await fetch('/prototype/commerce', { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error('Commerce sync unavailable');
+        const data = await response.json();
+
+        if (Array.isArray(data.serviceCountries)) {
+            serviceCountries.splice(0, serviceCountries.length, ...data.serviceCountries);
+        }
+        if (Array.isArray(data.packages)) websitePackages = data.packages;
+        if (Array.isArray(data.coupons)) websiteCoupons = data.coupons;
+        if (Array.isArray(data.couponUsage)) couponUsageRecords = data.couponUsage;
+        if (Array.isArray(data.studentPayments)) websiteStudentPayments = data.studentPayments;
+
+        commerceSyncLoaded = true;
+    } catch (error) {
+        commerceSyncLoaded = false;
+    }
+}
+
+async function saveCommerceSync(message = 'Website pricing synced.') {
+    try {
+        const response = await fetch('/prototype/commerce', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+            body: JSON.stringify(getCommercePayload()),
+        });
+
+        if (!response.ok) throw new Error('Commerce sync failed');
+        commerceSyncLoaded = true;
+        showSparkToast(message);
+    } catch (error) {
+        showSparkToast('Saved on this screen, but website sync needs dashboard deployment.');
+    }
+}
 
 function packageStatus(value) {
     const statusClass = String(value).toLowerCase().replaceAll(' ', '-');
@@ -7988,18 +8054,18 @@ function renderPackagesAndPrices() {
 
     renderPackageMarketOptions();
     cards.innerHTML = serviceCountries.map((item) => {
-        const count = websitePackages.filter((pkg) => pkg.market === item.name).length;
+        const count = websitePackages.filter((pkg) => String(pkg.market).toLowerCase().replace(/^united arab emirates$/, 'uae') === String(item.name).toLowerCase().replace(/^united arab emirates$/, 'uae')).length;
         return `
             <button type="button" class="${activePackageMarket === item.name ? 'selected' : ''}" data-package-market="${item.name}">
                 <span>${item.name}</span>
                 <strong>${count ? `${count} package${count > 1 ? 's' : ''}` : 'No package yet'}</strong>
-                <small>USD / ${item.currency} · ${item.status} · ${item.serviceArea}</small>
+                <small>${item.currency} pricing · ${item.status} · ${item.serviceArea}</small>
             </button>
         `;
     }).join('');
 
     title.textContent = activePackageMarket === 'All Markets' ? 'All Country Packages' : `${activePackageMarket} Packages`;
-    const rows = websitePackages.filter((item) => activePackageMarket === 'All Markets' || item.market === activePackageMarket);
+    const rows = websitePackages.filter((item) => activePackageMarket === 'All Markets' || String(item.market).toLowerCase().replace(/^united arab emirates$/, 'uae') === String(activePackageMarket).toLowerCase().replace(/^united arab emirates$/, 'uae'));
     body.innerHTML = rows.length ? rows.map((row) => `
         <tr class="package-row package-row-${row.audience.toLowerCase()}">
             <td><span class="country-badge">${row.market}</span></td>
@@ -8007,7 +8073,7 @@ function renderPackagesAndPrices() {
             <td>${row.duration}</td>
             <td class="strong">${row.name}</td>
             <td>${row.lessons}</td>
-            <td><span class="package-price">$${row.price} USD</span></td>
+            <td><span class="package-price">${formatWebsitePackagePrice(row)}</span></td>
             <td>${packageStatus(row.visibility)}</td>
             <td><button class="edit-price-button" type="button" data-package-edit="${row.id}">Edit Name &amp; Price</button></td>
         </tr>
@@ -8066,7 +8132,7 @@ function renderCouponManagement() {
                 coupon.status = coupon.status === 'Active' ? 'Paused' : 'Active';
                 coupon.websiteSync = coupon.status === 'Active' ? 'Ready for checkout' : 'Disabled';
                 renderCouponManagement();
-                showSparkToast(`${coupon.code} is now ${coupon.status}.`);
+                saveCommerceSync(`${coupon.code} is now ${coupon.status}. Website pricing synced.`);
             });
         });
     }
@@ -8180,7 +8246,7 @@ function openCouponEditor(coupon = null) {
         else websiteCoupons.push(nextCoupon);
         close();
         renderCouponManagement();
-        showSparkToast(`${nextCoupon.code} coupon saved.`);
+        saveCommerceSync(`${nextCoupon.code} coupon saved and synced to website.`);
     }
 
     overlay.querySelectorAll('[data-coupon-close]').forEach((button) => button.addEventListener('click', close));
@@ -8216,19 +8282,19 @@ function openPackageEditor(pkg = null) {
         <div class="modal package-editor-modal" role="dialog" aria-modal="true" aria-labelledby="package-editor-title">
             <div class="modal-head">
                 <div>
-                    <p>COUNTRY-SPECIFIC PRICING · USD</p>
+                    <p>COUNTRY-SPECIFIC PRICING</p>
                     <h3 id="package-editor-title">${existing ? 'Edit Package' : 'Add Package'}</h3>
                 </div>
                 <button type="button" data-package-close aria-label="Close">×</button>
             </div>
-            <p class="modal-intro">Choose the country first. All website prices use US dollars by default, and changes apply only to the selected country.</p>
+            <p class="modal-intro">Choose the country first. The website will show this package only for the selected country.</p>
             <div class="package-editor-grid">
                 <label>Country<select id="packageEditMarket">${serviceCountries.map((item) => `<option>${item.name}</option>`).join('')}</select></label>
                 <label>Student Type<select id="packageEditAudience"><option>Adults</option><option>Kids</option></select></label>
                 <label>Class Time<select id="packageEditDuration"><option>25 minutes</option><option>50 minutes</option></select></label>
                 <label>Number of Lessons<input id="packageEditLessons" type="number" min="1"></label>
                 <label>Package Name<input id="packageEditName" placeholder="Example: Silver" autofocus></label>
-                <label>Website Price (USD)<div class="price-input"><span>$</span><input id="packageEditPrice" type="number" min="0" step="1" placeholder="0"></div></label>
+                <label>Website Price<div class="price-input"><span id="packageEditCurrency">${getMarketCurrency(editing.market)}</span><input id="packageEditPrice" type="number" min="0" step="1" placeholder="0"></div></label>
                 <label>Visibility<select id="packageEditVisibility"><option>Published</option><option>Draft</option></select></label>
             </div>
             <div class="package-save-preview">
@@ -8266,7 +8332,9 @@ function openPackageEditor(pkg = null) {
     }
 
     function updatePreview() {
-        overlay.querySelector('#packageSavePreview').textContent = `${fields.name.value || 'Package name'} · ${fields.lessons.value || '0'} lessons · $${fields.price.value || '0'} USD`;
+        overlay.querySelector('#packageEditCurrency').textContent = getMarketCurrency(fields.market.value);
+        const previewPackage = { market: fields.market.value, price: fields.price.value || '0' };
+        overlay.querySelector('#packageSavePreview').textContent = `${fields.name.value || 'Package name'} · ${fields.lessons.value || '0'} lessons · ${formatWebsitePackagePrice(previewPackage)}`;
         overlay.querySelector('#packageSaveMarket').textContent = `${fields.market.value} only`;
         overlay.querySelector('#savePackageButton').disabled = !fields.name.value.trim() || !fields.price.value.trim();
     }
@@ -8289,6 +8357,7 @@ function openPackageEditor(pkg = null) {
         activePackageMarket = nextPackage.market;
         close();
         renderPackagesAndPrices();
+        saveCommerceSync(`${nextPackage.market} ${nextPackage.name} package synced to website.`);
     }
 
     overlay.querySelectorAll('[data-package-close]').forEach((button) => button.addEventListener('click', close));
@@ -17072,6 +17141,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('addCouponButton')?.addEventListener('click', () => openCouponEditor());
     document.getElementById('manageServiceCountries')?.addEventListener('click', openServiceCountriesModal);
     renderPackagesAndPrices();
+    loadCommerceSync().then(() => {
+        if (commerceSyncLoaded) renderPackagesAndPrices();
+    });
 
     document.querySelectorAll('.finance-hero [data-finance-modal]').forEach((button) => {
         button.addEventListener('click', () => openFinanceModal(button.dataset.financeModal));
