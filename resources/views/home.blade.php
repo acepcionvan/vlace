@@ -1394,7 +1394,6 @@
                                             <th>Processor</th>
                                             <th>Reference</th>
                                             <th>Status</th>
-                                            <th>Synchronized</th>
                                             <th>Receipt</th>
                                         </tr>
                                     </thead>
@@ -1409,7 +1408,6 @@
                                             <td>PayPal</td>
                                             <td>PP-7K24-9021</td>
                                             <td><span class="status-pill positive">Paid</span></td>
-                                            <td><span class="payment-sync-time">✓ Automatic · 10:32 AM</span></td>
                                             <td><button class="secondary-button receipt-view-button" type="button" data-payment-receipt>View Receipt</button></td>
                                         </tr>
                                         <tr>
@@ -1422,7 +1420,6 @@
                                             <td>NihaoPay · Alipay</td>
                                             <td>NHP-481952</td>
                                             <td><span class="status-pill positive">Paid</span></td>
-                                            <td><span class="payment-sync-time">✓ Automatic · 8:14 PM</span></td>
                                             <td><button class="secondary-button receipt-view-button" type="button" data-payment-receipt>View Receipt</button></td>
                                         </tr>
                                     </tbody>
@@ -1548,21 +1545,25 @@
                                     <strong id="studentReferralCredits">4</strong>
                                     <small>Bonus lessons applied</small>
                                 </article>
-                                <article>
-                                    <span>Discount Given</span>
-                                    <strong id="studentReferralDiscount">8%</strong>
-                                    <small>Used in payment history</small>
+                                <article class="referral-discount-card">
+                                    <div class="referral-summary-card-head">
+                                        <span>Discount Given</span>
+                                        <button class="inline-edit-button" type="button" id="studentReferralDiscountEdit">Edit</button>
+                                    </div>
+                                    <div class="referral-discount-display" id="studentReferralDiscountDisplay">
+                                        <strong id="studentReferralDiscount">8%</strong>
+                                        <small>Used in payment history</small>
+                                    </div>
+                                    <div class="referral-discount-editor" id="studentReferralDiscountEditor" hidden>
+                                        <label for="studentReferralDiscountInput">Discount percentage</label>
+                                        <div>
+                                            <input type="number" min="0" max="100" step="0.01" id="studentReferralDiscountInput" value="8">
+                                            <span>%</span>
+                                            <button class="primary-button" type="button" id="studentReferralDiscountSave">Save</button>
+                                            <button class="secondary-button" type="button" id="studentReferralDiscountCancel">Cancel</button>
+                                        </div>
+                                    </div>
                                 </article>
-                            </section>
-
-                            <section class="referral-code-card">
-                                <div class="referral-code-icon"><i data-lucide="share-2"></i></div>
-                                <div>
-                                    <span>Student Referral Code</span>
-                                    <strong id="studentReferralCode">LIAM-CHEN-2026</strong>
-                                    <p id="studentReferralLink">https://vlace.example/ref/liam-chen-2026</p>
-                                </div>
-                                <button class="secondary-button" type="button" id="copyReferralLink">Copy Link</button>
                             </section>
 
                             <section class="referral-policy-grid">
@@ -1588,8 +1589,9 @@
                                             <th>Package</th>
                                             <th>Status</th>
                                             <th>Reward</th>
+                                            <th>Reward Status</th>
                                             <th>Discount</th>
-                                            <th>Owner</th>
+                                            <th>Receipt</th>
                                             <th>Notes</th>
                                         </tr>
                                     </thead>
@@ -1601,9 +1603,10 @@
                                             <td>30 Lessons</td>
                                             <td><span class="status-pill positive">Converted</span></td>
                                             <td><strong class="referral-reward">+2 lessons</strong></td>
+                                            <td><span class="status-pill positive">Reward will be applied to next renewal</span></td>
                                             <td>8%</td>
-                                            <td>Grace Chen</td>
-                                            <td>Reward applied to next renewal.</td>
+                                            <td><button class="secondary-button referral-receipt-button" type="button" data-referral-receipt-action="view" data-referral-student="Emily Chen" data-referral-package="30 Lessons" data-referral-date="Jul 18, 2026">View Receipt</button></td>
+                                            <td class="referral-note-cell"><strong>Reward applied to next renewal.</strong><small>Receipt available for student view.</small></td>
                                         </tr>
                                         <tr>
                                             <td>Aug 2, 2026</td>
@@ -1612,9 +1615,10 @@
                                             <td>Trial</td>
                                             <td><span class="status-pill warning">Pending Trial</span></td>
                                             <td><span class="lesson-link-unavailable">Pending</span></td>
+                                            <td><span class="status-pill warning">Pending</span></td>
                                             <td>0%</td>
-                                            <td>Grace Chen</td>
-                                            <td>Trial scheduled this week.</td>
+                                            <td><button class="secondary-button referral-receipt-button" type="button" data-referral-receipt-action="upload" data-referral-student="Kevin Li" data-referral-package="Trial" data-referral-date="Aug 2, 2026">Upload Receipt</button></td>
+                                            <td class="referral-note-cell"><strong>Trial scheduled this week.</strong><small>Reward not yet applied.</small></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -2422,7 +2426,7 @@
                     </div>
 
                     <div class="table-wrap package-table-wrap">
-                        <table class="package-pricing-table">
+                        <table class="package-pricing-table country-package-table">
                             <thead>
                                 <tr>
                                     <th>Country</th>
@@ -2431,6 +2435,7 @@
                                     <th>Package Name</th>
                                     <th>Lessons</th>
                                     <th>Website Price</th>
+                                    <th>PHP Conversion</th>
                                     <th>Visibility</th>
                                     <th>Action</th>
                                 </tr>
@@ -2730,8 +2735,20 @@
                 <label>Referral discount %
                     <input type="number" min="0" max="100" step="0.01" id="referralDiscount" value="0">
                 </label>
-                <label>Notes
-                    <input type="text" id="referralNotes" placeholder="Short internal note">
+                <label>Reward status
+                    <select id="referralRewardStatus">
+                        <option>Pending</option>
+                        <option>Reward will be applied to next renewal</option>
+                        <option>Applied to current package</option>
+                        <option>Not yet applied</option>
+                        <option>Reward sent to e-wallet</option>
+                    </select>
+                </label>
+                <label>Reward receipt
+                    <input type="file" id="referralRewardReceipt" accept=".pdf,image/*">
+                </label>
+                <label class="full">Notes <small>Saved to the student's notes</small>
+                    <textarea id="referralNotes" placeholder="Short internal note for this student's record"></textarea>
                 </label>
             </form>
 

@@ -11697,6 +11697,21 @@ body.lesson-preview-open {
     border-radius: 12px;
 }
 
+.student-referrals-panel {
+    border-color: #fecdd3;
+    background: #fff1f2;
+}
+
+.student-referrals-panel .student-record-head,
+.student-referrals-panel .payment-history-foot {
+    border-color: #fecdd3;
+    background: #fff7f8;
+}
+
+.student-referrals-panel .table-wrap {
+    background: rgba(255, 255, 255, 0.82);
+}
+
 .student-record-head {
     display: flex;
     align-items: center;
@@ -11768,7 +11783,7 @@ body.lesson-preview-open {
 
 .student-payment-table {
     width: 100%;
-    min-width: 1220px;
+    min-width: 1100px;
     border-collapse: collapse;
 }
 
@@ -11784,7 +11799,7 @@ body.lesson-preview-open {
 
 .student-referral-table {
     width: 100%;
-    min-width: 1120px;
+    min-width: 1460px;
     border-collapse: collapse;
 }
 
@@ -11848,6 +11863,47 @@ body.lesson-preview-open {
     font-weight: 800;
 }
 
+.student-referral-table .status-pill {
+    white-space: normal;
+    line-height: 1.25;
+}
+
+.student-referral-table .referral-receipt-button {
+    min-height: 34px;
+    min-width: 112px;
+    justify-content: center;
+    padding: 0 12px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.referral-note-cell {
+    min-width: 220px;
+    white-space: normal;
+}
+
+.referral-note-cell strong,
+.referral-note-cell small {
+    display: block;
+}
+
+.referral-note-cell small {
+    margin-top: 4px;
+}
+
+.referral-entry-form label small {
+    color: #7c91a6;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.referral-entry-form input[type="file"] {
+    min-height: 48px;
+    padding: 11px 12px;
+    background: #f8fbff;
+    cursor: pointer;
+}
+
 .student-payment-table .secondary-button {
     min-height: 34px;
     padding: 0 12px;
@@ -11872,14 +11928,14 @@ body.lesson-preview-open {
 }
 
 .student-referrals-panel {
-    background: #fff;
+    background: #fff1f2;
 }
 
 .referral-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    padding: 16px 20px 0;
+    gap: 16px;
+    padding: 18px 20px 0;
 }
 
 .referral-summary-grid article,
@@ -11890,9 +11946,74 @@ body.lesson-preview-open {
     padding: 15px 16px;
 }
 
+.referral-summary-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.inline-edit-button {
+    min-height: 30px;
+    border: 1px solid #b9d7ff;
+    border-radius: 999px;
+    background: #eef6ff;
+    color: #1769e8;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 0 12px;
+}
+
+.referral-discount-editor {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.referral-discount-editor label {
+    color: #6b8198;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.referral-discount-editor > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.referral-discount-editor input {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid #d7e4f1;
+    border-radius: 9px;
+    background: #fff;
+    color: #102b4d;
+    font-size: 15px;
+    font-weight: 900;
+    padding: 0 10px;
+}
+
+.referral-discount-editor input:focus {
+    border-color: #77a9ee;
+    box-shadow: 0 0 0 3px #e8f1ff;
+    outline: none;
+}
+
+.referral-discount-editor span {
+    color: #102b4d;
+    font-weight: 950;
+}
+
+.referral-discount-editor .primary-button,
+.referral-discount-editor .secondary-button {
+    min-height: 38px;
+    padding: 0 12px;
+}
+
 .referral-summary-grid span,
-.referral-policy-grid span,
-.referral-code-card span {
+.referral-policy-grid span {
     display: block;
     color: #6b8198;
     font-size: 12px;
@@ -11909,55 +12030,22 @@ body.lesson-preview-open {
 }
 
 .referral-summary-grid small,
-.referral-policy-grid p,
-.referral-code-card p {
+.referral-policy-grid p {
     margin: 6px 0 0;
     color: #7890a8;
     font-size: 12px;
     font-weight: 750;
 }
 
-.referral-code-card {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 14px;
-    margin: 16px 20px;
-    padding: 15px 16px;
-    border: 1px solid #b9d7ff;
-    border-radius: 11px;
-    background: linear-gradient(135deg, #f7fbff, #eef6ff);
-}
-
-.referral-code-icon {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: #e5f1ff;
-    color: #1769e8;
-}
-
-.referral-code-card strong {
-    display: block;
-    margin-top: 4px;
-    color: #102b4d;
-    font-size: 20px;
-    font-weight: 950;
-}
-
-.referral-code-card p {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .referral-policy-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 0 20px 16px;
+    gap: 16px;
+    padding: 0 20px 18px;
+}
+
+.student-referrals-panel .table-wrap {
+    margin: 0 20px 16px;
 }
 
 .referral-policy-grid strong {
@@ -12184,9 +12272,10 @@ body.lesson-preview-open {
 }
 
 .enter-classroom-button {
-    border-color: #acd6bf;
-    background: #effaf4;
-    color: #167447;
+    border-color: #dc262633;
+    background: #dc2626;
+    box-shadow: 0 10px 22px #dc262638;
+    color: #fff;
 }
 
 .recording-view-button {
@@ -21289,9 +21378,64 @@ body.drawer-open {
 
 .package-pricing-table {
     width: 100%;
-    min-width: 920px;
+    min-width: 1040px;
     border-collapse: separate;
     border-spacing: 0 8px;
+}
+
+.country-package-table {
+    table-layout: fixed;
+}
+
+.country-package-table th,
+.country-package-table td {
+    text-align: left;
+}
+
+.country-package-table th:nth-child(1),
+.country-package-table td:nth-child(1) {
+    width: 11%;
+}
+
+.country-package-table th:nth-child(2),
+.country-package-table td:nth-child(2) {
+    width: 11%;
+}
+
+.country-package-table th:nth-child(3),
+.country-package-table td:nth-child(3) {
+    width: 11%;
+}
+
+.country-package-table th:nth-child(4),
+.country-package-table td:nth-child(4) {
+    width: 14%;
+}
+
+.country-package-table th:nth-child(5),
+.country-package-table td:nth-child(5) {
+    width: 8%;
+    text-align: center;
+}
+
+.country-package-table th:nth-child(6),
+.country-package-table td:nth-child(6) {
+    width: 12%;
+}
+
+.country-package-table th:nth-child(7),
+.country-package-table td:nth-child(7) {
+    width: 13%;
+}
+
+.country-package-table th:nth-child(8),
+.country-package-table td:nth-child(8) {
+    width: 10%;
+}
+
+.country-package-table th:nth-child(9),
+.country-package-table td:nth-child(9) {
+    width: 10%;
 }
 
 .package-pricing-table thead th {
@@ -21365,6 +21509,20 @@ body.drawer-open {
     border-radius: 8px;
     padding: 6px 9px;
     font-weight: 850;
+    white-space: nowrap;
+}
+
+.package-php-price {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    background: #fff8e1;
+    border: 1px solid #f7d77a;
+    color: #8a5a08;
+    font-size: 12px;
+    font-weight: 900;
     white-space: nowrap;
 }
 
@@ -21751,21 +21909,43 @@ body.drawer-open {
 }
 
 .price-input {
-    position: relative;
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    margin-top: 5px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
 }
 
 .price-input span {
-    position: absolute;
-    left: 11px;
-    top: 50%;
-    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    justify-content: center;
+    border-right: 1px solid var(--line);
+    background: #f2f7ff;
     color: #2a619a;
     font-size: 13px;
     font-weight: 800;
 }
 
 .price-input input {
-    padding-left: 27px;
+    margin-top: 0;
+    border: 0;
+    border-radius: 0;
+    padding-left: 14px;
+}
+
+.price-input:focus-within {
+    border-color: #77a9ee;
+    box-shadow: 0 0 0 3px #e8f1ff;
+}
+
+.price-input:focus-within input {
+    box-shadow: none;
 }
 
 .package-save-preview {
@@ -22237,14 +22417,9 @@ body.drawer-open {
     .student-summary-grid,
     .referral-summary-grid,
     .referral-policy-grid,
-    .referral-code-card,
     .schedule-overview-grid,
     .schedule-detail-grid {
         grid-template-columns: 1fr;
-    }
-
-    .referral-code-card {
-        align-items: stretch;
     }
 
     .referral-entry-form {

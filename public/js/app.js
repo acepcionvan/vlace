@@ -140,8 +140,6 @@ const students = [
         email: 'liam.guardian@example.com',
         guardian: 'Grace Chen (Mother)',
         phone: '+86 138 0013 8000',
-        referralCode: 'LIAM-CHEN-2026',
-        referralLink: 'https://vlace.example/ref/liam-chen-2026',
         referrals: { total: 3, converted: 2, credits: 4, discount: '8%' },
         schedule: { duration: '25 minutes', frequency: '2x weekly', platform: 'Voov' },
     },
@@ -163,8 +161,6 @@ const students = [
         email: 'sophia.kim@example.com',
         guardian: 'Not applicable',
         phone: '+82 10-2345-7788',
-        referralCode: 'SOPHIA-KIM-2026',
-        referralLink: 'https://vlace.example/ref/sophia-kim-2026',
         referrals: { total: 1, converted: 1, credits: 2, discount: '5%' },
         schedule: { duration: '50 minutes', frequency: '2x weekly', platform: 'Google Meet' },
     },
@@ -186,8 +182,6 @@ const students = [
         email: 'eddie.guardian@example.com',
         guardian: 'Mei Zhang (Mother)',
         phone: '+86 139 5566 2180',
-        referralCode: 'EDDIE-ZHANG-2026',
-        referralLink: 'https://vlace.example/ref/eddie-zhang-2026',
         referrals: { total: 0, converted: 0, credits: 0, discount: '0%' },
         schedule: { duration: '25 minutes', frequency: '2x weekly', platform: 'Voov' },
     },
@@ -209,8 +203,6 @@ const students = [
         email: 'chloe.huang@example.com',
         guardian: 'Not applicable',
         phone: '+86 137 4420 1188',
-        referralCode: 'CHLOE-HUANG-2026',
-        referralLink: 'https://vlace.example/ref/chloe-huang-2026',
         referrals: { total: 2, converted: 1, credits: 2, discount: '5%' },
         schedule: { duration: '50 minutes', frequency: '2x weekly', platform: 'Google Meet' },
     },
@@ -232,8 +224,6 @@ const students = [
         email: 'leo.guardian@example.com',
         guardian: 'Anna Wang (Mother)',
         phone: '+86 136 2210 9090',
-        referralCode: 'LEO-WANG-2026',
-        referralLink: 'https://vlace.example/ref/leo-wang-2026',
         referrals: { total: 1, converted: 0, credits: 0, discount: '0%' },
         schedule: { duration: '25 minutes', frequency: '2x weekly', platform: 'Voov' },
     },
@@ -255,8 +245,6 @@ const students = [
         email: 'aria.lin@example.com',
         guardian: 'Jun Lin (Father)',
         phone: '+86 135 6677 1212',
-        referralCode: 'ARIA-LIN-2026',
-        referralLink: 'https://vlace.example/ref/aria-lin-2026',
         referrals: { total: 4, converted: 2, credits: 4, discount: '8%' },
         schedule: { duration: '50 minutes', frequency: '2x weekly', platform: 'Voov' },
     },
@@ -278,8 +266,6 @@ const students = [
         email: 'kevin.zhao@example.com',
         guardian: 'Not applicable',
         phone: '+86 139 7700 4040',
-        referralCode: 'KEVIN-ZHAO-2026',
-        referralLink: 'https://vlace.example/ref/kevin-zhao-2026',
         referrals: { total: 0, converted: 0, credits: 0, discount: '0%' },
         schedule: { duration: '50 minutes', frequency: '1x weekly', platform: 'Google Meet' },
     },
@@ -301,8 +287,6 @@ const students = [
         email: 'bella.guardian@example.com',
         guardian: 'Lina Xu (Mother)',
         phone: '+86 138 4455 6677',
-        referralCode: 'BELLA-XU-2026',
-        referralLink: 'https://vlace.example/ref/bella-xu-2026',
         referrals: { total: 1, converted: 1, credits: 2, discount: '5%' },
         schedule: { duration: '25 minutes', frequency: '1x weekly', platform: 'Voov' },
     },
@@ -324,8 +308,6 @@ const students = [
         email: 'noah.parent@example.com',
         guardian: 'Daniel Brown (Father)',
         phone: '+972 50-555-0148',
-        referralCode: 'NOAH-BROWN-2026',
-        referralLink: 'https://vlace.example/ref/noah-brown-2026',
         referrals: { total: 1, converted: 0, credits: 0, discount: '0%' },
         schedule: { duration: '25 minutes', frequency: '1x weekly', platform: 'Zoom' },
     },
@@ -347,8 +329,6 @@ const students = [
         email: 'mira.wang@example.com',
         guardian: 'Not applicable',
         phone: '+971 50 123 8877',
-        referralCode: 'MIRA-WANG-2026',
-        referralLink: 'https://vlace.example/ref/mira-wang-2026',
         referrals: { total: 2, converted: 1, credits: 2, discount: '6%' },
         schedule: { duration: '50 minutes', frequency: '2x weekly', platform: 'Microsoft Teams' },
     },
@@ -1348,6 +1328,7 @@ let activeStaffContactKind = 'staff';
 let teacherWeekOffset = 0;
 let activeManagerTeacherPayrollPeriod = 'January 1–15, 2026';
 const payrollReceiptUploads = {};
+const referralReceiptUploads = {};
 
 const usdFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const phpFormatter = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -7913,12 +7894,12 @@ function updateStudentPackageBookingStatus(student = getSelectedStudent()) {
 }
 
 const serviceCountries = sharedCommerceData.serviceCountries || [
-    { name: 'China', currency: 'CNY', status: 'Active', serviceArea: 'Nationwide' },
-    { name: 'South Korea', currency: 'KRW', status: 'Active', serviceArea: 'Nationwide' },
-    { name: 'Japan', currency: 'JPY', status: 'Active', serviceArea: 'Nationwide' },
-    { name: 'United Arab Emirates', currency: 'AED', status: 'Active', serviceArea: 'Includes Dubai' },
-    { name: 'Saudi Arabia', currency: 'SAR', status: 'Active', serviceArea: 'Nationwide' },
-    { name: 'Israel', currency: 'ILS', status: 'Active', serviceArea: 'Nationwide' },
+    { name: 'China', currency: 'USD', status: 'Active', serviceArea: 'Nationwide' },
+    { name: 'South Korea', currency: 'USD', status: 'Active', serviceArea: 'Nationwide' },
+    { name: 'Japan', currency: 'USD', status: 'Active', serviceArea: 'Nationwide' },
+    { name: 'United Arab Emirates', currency: 'USD', status: 'Active', serviceArea: 'Includes Dubai' },
+    { name: 'Saudi Arabia', currency: 'USD', status: 'Active', serviceArea: 'Nationwide' },
+    { name: 'Israel', currency: 'USD', status: 'Active', serviceArea: 'Nationwide' },
 ];
 
 let websitePackages = sharedCommerceData.packages || [
@@ -7949,7 +7930,68 @@ let websiteStudentPayments = sharedCommerceData.studentPayments || [];
 let activePackageMarket = 'All Markets';
 let commerceSyncLoaded = false;
 
+const standardUsdPackagePrices = {
+    Adults: {
+        15: '165',
+        30: '314',
+        45: '456',
+    },
+    Kids: {
+        15: '90',
+        30: '171',
+        45: '249',
+    },
+};
+
+const legacyLocalPackagePrices = {
+    'south korea': {
+        Adults: { 15: '229000', 30: '436000', 45: '634000' },
+        Kids: { 15: '125000', 30: '238000', 45: '346000' },
+    },
+    japan: {
+        Adults: { 15: '24600', 30: '46900', 45: '68100' },
+        Kids: { 15: '13450', 30: '25525', 45: '37165' },
+    },
+    uae: {
+        Adults: { 15: '605', 30: '1153', 45: '1675' },
+        Kids: { 15: '331', 30: '628', 45: '915' },
+    },
+    'saudi arabia': {
+        Adults: { 15: '620', 30: '1178', 45: '1710' },
+        Kids: { 15: '338', 30: '641', 45: '934' },
+    },
+    israel: {
+        Adults: { 15: '610', 30: '1160', 45: '1685' },
+        Kids: { 15: '333', 30: '632', 45: '920' },
+    },
+};
+
+function normalizeMarketName(value) {
+    return String(value).toLowerCase().replace(/^united arab emirates$/, 'uae');
+}
+
+function normalizeCommercePricingToUsd() {
+    serviceCountries.forEach((country) => {
+        country.currency = 'USD';
+    });
+
+    websitePackages = websitePackages.map((pkg) => {
+        const market = normalizeMarketName(pkg.market);
+        const standardPrice = standardUsdPackagePrices[pkg.audience]?.[String(pkg.lessons)];
+        const legacyPrice = legacyLocalPackagePrices[market]?.[pkg.audience]?.[String(pkg.lessons)];
+        const normalizedPrice = String(pkg.price).replace(/,/g, '');
+
+        if (legacyPrice && normalizedPrice === legacyPrice && standardPrice) {
+            return { ...pkg, price: standardPrice };
+        }
+
+        return { ...pkg };
+    });
+}
+
 function getCommercePayload() {
+    normalizeCommercePricingToUsd();
+
     return {
         serviceCountries,
         packages: websitePackages,
@@ -7960,8 +8002,8 @@ function getCommercePayload() {
 }
 
 function getMarketCurrency(market) {
-    const normalizedMarket = String(market).toLowerCase().replace(/^united arab emirates$/, 'uae');
-    return serviceCountries.find((country) => String(country.name).toLowerCase().replace(/^united arab emirates$/, 'uae') === normalizedMarket)?.currency || 'USD';
+    const normalizedMarket = normalizeMarketName(market);
+    return serviceCountries.find((country) => normalizeMarketName(country.name) === normalizedMarket)?.currency || 'USD';
 }
 
 function formatWebsitePackagePrice(pkg) {
@@ -7972,6 +8014,14 @@ function formatWebsitePackagePrice(pkg) {
         : escapeHtml(String(pkg.price));
 
     return currency === 'USD' ? `$${value} USD` : `${currency} ${value}`;
+}
+
+function getPackagePhpConversion(pkg) {
+    const amount = Number(String(pkg.price).replace(/,/g, ''));
+    if (!Number.isFinite(amount)) return '—';
+
+    const phpPerUsd = Math.max(1, Number(document.getElementById('phpPerUsd')?.value || DEFAULT_PHP_PER_USD));
+    return `₱${phpFormatter.format(amount * phpPerUsd)}`;
 }
 
 async function loadCommerceSync() {
@@ -7988,6 +8038,7 @@ async function loadCommerceSync() {
         if (Array.isArray(data.couponUsage)) couponUsageRecords = data.couponUsage;
         if (Array.isArray(data.studentPayments)) websiteStudentPayments = data.studentPayments;
 
+        normalizeCommercePricingToUsd();
         commerceSyncLoaded = true;
     } catch (error) {
         commerceSyncLoaded = false;
@@ -8047,6 +8098,8 @@ function renderPackageMarketOptions() {
 }
 
 function renderPackagesAndPrices() {
+    normalizeCommercePricingToUsd();
+
     const cards = document.getElementById('marketCards');
     const body = document.getElementById('packageTableBody');
     const title = document.getElementById('packageTableTitle');
@@ -8054,7 +8107,7 @@ function renderPackagesAndPrices() {
 
     renderPackageMarketOptions();
     cards.innerHTML = serviceCountries.map((item) => {
-        const count = websitePackages.filter((pkg) => String(pkg.market).toLowerCase().replace(/^united arab emirates$/, 'uae') === String(item.name).toLowerCase().replace(/^united arab emirates$/, 'uae')).length;
+        const count = websitePackages.filter((pkg) => normalizeMarketName(pkg.market) === normalizeMarketName(item.name)).length;
         return `
             <button type="button" class="${activePackageMarket === item.name ? 'selected' : ''}" data-package-market="${item.name}">
                 <span>${item.name}</span>
@@ -8065,7 +8118,7 @@ function renderPackagesAndPrices() {
     }).join('');
 
     title.textContent = activePackageMarket === 'All Markets' ? 'All Country Packages' : `${activePackageMarket} Packages`;
-    const rows = websitePackages.filter((item) => activePackageMarket === 'All Markets' || String(item.market).toLowerCase().replace(/^united arab emirates$/, 'uae') === String(activePackageMarket).toLowerCase().replace(/^united arab emirates$/, 'uae'));
+    const rows = websitePackages.filter((item) => activePackageMarket === 'All Markets' || normalizeMarketName(item.market) === normalizeMarketName(activePackageMarket));
     body.innerHTML = rows.length ? rows.map((row) => `
         <tr class="package-row package-row-${row.audience.toLowerCase()}">
             <td><span class="country-badge">${row.market}</span></td>
@@ -8074,10 +8127,11 @@ function renderPackagesAndPrices() {
             <td class="strong">${row.name}</td>
             <td>${row.lessons}</td>
             <td><span class="package-price">${formatWebsitePackagePrice(row)}</span></td>
+            <td><span class="package-php-price">${getPackagePhpConversion(row)}</span></td>
             <td>${packageStatus(row.visibility)}</td>
             <td><button class="edit-price-button" type="button" data-package-edit="${row.id}">Edit Name &amp; Price</button></td>
         </tr>
-    `).join('') : '<tr><td colspan="8" class="empty-row">No package has been created for this country yet. Click “Add Package” to create one.</td></tr>';
+    `).join('') : '<tr><td colspan="9" class="empty-row">No package has been created for this country yet. Click “Add Package” to create one.</td></tr>';
 
     cards.querySelectorAll('[data-package-market]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -15278,8 +15332,6 @@ function openStudentProfile(studentId) {
     setText('#studentProfileGuardian', student.guardian);
     setText('#studentProfilePhone', student.phone);
     setText('#studentReferralTitle', `${student.name}'s Referrals`);
-    setText('#studentReferralCode', student.referralCode);
-    setText('#studentReferralLink', student.referralLink);
     updateReferralSummary(student);
     updateStudentScheduleView(student);
     updateStudentPackageBookingStatus(student);
@@ -15326,6 +15378,40 @@ function updateReferralSummary(student = getSelectedStudent()) {
     setText('#studentReferralConverted', String(referrals.converted));
     setText('#studentReferralCredits', String(referrals.credits));
     setText('#studentReferralDiscount', referrals.discount);
+    setFieldValue('#studentReferralDiscountInput', String(referrals.discount || '0%').replace('%', ''));
+    closeReferralDiscountEditor();
+}
+
+function openReferralDiscountEditor() {
+    const student = getSelectedStudent();
+    const discount = String(student?.referrals?.discount || '0%').replace('%', '');
+
+    setFieldValue('#studentReferralDiscountInput', discount);
+    document.getElementById('studentReferralDiscountDisplay')?.setAttribute('hidden', '');
+    document.getElementById('studentReferralDiscountEditor')?.removeAttribute('hidden');
+    document.getElementById('studentReferralDiscountEdit')?.setAttribute('hidden', '');
+    document.getElementById('studentReferralDiscountInput')?.focus();
+}
+
+function closeReferralDiscountEditor() {
+    document.getElementById('studentReferralDiscountDisplay')?.removeAttribute('hidden');
+    document.getElementById('studentReferralDiscountEditor')?.setAttribute('hidden', '');
+    document.getElementById('studentReferralDiscountEdit')?.removeAttribute('hidden');
+}
+
+function saveReferralDiscountEdit() {
+    const student = getSelectedStudent();
+    const input = document.getElementById('studentReferralDiscountInput');
+    if (!student || !input) return;
+
+    const rawValue = Number(input.value || 0);
+    const normalizedValue = Number.isFinite(rawValue) ? Math.min(100, Math.max(0, rawValue)) : 0;
+    const formattedDiscount = `${Number.isInteger(normalizedValue) ? normalizedValue : normalizedValue.toFixed(2)}%`;
+
+    student.referrals = student.referrals || { total: 0, converted: 0, credits: 0, discount: '0%' };
+    student.referrals.discount = formattedDiscount;
+    updateReferralSummary(student);
+    showSparkToast(`${student.name}'s referral discount updated to ${formattedDiscount}.`);
 }
 
 function updateStudentScheduleView(student = getSelectedStudent()) {
@@ -15593,10 +15679,9 @@ function renderStudentPayments(student = getSelectedStudent()) {
             <td>${escapeHtml(record.processor || 'Website Checkout')}</td>
             <td>${escapeHtml(record.reference || 'Website order')}</td>
             <td><span class="status-pill ${getStatusPillClass(record.status || 'Paid')}">${escapeHtml(record.status || 'Paid')}</span></td>
-            <td><span class="payment-sync-time">✓ ${escapeHtml(record.synchronized || 'Website checkout')}</span></td>
             <td><button class="secondary-button receipt-view-button" type="button" data-payment-receipt>View Receipt</button></td>
         </tr>
-    `).join('') : '<tr><td colspan="11" class="empty-row">No synchronized payments yet for this student.</td></tr>';
+    `).join('') : '<tr><td colspan="10" class="empty-row">No payments yet for this student.</td></tr>';
 }
 
 function openPaymentReceipt(button) {
@@ -15640,6 +15725,74 @@ function closePaymentReceipt() {
     document.getElementById('paymentReceiptModal')?.setAttribute('hidden', '');
 }
 
+function getReferralReceiptKey(button) {
+    const row = button?.closest('tr');
+    const cells = row ? Array.from(row.children).map((cell) => cleanReceiptText(cell.innerText)) : [];
+    const studentName = button?.dataset.referralStudent || cells[1] || 'Referral';
+    const date = button?.dataset.referralDate || cells[0] || 'Today';
+    return `${studentName}-${date}`.replace(/\s+/g, '-').toLowerCase();
+}
+
+function openReferralReceipt(button) {
+    const row = button.closest('tr');
+    const student = getSelectedStudent();
+    if (!row || !student) return;
+
+    const cells = Array.from(row.children).map((cell) => cleanReceiptText(cell.innerText));
+    const [date, referredStudent, country, packageName, status, reward, rewardStatus, discount] = cells;
+    const receipt = referralReceiptUploads[getReferralReceiptKey(button)];
+
+    setText('#paymentReceiptTitle', referredStudent || button.dataset.referralStudent || 'Referred Student');
+    setText('#receiptStudentMeta', `Referred by ${student.name} · ${country || student.country} · Referral reward`);
+    setText('#receiptNumber', receipt?.number || `REF-${(referredStudent || button.dataset.referralStudent || 'STUDENT').replace(/[^A-Z0-9]/gi, '').toUpperCase()}-2026`);
+    setText('#receiptDate', date || button.dataset.referralDate || 'Today');
+    setText('#receiptReference', receipt?.name || 'Referral receipt on file');
+    setText('#receiptStatus', status || 'Uploaded');
+    setText('#receiptPackage', packageName || button.dataset.referralPackage || 'Referral Package');
+    setText('#receiptProcessor', 'Referral program');
+    setText('#receiptSynchronized', receipt?.uploadedAt || rewardStatus || 'Admin reviewed');
+    setText('#receiptOriginalAmount', reward || 'Referral reward');
+    setText('#receiptDiscount', discount || '0%');
+    setText('#receiptReferralDiscount', discount || '0%');
+    setText('#receiptNetAmount', receipt?.name || 'Uploaded receipt');
+
+    document.getElementById('paymentReceiptModal')?.removeAttribute('hidden');
+    refreshIcons();
+}
+
+function uploadReferralReceipt(button) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.pdf';
+    input.addEventListener('change', () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        referralReceiptUploads[getReferralReceiptKey(button)] = {
+            name: file.name,
+            number: `REF-${Date.now().toString().slice(-6)}`,
+            uploadedAt: `Uploaded · ${formatPhtTime()} PHT`,
+        };
+
+        button.textContent = 'View Receipt';
+        button.dataset.referralReceiptAction = 'view';
+        showSparkToast(`Referral receipt uploaded for ${button.dataset.referralStudent || 'this referral'}.`);
+    }, { once: true });
+    input.click();
+}
+
+function handleReferralReceiptAction(event) {
+    const button = event.target.closest('[data-referral-receipt-action]');
+    if (!button) return;
+
+    if (button.dataset.referralReceiptAction === 'upload') {
+        uploadReferralReceipt(button);
+        return;
+    }
+
+    openReferralReceipt(button);
+}
+
 function saveManualPaymentRecord() {
     const amount = Number(document.getElementById('manualPaymentAmount')?.value || 0);
     const reference = document.getElementById('manualPaymentReference')?.value.trim();
@@ -15649,7 +15802,6 @@ function saveManualPaymentRecord() {
     const symbol = getCurrencySymbol(currency);
     const net = calculateManualPaymentNet();
     const status = document.getElementById('manualPaymentStatus')?.value || 'Paid';
-    const time = formatPhtTime();
     const body = document.getElementById('studentPaymentBody');
     if (!body) return;
 
@@ -15664,7 +15816,6 @@ function saveManualPaymentRecord() {
             <td>${document.getElementById('manualPaymentProcessor')?.value || 'Manual Payment'}</td>
             <td>${reference}</td>
             <td><span class="status-pill ${getStatusPillClass(status)}">${status}</span></td>
-            <td><span class="payment-sync-time">✓ Manual · ${time}</span></td>
             <td><button class="secondary-button receipt-view-button" type="button" data-payment-receipt>${document.getElementById('manualPaymentReceipt')?.value.trim() ? 'View Receipt' : 'View Receipt'}</button></td>
         </tr>
     `);
@@ -15683,7 +15834,10 @@ function openReferralModal() {
     setFieldValue('#referralPackage', 'Trial');
     setFieldValue('#referralStatus', 'Pending Trial');
     setFieldValue('#referralDiscount', '0');
+    setFieldValue('#referralRewardStatus', 'Pending');
     setFieldValue('#referralNotes', '');
+    const receiptInput = document.getElementById('referralRewardReceipt');
+    if (receiptInput) receiptInput.value = '';
     document.getElementById('referralModal')?.removeAttribute('hidden');
     document.getElementById('referralStudentName')?.focus();
 }
@@ -15698,6 +15852,12 @@ function getReferralStatusClass(status) {
     return 'neutral';
 }
 
+function getReferralRewardStatusClass(status) {
+    if (status === 'Applied to current package' || status === 'Reward will be applied to next renewal' || status === 'Reward sent to e-wallet') return 'positive';
+    if (status === 'Pending' || status === 'Not yet applied') return 'warning';
+    return 'neutral';
+}
+
 function saveReferralRecord() {
     const name = document.getElementById('referralStudentName')?.value.trim();
     if (!name) return;
@@ -15705,24 +15865,35 @@ function saveReferralRecord() {
     const student = getSelectedStudent();
     const status = document.getElementById('referralStatus')?.value || 'Pending Trial';
     const discount = Number(document.getElementById('referralDiscount')?.value || 0);
+    const rewardStatus = document.getElementById('referralRewardStatus')?.value || 'Pending';
+    const notes = document.getElementById('referralNotes')?.value.trim() || 'Added manually.';
+    const receiptFile = document.getElementById('referralRewardReceipt')?.files?.[0];
+    const receiptName = receiptFile?.name || '';
     const reward = status === 'Converted' ? '+2 lessons' : 'Pending';
     const rewardMarkup = status === 'Converted'
         ? `<strong class="referral-reward">${reward}</strong>`
         : '<span class="lesson-link-unavailable">Pending</span>';
+    const rewardStatusMarkup = `<span class="status-pill ${getReferralRewardStatusClass(rewardStatus)}">${escapeHtml(rewardStatus)}</span>`;
+    const receiptMarkup = receiptName
+        ? `<button class="secondary-button referral-receipt-button" type="button" data-referral-receipt-action="view" data-referral-receipt="${escapeHtml(receiptName)}">View Receipt</button><small>${escapeHtml(receiptName)}</small>`
+        : '<span class="lesson-link-unavailable">No receipt</span>';
+    const noteMarkup = `<div class="referral-note-cell"><strong>${escapeHtml(notes)}</strong><small>Reward status: ${escapeHtml(rewardStatus)}</small>${receiptName ? `<small>Receipt: ${escapeHtml(receiptName)}</small>` : ''}</div>`;
     const body = document.getElementById('studentReferralBody');
     if (!body || !student) return;
 
     body.insertAdjacentHTML('afterbegin', `
         <tr>
             <td>${formatManualPaymentDate(new Date().toISOString().slice(0, 10))}</td>
-            <td><strong>${name}</strong><small>Manual referral</small></td>
-            <td>${document.getElementById('referralCountry')?.value || student.country}</td>
-            <td>${document.getElementById('referralPackage')?.value || 'Trial'}</td>
-            <td><span class="status-pill ${getReferralStatusClass(status)}">${status}</span></td>
+            <td><strong>${escapeHtml(name)}</strong><small>Manual referral</small></td>
+            <td>${escapeHtml(document.getElementById('referralCountry')?.value || student.country)}</td>
+            <td>${escapeHtml(document.getElementById('referralPackage')?.value || 'Trial')}</td>
+            <td><span class="status-pill ${getReferralStatusClass(status)}">${escapeHtml(status)}</span></td>
             <td>${rewardMarkup}</td>
+            <td>${rewardStatusMarkup}</td>
             <td>${discount}%</td>
-            <td>${student.guardian || student.name}</td>
-            <td>${document.getElementById('referralNotes')?.value.trim() || 'Added manually.'}</td>
+            <td>${receiptMarkup}</td>
+            <td>${escapeHtml(student.guardian || student.name)}</td>
+            <td>${noteMarkup}</td>
         </tr>
     `);
 
@@ -15733,6 +15904,10 @@ function saveReferralRecord() {
     }
     if (discount > 0) student.referrals.discount = `${discount}%`;
     updateReferralSummary(student);
+    addStudentActivity(
+        'Referral reward note',
+        `${name} · ${rewardStatus} · ${discount}% discount · ${notes}${receiptName ? ` · Receipt uploaded: ${receiptName}` : ''}`
+    );
     closeReferralModal();
     showSparkToast('Referral record added in prototype mode.');
 }
@@ -16852,6 +17027,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('paymentReceiptPrint')?.addEventListener('click', () => window.print());
     document.getElementById('studentAddReferral')?.addEventListener('click', openReferralModal);
+    document.getElementById('studentReferralDiscountEdit')?.addEventListener('click', openReferralDiscountEditor);
+    document.getElementById('studentReferralDiscountCancel')?.addEventListener('click', closeReferralDiscountEditor);
+    document.getElementById('studentReferralDiscountSave')?.addEventListener('click', saveReferralDiscountEdit);
+    document.getElementById('studentReferralDiscountInput')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') saveReferralDiscountEdit();
+        if (event.key === 'Escape') closeReferralDiscountEditor();
+    });
     document.getElementById('referralModalClose')?.addEventListener('click', closeReferralModal);
     document.getElementById('referralCancel')?.addEventListener('click', closeReferralModal);
     document.getElementById('referralModal')?.addEventListener('click', (event) => {
@@ -16861,12 +17043,18 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         saveReferralRecord();
     });
-    document.getElementById('copyReferralLink')?.addEventListener('click', async () => {
-        const link = document.getElementById('studentReferralLink')?.textContent || '';
-        if (navigator.clipboard && link) {
-            await navigator.clipboard.writeText(link).catch(() => undefined);
+    document.getElementById('studentReferralBody')?.addEventListener('click', (event) => {
+        const receiptButton = event.target.closest('[data-referral-receipt-action]');
+        if (!receiptButton) return;
+
+        const action = receiptButton.dataset.referralReceiptAction;
+        if (action === 'upload') {
+            showSparkToast('Reward receipt upload ready in prototype mode.');
+            return;
         }
-        showSparkToast('Referral link copied in prototype mode.');
+
+        const receiptName = receiptButton.dataset.referralReceipt || `${receiptButton.dataset.referralStudent || 'Referral'} reward receipt`;
+        showSparkToast(`${receiptName} is ready for student receipt view.`);
     });
     document.getElementById('studentEditSchedule')?.addEventListener('click', openScheduleModal);
     document.getElementById('scheduleModalClose')?.addEventListener('click', closeScheduleModal);

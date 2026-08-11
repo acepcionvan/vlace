@@ -8,31 +8,31 @@ window.SPEAKRYT_COMMERCE = {
         },
         {
             "name": "South Korea",
-            "currency": "KRW",
+            "currency": "USD",
             "status": "Active",
             "serviceArea": "Nationwide"
         },
         {
             "name": "Japan",
-            "currency": "JPY",
+            "currency": "USD",
             "status": "Active",
             "serviceArea": "Nationwide"
         },
         {
             "name": "UAE",
-            "currency": "AED",
+            "currency": "USD",
             "status": "Active",
             "serviceArea": "Includes Dubai"
         },
         {
             "name": "Saudi Arabia",
-            "currency": "SAR",
+            "currency": "USD",
             "status": "Active",
             "serviceArea": "Nationwide"
         },
         {
             "name": "Israel",
-            "currency": "ILS",
+            "currency": "USD",
             "status": "Active",
             "serviceArea": "Nationwide"
         }
@@ -105,7 +105,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "229000",
+            "price": "165",
             "visibility": "Published"
         },
         {
@@ -115,7 +115,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "436000",
+            "price": "314",
             "visibility": "Published"
         },
         {
@@ -125,7 +125,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Black Diamond",
             "lessons": "45",
-            "price": "634000",
+            "price": "456",
             "visibility": "Published"
         },
         {
@@ -135,7 +135,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "125000",
+            "price": "90",
             "visibility": "Published"
         },
         {
@@ -145,7 +145,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "238000",
+            "price": "171",
             "visibility": "Published"
         },
         {
@@ -155,7 +155,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Platinum",
             "lessons": "45",
-            "price": "346000",
+            "price": "249",
             "visibility": "Published"
         },
         {
@@ -165,7 +165,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "24600",
+            "price": "165",
             "visibility": "Published"
         },
         {
@@ -175,7 +175,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "46900",
+            "price": "314",
             "visibility": "Published"
         },
         {
@@ -185,7 +185,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Black Diamond",
             "lessons": "45",
-            "price": "68100",
+            "price": "456",
             "visibility": "Published"
         },
         {
@@ -195,7 +195,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "13450",
+            "price": "90",
             "visibility": "Published"
         },
         {
@@ -205,7 +205,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "25525",
+            "price": "171",
             "visibility": "Published"
         },
         {
@@ -215,7 +215,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Platinum",
             "lessons": "45",
-            "price": "37165",
+            "price": "249",
             "visibility": "Published"
         },
         {
@@ -225,7 +225,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "605",
+            "price": "165",
             "visibility": "Published"
         },
         {
@@ -235,7 +235,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "1153",
+            "price": "314",
             "visibility": "Published"
         },
         {
@@ -245,7 +245,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Black Diamond",
             "lessons": "45",
-            "price": "1675",
+            "price": "456",
             "visibility": "Published"
         },
         {
@@ -255,7 +255,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "331",
+            "price": "90",
             "visibility": "Published"
         },
         {
@@ -265,7 +265,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "628",
+            "price": "171",
             "visibility": "Published"
         },
         {
@@ -275,7 +275,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Platinum",
             "lessons": "45",
-            "price": "915",
+            "price": "249",
             "visibility": "Published"
         },
         {
@@ -285,7 +285,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "620",
+            "price": "165",
             "visibility": "Published"
         },
         {
@@ -295,7 +295,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "1178",
+            "price": "314",
             "visibility": "Published"
         },
         {
@@ -305,7 +305,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Black Diamond",
             "lessons": "45",
-            "price": "1710",
+            "price": "456",
             "visibility": "Published"
         },
         {
@@ -315,7 +315,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "338",
+            "price": "90",
             "visibility": "Published"
         },
         {
@@ -325,7 +325,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "641",
+            "price": "171",
             "visibility": "Published"
         },
         {
@@ -335,7 +335,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Platinum",
             "lessons": "45",
-            "price": "934",
+            "price": "249",
             "visibility": "Published"
         },
         {
@@ -345,7 +345,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "610",
+            "price": "165",
             "visibility": "Published"
         },
         {
@@ -355,7 +355,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "1160",
+            "price": "314",
             "visibility": "Published"
         },
         {
@@ -365,7 +365,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "50 minutes",
             "name": "Black Diamond",
             "lessons": "45",
-            "price": "1685",
+            "price": "456",
             "visibility": "Published"
         },
         {
@@ -375,7 +375,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Silver",
             "lessons": "15",
-            "price": "333",
+            "price": "90",
             "visibility": "Published"
         },
         {
@@ -385,7 +385,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Gold",
             "lessons": "30",
-            "price": "632",
+            "price": "171",
             "visibility": "Published"
         },
         {
@@ -395,7 +395,7 @@ window.SPEAKRYT_COMMERCE = {
             "duration": "25 minutes",
             "name": "Platinum",
             "lessons": "45",
-            "price": "920",
+            "price": "249",
             "visibility": "Published"
         }
     ],
