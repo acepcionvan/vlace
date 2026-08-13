@@ -89,6 +89,23 @@ a {
     font: inherit;
 }
 
+.student-account-card button,
+.staff-login-note a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border: 1px solid #b8d5ed;
+    border-radius: 999px;
+    padding: 0 18px;
+    background: white;
+    color: var(--blue-deep);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 950;
+    cursor: pointer;
+}
+
 .commerce-primary:disabled {
     cursor: not-allowed;
     background: #d9e5f0;
@@ -521,6 +538,102 @@ h1 {
     font-weight: 750;
 }
 
+.student-login-section {
+    display: grid;
+    gap: 24px;
+}
+
+.student-login-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, .95fr) minmax(300px, 1.05fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.student-login-card,
+.student-account-card,
+.staff-login-note {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    padding: 26px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 18px 42px rgba(22, 59, 91, .08);
+}
+
+.student-login-card label {
+    display: grid;
+    gap: 8px;
+    color: #31536f;
+    font-size: 12px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.student-login-card input {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid #cfe0ef;
+    border-radius: 10px;
+    padding: 0 14px;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 850;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.student-login-error {
+    padding: 12px 14px;
+    border: 1px solid rgba(230, 95, 88, .3);
+    border-radius: 10px;
+    background: rgba(230, 95, 88, .08);
+    color: #9f342f;
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.student-account-card,
+.staff-login-note {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+}
+
+.student-account-card > span,
+.staff-login-note > span {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #effbf6;
+    color: var(--mint);
+}
+
+.staff-login-note > span {
+    background: #eef6ff;
+    color: var(--blue);
+}
+
+.student-account-card h3,
+.staff-login-note h3 {
+    margin: 0 0 5px;
+    font-size: 22px;
+    font-weight: 950;
+}
+
+.student-account-card p,
+.staff-login-note p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.45;
+    font-weight: 750;
+}
+
 .checkout-total {
     display: grid;
     gap: 4px;
@@ -729,6 +842,7 @@ h1 {
     .pricing-grid,
     .testimonial-grid,
     .teacher-layout,
+    .student-login-grid,
     .mission-band,
     .pricing-toolbar,
     .commerce-layout,
@@ -781,6 +895,11 @@ h1 {
     }
 
     .coupon-list {
+        grid-template-columns: 1fr;
+    }
+
+    .student-account-card,
+    .staff-login-note {
         grid-template-columns: 1fr;
     }
 }

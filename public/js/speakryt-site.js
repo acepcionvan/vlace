@@ -16,6 +16,10 @@
     };
     const authorizedCheckoutPhone = '+639273028515';
 
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
     function money(value) {
         return `$${Number(value || 0).toFixed(2)}`;
     }
@@ -226,6 +230,104 @@
         renderPaymentFeed();
     }
 
+    function showStudentAccount(user) {
+        const loginForm = document.getElementById('studentLoginForm');
+        const accountCard = document.getElementById('studentAccountCard');
+        if (!loginForm || !accountCard || user?.role !== 'student') return;
+
+        loginForm.setAttribute('hidden', '');
+        accountCard.removeAttribute('hidden');
+        document.getElementById('studentLoginError')?.setAttribute('hidden', '');
+        const name = document.getElementById('studentAccountName');
+        const email = document.getElementById('studentAccountEmail');
+        if (name) name.textContent = user.name || 'Student Account';
+        if (email) email.textContent = user.email || '';
+        window.lucide?.createIcons();
+    }
+
+    function showStudentLogin() {
+        document.getElementById('studentAccountCard')?.setAttribute('hidden', '');
+        document.getElementById('studentLoginForm')?.removeAttribute('hidden');
+    }
+
+    async function submitStudentLogin(email, password) {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+            body: JSON.stringify({ email, password, portal: 'website' }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.message || data?.errors?.email?.[0] || 'Login failed');
+        }
+
+        return data;
+    }
+
+    async function submitStudentLogout() {
+        await fetch('/logout', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+        });
+    }
+
+    function initStudentLogin() {
+        const loginForm = document.getElementById('studentLoginForm');
+        const loginError = document.getElementById('studentLoginError');
+        const passwordInput = document.getElementById('studentPasswordInput');
+        const currentUser = window.SPEAKRYT_AUTH_USER;
+
+        if (currentUser?.role === 'student') {
+            showStudentAccount(currentUser);
+        } else {
+            showStudentLogin();
+        }
+
+        loginForm?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = loginForm.querySelector('input[type="email"]');
+            if (!email?.value.trim() || !passwordInput?.value.trim()) {
+                if (loginError) loginError.textContent = 'Enter your student email and password to continue.';
+                loginError?.removeAttribute('hidden');
+                return;
+            }
+
+            loginError?.setAttribute('hidden', '');
+            const button = loginForm.querySelector('button[type="submit"]');
+
+            try {
+                if (button) {
+                    button.disabled = true;
+                    button.textContent = 'Signing In...';
+                }
+                const data = await submitStudentLogin(email.value.trim(), passwordInput.value);
+                passwordInput.value = '';
+                showStudentAccount(data.user);
+            } catch (error) {
+                if (loginError) loginError.textContent = error.message || 'Use a student account on the SpeakRyt website.';
+                loginError?.removeAttribute('hidden');
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Sign In';
+                }
+            }
+        });
+
+        document.getElementById('studentLogoutButton')?.addEventListener('click', async () => {
+            await submitStudentLogout().catch(() => undefined);
+            showStudentLogin();
+        });
+    }
+
     function init() {
         if (!document.getElementById('chinaPricingGrid')) return;
         renderPackages();
@@ -238,6 +340,7 @@
         document.getElementById('checkoutPhone')?.addEventListener('input', updateCheckoutAccess);
         document.getElementById('recordWebsitePayment')?.addEventListener('click', recordWebsitePayment);
         updateCheckoutAccess();
+        initStudentLogin();
     }
 
     init();

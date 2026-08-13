@@ -11,9 +11,9 @@
     <script>
         window.VLACE_AUTH_USER = @json(auth()->user()?->dashboardPayload());
     </script>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=commerce-sync-20260811">
-    <script src="{{ asset('js/speakryt-commerce.js') }}?v=commerce-sync-20260811"></script>
-    <script src="{{ asset('js/app.js') }}?v=commerce-sync-20260811" defer></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=manager-policy-pdf-20260814">
+    <script src="{{ asset('js/speakryt-commerce.js') }}?v=manager-policy-pdf-20260814"></script>
+    <script src="{{ asset('js/app.js') }}?v=manager-policy-pdf-20260814" defer></script>
 </head>
 <body>
     <main class="login-page" id="loginPage">
@@ -620,7 +620,6 @@
                                         <h4>Teaching Assignment</h4>
                                         <p>Current workload and payroll rate</p>
                                     </div>
-                                    <button class="secondary-button" type="button" id="teacherAssignmentPanelEdit">Edit</button>
                                 </div>
                                 <dl>
                                     <div><dt>Assigned Students</dt><dd id="teacherDetailStudents">14</dd></div>
@@ -752,12 +751,13 @@
 
                     <section class="teacher-tab-panel teacher-detail-records" data-teacher-tab-panel="weekly">
                         <article>
-                            <div class="student-record-head">
-                                <div>
-                                    <h3>Weekly Schedule</h3>
-                                    <p>Availability, assigned classes, and meeting links used when scheduling students.</p>
+                                <div class="student-record-head">
+                                    <div>
+                                        <h3>Weekly Schedule</h3>
+                                        <p>Availability, assigned classes, and meeting links used when scheduling students.</p>
+                                    </div>
+                                    <button class="secondary-button" type="button" data-manager-teacher-add-class="T1-001"><i data-lucide="calendar-plus"></i> Add Class</button>
                                 </div>
-                            </div>
 
                             <section class="teacher-weekly-status-grid">
                                 <article>
@@ -780,25 +780,6 @@
                                     <strong id="teacherWeeklyMeetingSource">Teacher profile</strong>
                                     <small>Used by Enter Classroom</small>
                                 </article>
-                            </section>
-
-                            <section class="teacher-week-card">
-                                <div class="schedule-week-head">
-                                    <div>
-                                        <span>WEEKLY AVAILABILITY</span>
-                                        <h4>Teaching Pattern</h4>
-                                    </div>
-                                    <b>Asia/Manila · PHT</b>
-                                </div>
-                                <div class="teacher-week-grid" id="teacherWeeklyDays">
-                                    <article data-teacher-weekday="Monday"><strong>Mon</strong><span>No slots</span></article>
-                                    <article data-teacher-weekday="Tuesday"><strong>Tue</strong><span>No slots</span></article>
-                                    <article data-teacher-weekday="Wednesday"><strong>Wed</strong><span>No slots</span></article>
-                                    <article data-teacher-weekday="Thursday"><strong>Thu</strong><span>No slots</span></article>
-                                    <article data-teacher-weekday="Friday"><strong>Fri</strong><span>No slots</span></article>
-                                    <article data-teacher-weekday="Saturday"><strong>Sat</strong><span>No slots</span></article>
-                                    <article data-teacher-weekday="Sunday"><strong>Sun</strong><span>No slots</span></article>
-                                </div>
                             </section>
 
                             <div class="teacher-schedule-grid">
@@ -1476,13 +1457,7 @@
                                             <td><button class="feedback-button recording-view-button" type="button" data-lesson-action="recording" data-lesson-topic="Past Tense Review">▶ View Recording</button></td>
                                             <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-lesson-action="feedback" data-lesson-topic="Past Tense Review">View</button><button class="feedback-button add-feedback-button" type="button" data-lesson-action="add-feedback" data-lesson-topic="Past Tense Review">Add</button></div></td>
                                             <td><button class="feedback-button meeting-link-button" type="button" data-lesson-action="meeting-url" data-lesson-topic="Past Tense Review">Update Video</button></td>
-                                            <td>
-                                                <select class="lesson-action-select" data-lesson-row-action>
-                                                    <option value="">Select action</option>
-                                                    <option value="student-absent">Student absent</option>
-                                                    <option value="completed">Completed</option>
-                                                </select>
-                                            </td>
+                                            <td><button class="feedback-button meeting-link-button" type="button" data-admin-lesson-action data-lesson-topic="Past Tense Review">Action</button></td>
                                             <td>
                                                 <div class="feedback-approval-actions">
                                                     <button class="reject-feedback" type="button" data-feedback-decision="Rejected">Reject</button>
@@ -1500,13 +1475,7 @@
                                             <td><span class="lesson-link-unavailable">Not available</span></td>
                                             <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-lesson-action="feedback" data-lesson-topic="Free Conversation">View</button><button class="feedback-button add-feedback-button" type="button" data-lesson-action="add-feedback" data-lesson-topic="Free Conversation">Add</button></div></td>
                                             <td><button class="feedback-button meeting-link-button" type="button" data-lesson-action="meeting-url" data-lesson-topic="Free Conversation">Add Video</button></td>
-                                            <td>
-                                                <select class="lesson-action-select" data-lesson-row-action>
-                                                    <option value="">Select action</option>
-                                                    <option value="student-absent">Student absent</option>
-                                                    <option value="completed">Completed</option>
-                                                </select>
-                                            </td>
+                                            <td><button class="feedback-button meeting-link-button" type="button" data-admin-lesson-action data-lesson-topic="Free Conversation">Action</button></td>
                                             <td><span class="feedback-decision-note">Awaiting teacher feedback</span></td>
                                         </tr>
                                     </tbody>
@@ -2639,15 +2608,9 @@
             </div>
 
             <nav aria-label="Manager navigation">
-                <button class="active" data-manager-portal-target="manager-teachers"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
-                <button data-manager-portal-target="manager-schedule"><i data-lucide="calendar-days"></i><span>Schedule</span></button>
-                <button data-manager-portal-target="manager-overview"><i data-lucide="users-round"></i><span>Teachers</span></button>
+                <button class="active" data-manager-portal-target="manager-overview"><i data-lucide="users-round"></i><span>Teachers</span></button>
                 <button data-manager-portal-target="manager-students"><i data-lucide="graduation-cap"></i><span>Students</span></button>
-                <button data-manager-portal-target="manager-feedback"><i data-lucide="message-square-text"></i><span>Feedback</span></button>
-                <button data-manager-portal-target="manager-communication"><i data-lucide="inbox"></i><span>Communication</span></button>
-                <button data-manager-portal-target="manager-payroll"><i data-lucide="wallet"></i><span>Payroll Review</span></button>
-                <button data-manager-portal-target="manager-documents"><i data-lucide="folder-check"></i><span>Documents</span></button>
-                <button data-manager-portal-target="manager-policies"><i data-lucide="file-check-2"></i><span>Policies</span></button>
+                <button data-manager-portal-target="manager-lessons"><i data-lucide="book-open-check"></i><span>Lessons</span></button>
                 <button data-manager-portal-target="manager-profile"><i data-lucide="user-round"></i><span>Profile</span></button>
             </nav>
 

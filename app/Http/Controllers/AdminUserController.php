@@ -20,7 +20,7 @@ class AdminUserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'role' => ['required', Rule::in(['admin', 'manager', 'teacher', 'staff'])],
+            'role' => ['required', Rule::in(['admin', 'manager', 'teacher', 'staff', 'student'])],
             'password' => ['nullable', 'string', 'min:8'],
         ]);
 

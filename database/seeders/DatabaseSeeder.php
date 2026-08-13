@@ -35,5 +35,15 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
+
+        User::updateOrCreate(
+            ['email' => env('VLACE_STUDENT_EMAIL', 'student@vlace.com')],
+            [
+                'name' => env('VLACE_STUDENT_NAME', 'Liam Chen'),
+                'password' => Hash::make(env('VLACE_STUDENT_PASSWORD', 'prototype')),
+                'role' => 'student',
+                'email_verified_at' => now(),
+            ],
+        );
     }
 }

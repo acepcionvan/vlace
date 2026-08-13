@@ -92,4 +92,58 @@ class AdminUserControllerTest extends TestCase
             'role' => 'admin',
         ]);
     }
+
+    public function test_staff_roles_log_in_through_dashboard_domain_only(): void
+    {
+        User::create([
+            'name' => 'Manager User',
+            'email' => 'manager@example.com',
+            'password' => Hash::make('ManagerPass123!'),
+            'role' => 'manager',
+        ]);
+
+        $this->postJson('/login', [
+                'email' => 'manager@example.com',
+                'password' => 'ManagerPass123!',
+                'portal' => 'dashboard',
+            ], ['Host' => 'mydashboard.speakryt.com'])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'manager');
+
+        $this->postJson('/logout')->assertOk();
+
+        $this->postJson('/login', [
+                'email' => 'manager@example.com',
+                'password' => 'ManagerPass123!',
+                'portal' => 'website',
+            ], ['Host' => 'speakryt.com'])
+            ->assertUnprocessable();
+    }
+
+    public function test_students_log_in_through_website_domain_only(): void
+    {
+        User::create([
+            'name' => 'Student User',
+            'email' => 'student@example.com',
+            'password' => Hash::make('StudentPass123!'),
+            'role' => 'student',
+        ]);
+
+        $this->postJson('/login', [
+                'email' => 'student@example.com',
+                'password' => 'StudentPass123!',
+                'portal' => 'website',
+            ], ['Host' => 'speakryt.com'])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'student');
+
+        $this->postJson('/logout')->assertOk();
+
+        $this->postJson('/login', [
+                'email' => 'student@example.com',
+                'password' => 'StudentPass123!',
+                'portal' => 'dashboard',
+            ], ['Host' => 'mydashboard.speakryt.com'])
+            ->assertUnprocessable();
+    }
 }

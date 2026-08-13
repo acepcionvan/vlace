@@ -5577,14 +5577,20 @@ nav svg {
 }
 
 .staff-detail-panel .teacher-profile-tabs {
-    padding: 18px 28px 0;
+    padding: 18px 28px 16px;
     background: #fff;
+    border-bottom: 1px solid #e1eaf3;
 }
 
 .staff-detail-panel .teacher-profile-tabs button {
     min-height: 42px;
     padding: 0 18px;
     font-size: 14px;
+    margin: 0;
+}
+
+.manager-staff-style-profile .staff-detail-summary dl {
+    grid-template-columns: minmax(120px, auto);
 }
 
 .staff-contact-card {
@@ -5824,6 +5830,98 @@ nav svg {
     padding: 7px 10px;
     border-radius: 7px;
     font-size: 10px;
+}
+
+.manager-own-profile-panel {
+    overflow: hidden;
+    margin-top: 18px;
+    border-radius: 16px;
+}
+
+.manager-own-profile-panel .staff-detail-avatar {
+    background-size: cover;
+    background-position: center;
+}
+
+.manager-own-profile-panel .staff-detail-summary .secondary-button,
+.manager-own-profile-panel .staff-contact-card footer .secondary-button {
+    border-color: #bed8f5;
+    background: #f5faff;
+    color: #1769e8;
+    font-weight: 900;
+}
+
+.manager-own-activity-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: #fff;
+}
+
+.manager-own-activity-list li {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr) 140px 130px;
+    gap: 18px;
+    align-items: center;
+    padding: 14px 18px;
+    border-top: 1px solid #e7eef6;
+}
+
+.manager-own-activity-list li > span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #2b83ed;
+    box-shadow: 0 0 0 6px #e4f0ff;
+}
+
+.manager-own-activity-list strong {
+    display: block;
+    color: #173654;
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.manager-own-activity-list p,
+.manager-own-activity-list small {
+    margin: 4px 0 0;
+    color: #7890a8;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.manager-own-activity-card footer {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 18px;
+    border-top: 1px solid #e6eef8;
+    background: #fbfaf7;
+    color: #897b6c;
+    font-size: 11px;
+    font-weight: 850;
+}
+
+@media (max-width: 900px) {
+    .manager-own-profile-panel .staff-detail-hero,
+    .manager-own-profile-panel .staff-detail-summary {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .manager-own-profile-panel .staff-detail-summary {
+        margin-left: 0;
+    }
+
+    .manager-own-activity-list li {
+        grid-template-columns: 12px minmax(0, 1fr);
+    }
+
+    .manager-own-activity-card footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 }
 
 .staff-week-grid,
@@ -8968,6 +9066,33 @@ body.lesson-preview-open {
     color: #173856;
 }
 
+.protected-lesson-reader {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.protected-lesson-reader * {
+    -webkit-user-drag: none;
+}
+
+.protected-reader-banner {
+    position: absolute;
+    top: 86px;
+    left: 24px;
+    right: 24px;
+    z-index: 2;
+    border: 1px solid rgba(191, 219, 254, .45);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .76);
+    color: #dbeafe;
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: .02em;
+    padding: 10px 14px;
+    text-align: center;
+    pointer-events: none;
+}
+
 .lesson-pdf-reader-head,
 .lesson-pdf-reader-foot {
     display: flex;
@@ -8990,6 +9115,7 @@ body.lesson-preview-open {
 }
 
 .lesson-pdf-reader-stage {
+    position: relative;
     display: grid;
     align-items: center;
     justify-items: center;
@@ -10927,6 +11053,165 @@ body.lesson-preview-open {
     font-weight: 750;
 }
 
+.policy-pdf-backdrop {
+    background: rgba(13, 31, 49, .62);
+    backdrop-filter: blur(2px);
+}
+
+.policy-pdf-viewer-modal {
+    width: min(940px, calc(100vw - 36px));
+    max-width: 940px;
+    max-height: calc(100vh - 34px);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+    background: #eef3f8;
+}
+
+.policy-pdf-toolbar {
+    border-bottom: 1px solid #ccd9e6;
+    background: #fff;
+}
+
+.policy-pdf-shell {
+    overflow: auto;
+    padding: 26px;
+    background:
+        linear-gradient(90deg, rgba(18, 43, 67, .05) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(18, 43, 67, .05) 1px, transparent 1px),
+        #dfe8f1;
+    background-size: 24px 24px;
+}
+
+.policy-pdf-page {
+    width: min(740px, 100%);
+    min-height: 920px;
+    margin: 0 auto;
+    padding: 48px 54px;
+    background: #fff;
+    color: #17304a;
+    box-shadow: 0 20px 50px rgba(20, 44, 68, .22);
+}
+
+.policy-pdf-page header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #17304a;
+}
+
+.policy-pdf-page header span,
+.policy-pdf-page section h4,
+.policy-pdf-meta span,
+.policy-pdf-page footer {
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.policy-pdf-page header span {
+    color: #5f7890;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.policy-pdf-page header h2 {
+    margin: 7px 0 4px;
+    color: #102b4d;
+    font-size: 30px;
+    line-height: 1.08;
+}
+
+.policy-pdf-page header p {
+    margin: 0;
+    color: #6d7f90;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.policy-pdf-page header strong {
+    align-self: flex-start;
+    border: 1px solid #cbd9e8;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #f6f9fc;
+    color: #176be8;
+    font-size: 13px;
+}
+
+.policy-pdf-meta {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    margin: 22px 0 28px;
+    border: 1px solid #d6e2ed;
+    background: #d6e2ed;
+}
+
+.policy-pdf-meta div {
+    min-width: 0;
+    padding: 11px 12px;
+    background: #f8fbff;
+}
+
+.policy-pdf-meta span {
+    display: block;
+    color: #7890a5;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.policy-pdf-meta b {
+    display: block;
+    margin-top: 4px;
+    color: #243f5b;
+    font-size: 12px;
+}
+
+.policy-pdf-page section {
+    margin-top: 24px;
+}
+
+.policy-pdf-page section h4 {
+    margin: 0 0 9px;
+    color: #17304a;
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.policy-pdf-page section p,
+.policy-pdf-page section li {
+    color: #334d65;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.75;
+}
+
+.policy-pdf-page section p {
+    margin: 0;
+}
+
+.policy-pdf-page section ol {
+    margin: 0;
+    padding-left: 19px;
+}
+
+.policy-pdf-page section li + li {
+    margin-top: 8px;
+}
+
+.policy-pdf-page footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 56px;
+    padding-top: 14px;
+    border-top: 1px solid #d7e2ec;
+    color: #7d8fa1;
+    font-size: 9px;
+    font-weight: 900;
+}
+
 .employee-policy-confirm {
     display: flex !important;
     align-items: flex-start;
@@ -12715,6 +13000,144 @@ body.drawer-open {
 
 .staff-schedule-drawer {
     width: min(680px, 96vw);
+}
+
+.manager-document-upload-drawer {
+    width: min(640px, 96vw);
+    background: #f4f7fb;
+}
+
+.manager-document-upload-drawer .student-edit-head {
+    padding: 24px 26px;
+    background: #ffffff;
+    border-bottom: 1px solid #d7e2ee;
+}
+
+.manager-document-upload-drawer .student-edit-head h2 {
+    font-size: 25px;
+    letter-spacing: 0;
+}
+
+.manager-document-upload-drawer .student-edit-body {
+    padding: 22px;
+}
+
+.manager-document-staff-card {
+    margin-bottom: 12px;
+    border-color: #c8dced;
+    background: #fff;
+    box-shadow: 0 10px 26px rgba(24, 57, 88, .06);
+}
+
+.manager-document-staff-card > b {
+    background: #fff7dc;
+    color: #8a6413;
+}
+
+.manager-document-review-banner {
+    margin-bottom: 14px;
+    border-color: #b8d6f5;
+    border-left-color: #2a74cf;
+    background: #eff7ff;
+}
+
+.manager-document-review-banner b {
+    color: #174f90;
+}
+
+.manager-document-review-banner span {
+    color: #496b8a;
+}
+
+.manager-document-section {
+    padding: 18px;
+    border-color: #d4e1ed;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(25, 55, 85, .05);
+}
+
+.manager-document-section .drawer-section-title {
+    align-items: center;
+}
+
+.manager-document-section .drawer-section-title > span {
+    background: #176be8;
+}
+
+.manager-document-upload-zone {
+    display: grid;
+    place-items: center;
+    gap: 7px;
+    min-height: 142px;
+    border: 2px dashed #b9d1ea;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #f8fbff, #ffffff);
+    color: #48627a;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.manager-document-upload-zone:hover,
+.manager-document-upload-zone:focus-within {
+    border-color: #2b74d8;
+    background: #f2f7ff;
+    box-shadow: 0 0 0 4px rgba(43, 116, 216, .1);
+}
+
+.manager-document-upload-zone input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.manager-document-upload-zone i,
+.manager-document-upload-zone svg {
+    width: 34px;
+    height: 34px;
+    color: #176be8;
+    stroke-width: 2.2;
+}
+
+.manager-document-upload-zone strong {
+    color: #183654;
+    font-size: 15px;
+    font-weight: 950;
+}
+
+.manager-document-upload-zone span {
+    color: #7a8da0;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.manager-document-note {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+    color: #4b6379;
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.manager-document-note textarea {
+    min-height: 84px;
+    border: 2px solid #d3e0ec;
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: #203c57;
+    font-size: 13px !important;
+    font-weight: 800;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+.manager-document-note textarea:focus {
+    outline: 0;
+    border-color: #72a6e5;
+    box-shadow: 0 0 0 3px #e8f2ff;
 }
 
 .schedule-staff-card {
@@ -17556,8 +17979,13 @@ body.drawer-open {
     padding-bottom: 20px;
 }
 
-.manager-profile-links-card .teacher-links-card-head button {
-    display: none;
+.manager-profile-links-card .teacher-links-card-head {
+    align-items: flex-start;
+}
+
+.manager-profile-links-card .teacher-links-card-head > div {
+    min-width: 0;
+    max-width: calc(100% - 78px);
 }
 
 .manager-profile-toolbar {

@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SpeakRyt online English lessons for kids, adults, professionals, IELTS, TOEFL, interviews, and business communication.">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SpeakRyt | Online English Lessons</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        window.SPEAKRYT_AUTH_USER = @json(auth()->user()?->dashboardPayload());
+        window.SPEAKRYT_DASHBOARD_URL = 'https://mydashboard.speakryt.com';
+    </script>
     <link rel="stylesheet" href="{{ asset('css/speakryt.css') }}?v=china-commerce-20260811">
     <script src="{{ asset('js/speakryt-commerce.js') }}?v=china-commerce-20260811"></script>
 </head>
@@ -23,7 +28,7 @@
             <a href="#pricing">Pricing</a>
             <a href="#faq">FAQ</a>
         </nav>
-        <a class="header-cta" href="#contact">Book Trial</a>
+        <a class="header-cta" href="#student-login">Student Login</a>
     </header>
 
     <main id="top">
@@ -57,6 +62,43 @@
                 <article><i data-lucide="badge-check"></i><h3>Professional classes</h3><p>Lessons are structured, practical, and designed to build confidence without premium-platform pricing.</p></article>
                 <article><i data-lucide="messages-square"></i><h3>Confident speaking</h3><p>Students practice real answers, clear pronunciation, and natural responses they can use immediately.</p></article>
                 <article><i data-lucide="globe-2"></i><h3>Built for Asia</h3><p>Scheduling, support channels, and payment choices are shaped around Asian families and professionals.</p></article>
+            </div>
+        </section>
+
+        <section class="section-shell student-login-section" id="student-login" aria-labelledby="student-login-title">
+            <div class="section-heading compact">
+                <p class="eyebrow">Student access</p>
+                <h2 id="student-login-title">Sign in to your SpeakRyt student account.</h2>
+                <p>Students use the main SpeakRyt website. Admins, teachers, and managers use the private dashboard domain.</p>
+            </div>
+            <div class="student-login-grid">
+                <form class="student-login-card" id="studentLoginForm">
+                    <label>Email address
+                        <input type="email" autocomplete="username" placeholder="student@vlace.com">
+                    </label>
+                    <label>Password
+                        <input id="studentPasswordInput" type="password" autocomplete="current-password" placeholder="Enter your password">
+                    </label>
+                    <div class="student-login-error" id="studentLoginError" role="alert" hidden>Enter your student email and password to continue.</div>
+                    <button class="commerce-primary" type="submit">Sign In</button>
+                </form>
+                <article class="student-account-card" id="studentAccountCard" hidden>
+                    <span><i data-lucide="badge-check"></i></span>
+                    <div>
+                        <p class="eyebrow">Signed in</p>
+                        <h3 id="studentAccountName">Student Account</h3>
+                        <p id="studentAccountEmail">student@vlace.com</p>
+                    </div>
+                    <button type="button" id="studentLogoutButton">Log Out</button>
+                </article>
+                <article class="staff-login-note">
+                    <span><i data-lucide="shield-check"></i></span>
+                    <div>
+                        <h3>Staff portal</h3>
+                        <p>Admin, teacher, and manager accounts should sign in at mydashboard.speakryt.com.</p>
+                    </div>
+                    <a href="https://mydashboard.speakryt.com">Open Dashboard</a>
+                </article>
             </div>
         </section>
 

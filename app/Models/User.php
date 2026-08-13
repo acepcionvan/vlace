@@ -51,12 +51,17 @@ class User extends Authenticatable
 
         $role = Str::lower(trim($this->role ?: 'staff'));
 
-        return in_array($role, ['admin', 'manager', 'teacher', 'staff'], true) ? $role : 'staff';
+        return in_array($role, ['admin', 'manager', 'teacher', 'staff', 'student'], true) ? $role : 'staff';
     }
 
     public function isAdmin(): bool
     {
         return $this->effectiveRole() === 'admin';
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->effectiveRole() === 'student';
     }
 
     public function isOwnerEmail(): bool

@@ -37,6 +37,21 @@ class AuthController extends Controller
             $user->forceFill(['role' => 'admin'])->save();
         }
 
+        if (! $this->allowedForPortal($request, $user)) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            $message = $user->isStudent()
+                ? 'Students must sign in through the SpeakRyt website.'
+                : 'Admin, manager, and teacher accounts must sign in through mydashboard.speakryt.com.';
+
+            return response()->json([
+                'message' => $message,
+                'errors' => ['email' => [$message]],
+            ], 422);
+        }
+
         return response()->json([
             'user' => $user->dashboardPayload(),
         ]);
@@ -45,6 +60,8 @@ class AuthController extends Controller
     private function ensurePrototypeRoleAccount(string $email, string $password): void
     {
         $prototypeAccounts = [
+            'student@vlace.com' => ['name' => 'Liam Chen', 'role' => 'student'],
+            'liam.chen@speakryt.com' => ['name' => 'Liam Chen', 'role' => 'student'],
             'manager@vlace.com' => ['name' => 'Angela Reyes', 'role' => 'manager'],
             'teacher@vlace.com' => ['name' => 'Maria Santos', 'role' => 'teacher'],
         ];
@@ -62,6 +79,26 @@ class AuthController extends Controller
                 'email_verified_at' => now(),
             ],
         );
+    }
+
+    private function allowedForPortal(Request $request, User $user): bool
+    {
+        $portal = Str::lower((string) $request->input('portal', ''));
+        $host = Str::lower($request->getHost());
+        $dashboardHost = Str::lower((string) config('vlace.dashboard_host', 'mydashboard.speakryt.com'));
+        $websiteHosts = array_map('strtolower', config('vlace.website_hosts', ['speakryt.com', 'www.speakryt.com']));
+        $localHosts = ['localhost', '127.0.0.1', '::1'];
+        $isLocal = in_array($host, $localHosts, true);
+
+        if ($user->isStudent()) {
+            return $isLocal
+                ? in_array($portal, ['', 'website'], true)
+                : $portal !== 'dashboard' && in_array($host, $websiteHosts, true);
+        }
+
+        return $isLocal
+            ? in_array($portal, ['', 'dashboard'], true)
+            : $portal !== 'website' && $host === $dashboardHost;
     }
 
     public function logout(Request $request): RedirectResponse|JsonResponse

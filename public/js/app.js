@@ -1511,17 +1511,22 @@ const managerAccount = {
 const managerPortalTitles = {
     'manager-overview': 'Teachers',
     'manager-schedule': 'Schedule',
-    'manager-teachers': 'Overview',
+    'manager-teachers': 'Teachers',
     'manager-students': 'Student Follow-up',
-    'manager-feedback': 'Feedback Review',
-    'manager-communication': 'Communication',
-    'manager-payroll': 'Payroll Review',
-    'manager-documents': 'Documents',
-    'manager-policies': 'Policies',
+    'manager-lessons': 'Lessons',
     'manager-profile': 'Manager Profile',
 };
 
-let activeManagerPortalSection = 'manager-teachers';
+const visibleManagerPortalSections = new Set([
+    'manager-overview',
+    'manager-schedule',
+    'manager-teachers',
+    'manager-students',
+    'manager-lessons',
+    'manager-profile',
+]);
+
+let activeManagerPortalSection = 'manager-overview';
 let managerOverviewCountry = 'All Countries';
 let managerTeacherDirectoryStatus = 'All Statuses';
 let managerTeacherDirectorySearch = '';
@@ -1532,7 +1537,35 @@ let activeManagerStudentProfileId = '';
 let activeManagerStudentProfileTab = 'profile';
 let activeManagerTeacherProfileId = '';
 let activeManagerTeacherProfileTab = 'profile';
+let activeManagerProfileTab = 'profile';
 const managerAddedClasses = [];
+const managerTeacherActivityNotes = {};
+const managerProfileScheduleOverrides = {};
+const managerProfileUploadedDocuments = [];
+
+function getManagerProfileStaff() {
+    const email = String(managerAccount.email || '').toLowerCase();
+    const matchedStaff = staffMembers.find((staff) => {
+        const staffEmail = String(staffContacts[staff.name]?.email || '').toLowerCase();
+        return staff.name === managerAccount.name || staffEmail === email;
+    });
+
+    const fallbackStaff = matchedStaff || {
+        id: managerAccount.id || 'MG-001',
+        name: managerAccount.name || 'Manager',
+        role: managerAccount.role || 'Manager',
+        department: managerAccount.department || 'Operations',
+        market: managerAccount.countryScope || 'Central Operations',
+        supervisor: managerAccount.supervisor || 'Van Acepcion',
+        schedule: 'Mon-Fri · 9:00 AM-6:00 PM',
+        pay: '₱28,000/month',
+        status: managerAccount.status || 'Active',
+        loginStatus: 'Logged in',
+    };
+    const override = managerProfileScheduleOverrides[fallbackStaff.id];
+
+    return override ? { ...fallbackStaff, ...override } : fallbackStaff;
+}
 
 function getTeacherPortalTeacher() {
     return teachers.find((teacher) => teacher.id === activeTeacherPortalTeacherId) || teachers[0];
@@ -2344,18 +2377,8 @@ function renderTeacherPortalPayrollDeductions(summary) {
 }
 
 function renderTeacherPortalFeedback(teacher) {
-    const publishedRecords = teacherFeedbackRecords.filter((record) => record.visibility !== 'Private');
-    const pendingAcknowledgement = teacherFeedbackRecords.filter((record) => !record.acknowledged).length;
-    const latestRecord = teacherFeedbackRecords[0];
-
     return `
         ${renderTeacherPortalHero(teacher, 'Feedback', 'Review the same teacher feedback records prepared in Admin and acknowledge items that need your confirmation.')}
-        <section class="teacher-portal-kpis teacher-record-kpis">
-            <article><span>Total feedback records</span><strong>${teacherFeedbackRecords.length}</strong><small>Admin review history</small></article>
-            <article><span>Published feedback</span><strong>${publishedRecords.length}</strong><small>Visible to teacher</small></article>
-            <article><span>Pending acknowledgement</span><strong>${pendingAcknowledgement}</strong><small>Require your review</small></article>
-            <article><span>Latest result</span><strong>${escapeHtml(latestRecord?.result || '—')}</strong><small>${escapeHtml(latestRecord?.period || 'No record yet')}</small></article>
-        </section>
         <article class="teacher-portal-panel teacher-portal-record-panel">
             <div class="teacher-panel-head">
                 <div><h3>Feedback Records</h3><p>Performance reviews, student feedback summaries, and coaching notes from Admin.</p></div>
@@ -2785,7 +2808,7 @@ function renderTeacherPortalProfile(teacher) {
 }
 
 function showManagerDashboard(user = {}) {
-    activeManagerPortalSection = 'manager-teachers';
+    activeManagerPortalSection = 'manager-overview';
     document.getElementById('loginPage')?.setAttribute('hidden', '');
     document.getElementById('dashboardApp')?.setAttribute('hidden', '');
     document.getElementById('teacherDashboardApp')?.setAttribute('hidden', '');
@@ -2798,6 +2821,9 @@ function showManagerDashboard(user = {}) {
 }
 
 function activateManagerPortal(section) {
+    if (!visibleManagerPortalSections.has(section)) {
+        section = 'manager-overview';
+    }
     activeManagerPortalSection = section;
     if (section !== 'manager-overview') activeManagerTeacherProfileId = '';
     document.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
@@ -2810,13 +2836,16 @@ function activateManagerPortal(section) {
 function renderManagerPortal() {
     const root = document.getElementById('managerPortalContent');
     if (!root) return;
+    if (!visibleManagerPortalSections.has(activeManagerPortalSection)) {
+        activeManagerPortalSection = 'manager-overview';
+    }
 
     setText('#managerPortalTitle', managerPortalTitles[activeManagerPortalSection] || 'Manager Dashboard');
     setText('#managerPortalName', managerAccount.name);
     setText('#managerPortalInitials', getInitials(managerAccount.name));
     const managerPhoto = document.getElementById('managerPortalPhoto');
     if (managerPhoto) {
-        const managerStaff = staffMembers.find((staff) => staff.email === managerAccount.email || staff.name === managerAccount.name) || staffMembers[0];
+        const managerStaff = getManagerProfileStaff();
         managerPhoto.className = `dashboard-face ${getStaffFaceClass(managerStaff)}`;
         managerPhoto.setAttribute('aria-label', `${managerAccount.name} mock profile photo`);
     }
@@ -2829,11 +2858,7 @@ function renderManagerPortal() {
         ${activeManagerPortalSection === 'manager-schedule' ? renderManagerSchedule() : ''}
         ${activeManagerPortalSection === 'manager-teachers' ? renderManagerTeachers() : ''}
         ${activeManagerPortalSection === 'manager-students' ? renderManagerStudents() : ''}
-        ${activeManagerPortalSection === 'manager-feedback' ? renderManagerFeedback() : ''}
-        ${activeManagerPortalSection === 'manager-communication' ? renderManagerCommunication() : ''}
-        ${activeManagerPortalSection === 'manager-payroll' ? renderManagerPayroll() : ''}
-        ${activeManagerPortalSection === 'manager-documents' ? renderManagerDocuments() : ''}
-        ${activeManagerPortalSection === 'manager-policies' ? renderManagerPolicies() : ''}
+        ${activeManagerPortalSection === 'manager-lessons' ? renderManagerLessons() : ''}
         ${activeManagerPortalSection === 'manager-profile' ? renderManagerProfile() : ''}
     `;
     bindManagerPortalEvents(root);
@@ -3252,6 +3277,7 @@ function getManagerTeacherPolicyAcknowledgements(teacher) {
 function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payroll, supervisor) {
     const computerSpecs = getTeacherComputerSpecs(teacher);
     const bankInfo = getTeacherBankInformation(teacher);
+    const activityNotes = getManagerTeacherActivityNotes(teacher);
     return `
         <div class="teacher-tab-panel active">
             <section class="teacher-profile-overview admin-teacher-profile-overview manager-admin-profile-overview">
@@ -3261,6 +3287,7 @@ function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payr
                             <h4>Teacher Information</h4>
                             <p>Individual employment record</p>
                         </div>
+                        <button class="secondary-button" type="button" data-manager-teacher-edit="info" data-teacher-id="${escapeHtml(teacher.id)}">Edit</button>
                     </div>
                     <dl>
                         <div><dt>Teacher ID</dt><dd>${escapeHtml(teacher.id)}</dd></div>
@@ -3291,7 +3318,7 @@ function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payr
                             <h4>Meeting Links</h4>
                             <p>Classroom URLs and IDs used by assigned students</p>
                         </div>
-                        <button class="secondary-button" type="button" data-manager-toast="Meeting link edit request opened for ${escapeHtml(teacher.name)}.">Edit</button>
+                        <button class="secondary-button" type="button" data-manager-teacher-edit="links" data-teacher-id="${escapeHtml(teacher.id)}">Edit</button>
                     </div>
                     <dl>
                         <div><dt>Voov</dt><dd>${escapeHtml(teacher.links.voov || 'Missing')}</dd></div>
@@ -3302,6 +3329,7 @@ function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payr
                 </article>
 
                 <article class="teacher-profile-info-card admin-teacher-supervisor-card">
+                    <button class="secondary-button admin-teacher-supervisor-edit" type="button" data-manager-teacher-edit="supervisor" data-teacher-id="${escapeHtml(teacher.id)}">Edit</button>
                     <span>ASSIGNED SUPERVISOR</span>
                     <img class="admin-teacher-supervisor-photo" src="${escapeHtml(supervisor.photo)}" width="64" height="64" alt="${escapeHtml(supervisor.name)} supervisor picture">
                     <h4>${escapeHtml(supervisor.name)}</h4>
@@ -3381,22 +3409,11 @@ function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payr
                     </div>
                     <div class="student-activity-actions">
                         <b>Internal use only</b>
-                        <button class="primary-button" type="button" data-manager-toast="Manager note draft opened for ${escapeHtml(teacher.name)}.">+ Add Note</button>
+                        <button class="primary-button" type="button" data-manager-teacher-note="${escapeHtml(teacher.id)}">+ Add Note</button>
                     </div>
                 </div>
                 <ul>
-                    <li>
-                        <span></span>
-                        <div><strong>Meeting link verified</strong><p>Voov and Google Meet links were checked for classroom access.</p></div>
-                        <div><strong>Van A.</strong><small>Admin</small></div>
-                        <div><strong>Aug 2, 2026</strong><small>9:42 PM PHT</small></div>
-                    </li>
-                    <li>
-                        <span></span>
-                        <div><strong>Weekly availability updated</strong><p>Preferred teaching blocks were updated for this teacher.</p></div>
-                        <div><strong>Ana Cruz</strong><small>Manager</small></div>
-                        <div><strong>Aug 1, 2026</strong><small>6:15 PM PHT</small></div>
-                    </li>
+                    ${activityNotes.map(renderManagerTeacherActivityNote).join('')}
                 </ul>
                 <footer>
                     <span>Visibility controlled by: User Management -> Roles & Permissions -> Teacher Profile Activity & Notes</span>
@@ -3407,12 +3424,38 @@ function renderManagerTeacherProfileTab(teacher, assignedStudents, contact, payr
     `;
 }
 
-function renderManagerTeacherWeekDayCards(availability) {
-    const dayMap = getTeacherWeeklyDayMap(availability);
-    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
-        const times = dayMap[day] || [];
-        return `<article class="${times.length ? 'active' : ''}"><strong>${escapeHtml(day.slice(0, 3))}</strong><span>${times.length ? times.map(inputTimeToDisplay).map(escapeHtml).join(' · ') : 'No slots'}</span></article>`;
-    }).join('');
+function getManagerTeacherActivityNotes(teacher) {
+    const savedNotes = managerTeacherActivityNotes[teacher.id] || [];
+    const defaultNotes = [
+        {
+            title: 'Meeting link verified',
+            body: 'Voov and Google Meet links were checked for classroom access.',
+            author: 'Van A.',
+            role: 'Admin',
+            date: 'Aug 2, 2026',
+            time: '9:42 PM PHT',
+        },
+        {
+            title: 'Weekly availability updated',
+            body: 'Preferred teaching blocks were updated for this teacher.',
+            author: 'Ana Cruz',
+            role: 'Manager',
+            date: 'Aug 1, 2026',
+            time: '6:15 PM PHT',
+        },
+    ];
+    return [...savedNotes, ...defaultNotes];
+}
+
+function renderManagerTeacherActivityNote(note) {
+    return `
+        <li>
+            <span></span>
+            <div><strong>${escapeHtml(note.title)}</strong><p>${escapeHtml(note.body)}</p></div>
+            <div><strong>${escapeHtml(note.author)}</strong><small>${escapeHtml(note.role)}</small></div>
+            <div><strong>${escapeHtml(note.date)}</strong><small>${escapeHtml(note.time)}</small></div>
+        </li>
+    `;
 }
 
 function renderManagerTeacherTodayRows(teacher) {
@@ -3434,7 +3477,7 @@ function renderManagerTeacherTodayRows(teacher) {
                 ? `<div class="feedback-approval-actions"><button class="reject-feedback" type="button" data-manager-feedback-decision="Rejected" data-manager-feedback-row="${escapeHtml(row.id)}">Reject</button><button class="approve-feedback" type="button" data-manager-feedback-decision="Approved" data-manager-feedback-row="${escapeHtml(row.id)}">Approve</button></div>`
                 : '<span class="feedback-decision-note">Awaiting teacher feedback</span>';
         const classroomButton = row.hasClassroom
-            ? `<button class="enter-classroom-button" type="button" data-manager-toast="Opening ${escapeHtml(row.student.name)} classroom for ${escapeHtml(teacher.name)}.">Enter Classroom</button>`
+            ? `<button class="enter-classroom-button" type="button" data-manager-classroom="${escapeHtml(row.id)}">Enter Classroom</button>`
             : '<span class="lesson-link-unavailable">Not ready</span>';
         return `
             <tr data-manager-feedback-row="${escapeHtml(row.id)}">
@@ -3446,8 +3489,7 @@ function renderManagerTeacherTodayRows(teacher) {
                 <td>${classroomButton}</td>
                 <td>${row.status === 'Completed' ? `<button class="feedback-button recording-view-button" type="button" data-manager-toast="Recording opened for ${escapeHtml(row.topic)}.">View Recording</button>` : '<span class="lesson-link-unavailable">Not available</span>'}</td>
                 <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-manager-feedback-view="${escapeHtml(row.id)}">${feedbackReview.submitted ? 'View' : 'Preview'}</button><button class="feedback-button add-feedback-button" type="button" data-manager-feedback-submit="${escapeHtml(row.id)}">${feedbackLabel}</button></div></td>
-                <td>${savedVideoUrl ? `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="${escapeHtml(savedVideoUrl)}">View Video</button>` : '<span class="lesson-link-unavailable">No URL yet</span>'}</td>
-                <td><button class="feedback-button meeting-link-button" type="button" data-manager-toast="Lesson action opened for ${escapeHtml(row.topic)}.">Action</button></td>
+                <td>${savedVideoUrl ? `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="${escapeHtml(savedVideoUrl)}">View Video</button>` : `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="Upload video URL opened for ${escapeHtml(row.topic)}.">Upload URL</button>`}</td>
                 <td>${approvalContent}</td>
             </tr>
         `;
@@ -3533,7 +3575,7 @@ function renderManagerStudentLessonRows(student) {
         const savedVideoUrl = getTeacherPortalVideoUrl(row);
         const feedbackReview = managerLessonFeedbackReviews[row.id] || {};
         const classroomButton = row.hasClassroom
-            ? `<button class="enter-classroom-button" type="button" data-manager-toast="Opening ${escapeHtml(student.name)} classroom with ${escapeHtml(row.teacherName || student.teacher)}.">Enter Classroom</button>`
+            ? `<button class="enter-classroom-button" type="button" data-manager-classroom="${escapeHtml(row.id)}">Enter Classroom</button>`
             : '<span class="lesson-link-unavailable">Not ready</span>';
         const feedbackLabel = feedbackReview.submitted ? 'View' : 'Add';
         return `
@@ -3546,8 +3588,7 @@ function renderManagerStudentLessonRows(student) {
                 <td>${classroomButton}</td>
                 <td>${row.status === 'Completed' ? `<button class="feedback-button recording-view-button" type="button" data-manager-toast="Recording opened for ${escapeHtml(row.topic)}.">View Recording</button>` : '<span class="lesson-link-unavailable">Not available</span>'}</td>
                 <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-manager-feedback-view="${escapeHtml(row.id)}">${feedbackReview.submitted ? 'View' : 'Preview'}</button><button class="feedback-button add-feedback-button" type="button" data-manager-feedback-submit="${escapeHtml(row.id)}">${feedbackLabel}</button></div></td>
-                <td>${savedVideoUrl ? `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="${escapeHtml(savedVideoUrl)}">View Video</button>` : '<span class="lesson-link-unavailable">No URL yet</span>'}</td>
-                <td><button class="feedback-button meeting-link-button" type="button" data-manager-toast="Lesson action opened for ${escapeHtml(row.topic)}.">Action</button></td>
+                <td>${savedVideoUrl ? `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="${escapeHtml(savedVideoUrl)}">View Video</button>` : `<button class="feedback-button meeting-link-button" type="button" data-manager-toast="Upload video URL opened for ${escapeHtml(row.topic)}.">Upload URL</button>`}</td>
                 <td>${renderManagerLessonApprovalContent(row)}</td>
             </tr>
         `;
@@ -3783,6 +3824,85 @@ function decideManagerLessonFeedback(rowId, decision) {
     showSparkToast(`Teacher feedback ${decision.toLowerCase()} by Manager for ${row.student.name}.`);
 }
 
+function getManagerLessonTeacher(row) {
+    return teachers.find((teacher) => teacher.id === row?.teacher?.id)
+        || teachers.find((teacher) => teacher.name === row?.teacherName)
+        || teachers.find((teacher) => teacher.name === row?.teacher?.name)
+        || teachers.find((teacher) => teacher.name === row?.student?.teacher)
+        || teachers.find((teacher) => teacher.id === activeManagerTeacherProfileId)
+        || teachers[0];
+}
+
+function getManagerOperationalLessonRow(rowId) {
+    const selectedStudent = getManagerSelectedStudent();
+    const studentRow = selectedStudent ? getManagerStudentLessonRows(selectedStudent).find((row) => row.id === rowId) : null;
+    const profileTeacher = teachers.find((teacher) => teacher.id === activeManagerTeacherProfileId);
+    const teacherRow = profileTeacher ? getTeacherPortalStudentLessonRows(profileTeacher).find((row) => row.id === rowId) : null;
+
+    if (activeManagerPortalSection === 'manager-students' && studentRow) return studentRow;
+    if (activeManagerPortalSection === 'manager-overview' && teacherRow) return teacherRow;
+
+    return studentRow || teacherRow || getManagerLessonById(rowId) || getManagerLessonFeedbackRow(rowId);
+}
+
+function openManagerLessonClassroom(rowId) {
+    const row = getManagerOperationalLessonRow(rowId);
+    if (!row) {
+        showSparkToast('Classroom lesson row was not found.');
+        return;
+    }
+
+    const teacher = getManagerLessonTeacher(row);
+    const meeting = getTeacherPortalMeetingDetails(teacher, row.platform);
+    const scheduleLabel = row.time ? inputTimeToRange(row.time) : 'Scheduled time';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop teacher-portal-modal-backdrop';
+    overlay.innerHTML = `
+        <div class="modal teacher-portal-modal teacher-classroom-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+                <div>
+                    <p>MANAGER PORTAL · CLASSROOM ACCESS</p>
+                    <h3>${escapeHtml(row.topic)}</h3>
+                </div>
+                <button type="button" data-manager-classroom-close aria-label="Close">×</button>
+            </div>
+            <div class="teacher-portal-modal-body">
+                <div class="classroom-detail-hero">
+                    <div>
+                        <span>Student</span>
+                        <strong>${escapeHtml(row.student.name)}</strong>
+                        <small>${escapeHtml(row.student.id)} · Age ${escapeHtml(row.student.age || '—')} · ${escapeHtml(row.student.country)} · ${escapeHtml(row.student.level)}</small>
+                    </div>
+                    <div>
+                        <span>Schedule</span>
+                        <strong>${escapeHtml(row.day || row.date)} · ${escapeHtml(scheduleLabel)}</strong>
+                        <small>${escapeHtml(row.duration || '30 minutes')} · ${escapeHtml(row.status)}</small>
+                    </div>
+                </div>
+                <dl class="classroom-detail-list">
+                    <div><dt>Teacher</dt><dd>${escapeHtml(teacher.name)}</dd></div>
+                    <div><dt>Platform</dt><dd>${escapeHtml(row.platform)}</dd></div>
+                    <div><dt>Meeting ID / Link</dt><dd>${escapeHtml(meeting.display)}</dd></div>
+                    <div><dt>Manager Access</dt><dd>Allowed for class monitoring and support</dd></div>
+                </dl>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-manager-classroom-close>Close</button>
+                <button class="primary-button" type="button" data-manager-enter-classroom>Enter Video Meeting</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-manager-classroom-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('[data-manager-enter-classroom]')?.addEventListener('click', () => {
+        window.open(meeting.url, '_blank', 'noopener');
+        showSparkToast(`Manager classroom access opened for ${row.student.name}.`);
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
 function renderManagerTeacherWeeklyTab(teacher, availability) {
     const dayMap = getTeacherWeeklyDayMap(availability);
     const activeDays = Object.keys(dayMap);
@@ -3797,19 +3917,13 @@ function renderManagerTeacherWeeklyTab(teacher, availability) {
                         <h3>Weekly Schedule</h3>
                         <p>Availability, assigned classes, and meeting links used when scheduling students.</p>
                     </div>
+                    <button class="secondary-button" type="button" data-manager-teacher-add-class="${escapeHtml(teacher.id)}"><i data-lucide="calendar-plus"></i> Add Class</button>
                 </div>
                 <section class="teacher-weekly-status-grid">
                     <article><span>Teaching Days</span><strong>${activeDays.length}</strong><small>Days available this week</small></article>
                     <article><span>Available Slots</span><strong>${slotCount}</strong><small>Open lesson start times</small></article>
                     <article><span>Classes Today</span><strong>${teacher.today}</strong><small>Assigned to this teacher</small></article>
                     <article><span>Meeting Source</span><strong>${meetingPlatform === 'Missing' ? 'Missing link' : 'Teacher profile'}</strong><small>Used by Enter Classroom</small></article>
-                </section>
-                <section class="teacher-week-card">
-                    <div class="schedule-week-head">
-                        <div><span>WEEKLY AVAILABILITY</span><h4>Teaching Pattern</h4></div>
-                        <button class="secondary-button" type="button" data-manager-teacher-add-class="${escapeHtml(teacher.id)}"><i data-lucide="calendar-plus"></i> Add Class</button>
-                    </div>
-                    <div class="teacher-week-grid">${renderManagerTeacherWeekDayCards(availability)}</div>
                 </section>
                 <div class="teacher-schedule-grid">
                     <section>
@@ -3837,7 +3951,7 @@ function renderManagerTeacherWeeklyTab(teacher, availability) {
                     <div class="table-wrap">
                         <table class="student-lessons-table teacher-today-lessons-table">
                             <thead>
-                                <tr><th>Date</th><th>Topic</th><th>Student</th><th>Duration</th><th>Lesson Status</th><th>Student Classroom</th><th>Class Recording</th><th>Teacher Feedback</th><th>Video URL</th><th>Action</th><th>Feedback Approval</th></tr>
+                                <tr><th>Date</th><th>Topic</th><th>Student</th><th>Duration</th><th>Lesson Status</th><th>Student Classroom</th><th>Class Recording</th><th>Teacher Feedback</th><th>Video URL</th><th>Feedback Approval</th></tr>
                             </thead>
                             <tbody>${renderManagerTeacherTodayRows(teacher)}</tbody>
                         </table>
@@ -4129,6 +4243,80 @@ function openManagerTeacherPolicyModal(policyId) {
 
     document.body.appendChild(overlay);
     document.body.classList.add('drawer-open');
+    refreshIcons();
+}
+
+function openManagerTeacherActivityNote(teacherId = activeManagerTeacherProfileId) {
+    const teacher = teachers.find((item) => item.id === teacherId) || teachers.find((item) => item.id === activeManagerTeacherProfileId) || teachers[0];
+    if (!teacher) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop';
+    overlay.dataset.managerTeacherNoteModal = 'true';
+    overlay.innerHTML = `
+        <section class="modal activity-note-modal" role="dialog" aria-modal="true" aria-labelledby="managerTeacherNoteTitle">
+            <div class="modal-head">
+                <div>
+                    <p>MANAGER NOTE · INTERNAL USE ONLY</p>
+                    <h3 id="managerTeacherNoteTitle">Add Note for ${escapeHtml(teacher.name)}</h3>
+                </div>
+                <button type="button" data-manager-note-close aria-label="Close note form">×</button>
+            </div>
+            <div class="referral-entry-form">
+                <div class="activity-note-guidance referral-info-box">
+                    <span><i data-lucide="clipboard-list"></i></span>
+                    <p>Keep this note about profile activity, teacher support, schedule updates, or manager follow-up. Do not include payroll account details, passwords, or private credentials.</p>
+                </div>
+                <label>
+                    Note title
+                    <input id="managerTeacherNoteTitleInput" type="text" placeholder="Example: Schedule follow-up completed">
+                </label>
+                <label>
+                    Note details
+                    <textarea id="managerTeacherNoteDescription" placeholder="Write the internal note for this teacher profile..."></textarea>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-manager-note-close>Cancel</button>
+                <button class="primary-button" type="button" data-manager-note-save>Save Note</button>
+            </div>
+        </section>
+    `;
+
+    const close = () => {
+        overlay.remove();
+        document.body.classList.remove('drawer-open');
+    };
+    overlay.querySelectorAll('[data-manager-note-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('[data-manager-note-save]')?.addEventListener('click', () => {
+        const title = overlay.querySelector('#managerTeacherNoteTitleInput')?.value.trim();
+        const body = overlay.querySelector('#managerTeacherNoteDescription')?.value.trim();
+        if (!title || !body) {
+            showSparkToast('Please enter a note title and details before saving.');
+            return;
+        }
+        const date = new Date();
+        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        managerTeacherActivityNotes[teacher.id] = managerTeacherActivityNotes[teacher.id] || [];
+        managerTeacherActivityNotes[teacher.id].unshift({
+            title,
+            body,
+            author: managerAccount.name,
+            role: 'Manager',
+            date: formattedDate,
+            time: `${formatPhtTime(date)} PHT`,
+        });
+        close();
+        renderManagerPortal();
+        showSparkToast(`Profile note added for ${teacher.name}.`);
+    });
+
+    document.body.appendChild(overlay);
+    document.body.classList.add('drawer-open');
+    overlay.querySelector('#managerTeacherNoteTitleInput')?.focus();
     refreshIcons();
 }
 
@@ -4430,11 +4618,11 @@ function renderManagerTeachers() {
             <article class="teacher-portal-panel manager-overview-panel">
                 <div class="teacher-panel-head"><div><h3>Needs Manager Attention</h3><p>Approvals, links, attendance, and inbox items most likely to slow operations.</p></div></div>
                 <div class="manager-review-list">
-                    <button type="button" data-manager-portal-target="manager-feedback"><div><span>Feedback approval</span><small>Teacher feedback awaiting manager review</small></div><strong>${stats.pendingFeedback.length}</strong>${marketingStatus('For Review')}</button>
-                    <button type="button" data-manager-portal-target="manager-documents"><div><span>Document approval</span><small>Pending review or expiring soon</small></div><strong>${stats.pendingDocuments.length}</strong>${marketingStatus('Pending')}</button>
-                    <button type="button" data-manager-portal-target="manager-payroll"><div><span>Payroll flags</span><small>Manager adjustments awaiting Admin approval</small></div><strong>${stats.pendingPayrollFlags.length}</strong>${marketingStatus('Pending')}</button>
+                    <button type="button"><div><span>Feedback approval</span><small>Teacher feedback awaiting manager review</small></div><strong>${stats.pendingFeedback.length}</strong>${marketingStatus('For Review')}</button>
+                    <button type="button"><div><span>Document approval</span><small>Pending review or expiring soon</small></div><strong>${stats.pendingDocuments.length}</strong>${marketingStatus('Pending')}</button>
+                    <button type="button"><div><span>Payroll flags</span><small>Manager adjustments awaiting Admin approval</small></div><strong>${stats.pendingPayrollFlags.length}</strong>${marketingStatus('Pending')}</button>
                     <button type="button" data-manager-portal-target="manager-overview"><div><span>Missing meeting links</span><small>Teachers needing classroom URL / ID</small></div><strong>${stats.missingLinks.length}</strong>${marketingStatus(stats.missingLinks.length ? 'Needs review' : 'Complete')}</button>
-                    <button type="button" data-manager-portal-target="manager-communication"><div><span>Unread email</span><small>Unread, not archived</small></div><strong>${stats.unreadEmails.length}</strong>${marketingStatus('Unread')}</button>
+                    <button type="button"><div><span>Unread email</span><small>Unread, not archived</small></div><strong>${stats.unreadEmails.length}</strong>${marketingStatus('Unread')}</button>
                 </div>
             </article>
 
@@ -4704,7 +4892,6 @@ function renderManagerStudentProfile() {
                                         <th>Class Recording</th>
                                         <th>Teacher Feedback</th>
                                         <th>Video URL</th>
-                                        <th>Action</th>
                                         <th>Feedback Approval</th>
                                     </tr>
                                 </thead>
@@ -4732,6 +4919,344 @@ function renderManagerStudentProfile() {
                 </div>
             </article>
         </section>`;
+}
+
+function renderManagerLessons() {
+    if (!lessonLibraryState.lessons.length) resetLessonRows();
+
+    const groupDetail = lessonGroupDetails[lessonLibraryState.group];
+    const programs = getLessonPrograms().filter((program) => (
+        !lessonLibraryState.programSearch || program.toLowerCase().includes(lessonLibraryState.programSearch.toLowerCase())
+    ));
+    const modules = getLessonModules();
+    const filteredRows = getFilteredLessonRows();
+    const actionOptions = '<option value="" selected disabled>Choose action...</option><option value="assign">Assign to scheduled class</option><option value="preview">View PDF</option>';
+
+    return `
+        <section class="page-content dashboard-section lesson-library-page manager-lessons-page active">
+            <div class="section-intro curriculum-title">
+                <div>
+                    <p class="eyebrow">CURRICULUM OPERATIONS</p>
+                    <h2>Curriculum Management</h2>
+                    <p>Organize programs, modules, and lesson materials in one clear workspace.</p>
+                </div>
+                <span class="status-pill positive">Manager view</span>
+            </div>
+
+            <div class="curriculum-security manager-curriculum-security">
+                <span><i data-lucide="shield-check"></i></span>
+                <div>
+                    <strong>Protected curriculum · View-only access</strong>
+                    <p>Managers can assign lessons to scheduled classes and view protected PDFs. Direct lesson-file URLs, downloads, import, and export are hidden.</p>
+                </div>
+                <b>NO DOWNLOAD</b>
+            </div>
+
+            <div class="lesson-category-tabs" role="tablist" aria-label="Lesson age groups">
+                ${curriculumGroups.map((group) => {
+                    const detail = lessonGroupDetails[group.name];
+                    return `
+                        <button type="button" role="tab" aria-selected="${group.name === lessonLibraryState.group}" class="${detail.color} ${group.name === lessonLibraryState.group ? 'selected' : ''}" data-manager-lesson-group="${escapeHtml(group.name)}">
+                            <strong><span class="age-tab-icon">${detail.icon}</span>${escapeHtml(group.name)}</strong>
+                            <span>${escapeHtml(detail.ages)}</span>
+                            <small>${group.programs.length} programs</small>
+                        </button>
+                    `;
+                }).join('')}
+            </div>
+
+            <div class="curriculum-workspace lesson-library-layout">
+                <aside class="panel curriculum-tree lesson-navigation ${escapeHtml(groupDetail.color)}">
+                    <div class="tree-title">
+                        <div>
+                            <strong>Programs</strong>
+                            <span>Choose a program to view its modules</span>
+                        </div>
+                    </div>
+                    <label class="tree-search">
+                        <i data-lucide="search"></i>
+                        <input type="search" data-manager-lesson-program-search placeholder="Search programs..." value="${escapeHtml(lessonLibraryState.programSearch)}">
+                    </label>
+                    <div class="program-button-section">
+                        <div class="program-button-section-head">
+                            <span>${escapeHtml(groupDetail.icon)}</span>
+                            <strong>${escapeHtml(lessonLibraryState.group)} Programs</strong>
+                            <small>${getLessonPrograms().length} available</small>
+                        </div>
+                        <div class="program-button-grid">
+                            ${programs.length ? programs.map((program) => `
+                                <button type="button" class="program-button-card ${program === lessonLibraryState.program ? 'selected' : ''}" data-manager-lesson-program="${escapeHtml(program)}">
+                                    <span class="program-button-copy">
+                                        <b>${escapeHtml(program)}</b>
+                                        <small>${getLessonModules(program).length} Modules</small>
+                                    </span>
+                                    <span class="program-button-state">${program === lessonLibraryState.program ? '✓' : '›'}</span>
+                                </button>
+                            `).join('') : '<div class="tree-empty">No matching programs found.</div>'}
+                        </div>
+                    </div>
+                </aside>
+
+                <main class="curriculum-main">
+                    <article class="panel prototype-lessons ${escapeHtml(groupDetail.color)}">
+                        <div class="module-table-selector">
+                            <div class="cefr-category-selector">
+                                <div>
+                                    <span>ENGLISH LEVEL</span>
+                                    <strong>Select A1, A2, B1, or B2 for this program</strong>
+                                </div>
+                                <div class="cefr-category-tabs" role="tablist" aria-label="English levels">
+                                    ${['A1', 'A2', 'B1', 'B2'].map((level) => `
+                                        <button type="button" role="tab" aria-selected="${level === lessonLibraryState.level}" class="${level === lessonLibraryState.level ? 'selected' : ''}" data-manager-lesson-level="${level}">
+                                            <strong>${level}</strong>
+                                            <span>${modules.length} Modules</span>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <div class="module-selector-heading">
+                                <div>
+                                    <span>MODULES</span>
+                                    <strong>${escapeHtml(lessonLibraryState.level)} · ${escapeHtml(lessonLibraryState.program)}</strong>
+                                </div>
+                            </div>
+
+                            <div class="module-selector-tabs" role="tablist" aria-label="Program modules">
+                                ${modules.map((moduleName, index) => `
+                                    <button type="button" role="tab" aria-selected="${moduleName === lessonLibraryState.module}" class="${moduleName === lessonLibraryState.module ? 'selected' : ''}" data-manager-lesson-module="${escapeHtml(moduleName)}">
+                                        <span>Module ${index + 1}</span>
+                                        <strong>${escapeHtml(lessonLibraryState.level)} · ${escapeHtml(moduleName)}</strong>
+                                        <small>30 PDF lessons</small>
+                                    </button>
+                                `).join('')}
+                            </div>
+
+                            <div class="selected-module-summary" aria-live="polite">
+                                <div>
+                                    <span>NOW VIEWING</span>
+                                    <strong>${escapeHtml(lessonLibraryState.program)} · ${escapeHtml(lessonLibraryState.level)} · ${escapeHtml(lessonLibraryState.module)}</strong>
+                                </div>
+                                <b>${filteredRows.length} lesson${filteredRows.length === 1 ? '' : 's'} shown below</b>
+                            </div>
+                        </div>
+
+                        <div class="lesson-table-heading">
+                            <div>
+                                <span>LESSONS</span>
+                                <strong>${escapeHtml(lessonLibraryState.module)} · 30 PDF lessons</strong>
+                            </div>
+                            <span class="status-pill neutral">Protected viewer</span>
+                        </div>
+
+                        <div class="prototype-filters lesson-filters">
+                            <label class="search">
+                                <i data-lucide="search"></i>
+                                <input type="search" data-manager-lesson-search placeholder="Search lessons..." value="${escapeHtml(lessonLibraryState.search)}">
+                            </label>
+                            <select data-manager-lesson-status aria-label="Filter lessons by status">
+                                ${['All', 'Published', 'Draft', 'Scheduled', 'Archived'].map((status) => `<option ${status === lessonLibraryState.status ? 'selected' : ''}>${status}</option>`).join('')}
+                            </select>
+                            <select data-manager-lesson-file-type aria-label="Filter lessons by file type">
+                                ${['All', 'PDF', 'PowerPoint', 'Images', 'Video', 'Audio'].map((type) => `<option ${type === lessonLibraryState.fileType ? 'selected' : ''}>${type}</option>`).join('')}
+                            </select>
+                            <select data-manager-lesson-sort aria-label="Sort lessons">
+                                ${['Curriculum Order', 'Recently Updated', 'Oldest Updated', 'Title A-Z', 'Title Z-A'].map((sort) => `<option ${sort === lessonLibraryState.sort ? 'selected' : ''}>${sort}</option>`).join('')}
+                            </select>
+                            <div class="view-toggle">
+                                <button type="button" class="${lessonLibraryState.view === 'Table' ? 'active' : ''}" data-manager-lesson-view="Table">Table</button>
+                                <button type="button" class="${lessonLibraryState.view === 'Cards' ? 'active' : ''}" data-manager-lesson-view="Cards">Cards</button>
+                            </div>
+                        </div>
+
+                        <div class="table-wrap" ${lessonLibraryState.view !== 'Table' || !filteredRows.length ? 'hidden' : ''}>
+                            <table class="prototype-lesson-table manager-protected-lesson-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Lesson Code</th>
+                                        <th>Lesson</th>
+                                        <th>Level</th>
+                                        <th>File Type</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filteredRows.map((lesson, index) => `
+                                        <tr class="lesson-clickable-row" data-manager-lesson-open="${escapeHtml(lesson.id)}">
+                                            <td><b>${index + 1}</b></td>
+                                            <td><code class="lesson-code">${escapeHtml(lesson.code)}</code></td>
+                                            <td>
+                                                <button class="lesson-title-button" type="button" data-manager-lesson-preview="${escapeHtml(lesson.id)}" aria-label="View PDF for ${escapeHtml(lesson.title)}">
+                                                    <strong>${escapeHtml(lesson.title)}</strong>
+                                                    <small>${escapeHtml(lesson.topic)} · ESL Basics</small>
+                                                </button>
+                                            </td>
+                                            <td>${escapeHtml(lesson.level)}</td>
+                                            <td><strong>${escapeHtml(lesson.type)}</strong><small>${escapeHtml(lesson.size)}</small></td>
+                                            <td>${escapeHtml(lesson.duration)}</td>
+                                            <td><span class="status-pill ${lesson.status === 'Published' ? 'positive' : lesson.status === 'Archived' ? 'neutral' : 'warning'}">${escapeHtml(lesson.status)}</span></td>
+                                            <td>${escapeHtml(lesson.updated)}<small>${escapeHtml(lesson.by)}</small></td>
+                                            <td>
+                                                <select class="lesson-action-select" data-manager-lesson-action="${escapeHtml(lesson.id)}" aria-label="Choose an action for ${escapeHtml(lesson.title)}">
+                                                    ${actionOptions}
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="lesson-card-grid" ${lessonLibraryState.view !== 'Cards' || !filteredRows.length ? 'hidden' : ''}>
+                            ${filteredRows.map((lesson) => `
+                                <article>
+                                    <div class="lesson-card-cover ${escapeHtml(lesson.type.toLowerCase())}">
+                                        <code class="lesson-code">${escapeHtml(lesson.code)}</code>
+                                        <strong>${escapeHtml(lesson.type)}</strong>
+                                    </div>
+                                    <button class="lesson-card-title-button" type="button" data-manager-lesson-preview="${escapeHtml(lesson.id)}" aria-label="View PDF for ${escapeHtml(lesson.title)}">
+                                        <h4>${escapeHtml(lesson.title)}</h4>
+                                    </button>
+                                    <p>${escapeHtml(lesson.topic)} · ${escapeHtml(lesson.level)}</p>
+                                    <div><span class="status-pill ${lesson.status === 'Published' ? 'positive' : 'warning'}">${escapeHtml(lesson.status)}</span><span>${escapeHtml(lesson.duration)}</span></div>
+                                    <select class="lesson-action-select card-action-select" data-manager-lesson-action="${escapeHtml(lesson.id)}" aria-label="Choose an action for ${escapeHtml(lesson.title)}">
+                                        ${actionOptions}
+                                    </select>
+                                </article>
+                            `).join('')}
+                        </div>
+                        <div class="prototype-empty" ${filteredRows.length ? 'hidden' : ''}>
+                            <strong>No lessons match your current search or filters.</strong>
+                            <button type="button" data-manager-lesson-clear>Clear Filters</button>
+                        </div>
+                    </article>
+                </main>
+            </div>
+        </section>
+    `;
+}
+
+function getManagerLessonLibraryLesson(lessonId) {
+    if (!lessonLibraryState.lessons.length) resetLessonRows();
+    return lessonLibraryState.lessons.find((item) => item.id === lessonId);
+}
+
+function openManagerProtectedLessonPreview(lesson) {
+    openLessonLibraryPreview(lesson, { mode: 'manager', allowDownload: false });
+}
+
+function handleManagerLessonAction(action, lessonId) {
+    const lesson = getManagerLessonLibraryLesson(lessonId);
+    if (!lesson) return;
+
+    if (action === 'preview') {
+        openManagerProtectedLessonPreview(lesson);
+        return;
+    }
+
+    if (action === 'assign') {
+        openLessonAssignmentModal(lesson);
+    }
+}
+
+function bindManagerLessonLibraryEvents(root) {
+    root.querySelectorAll('[data-manager-lesson-group]').forEach((button) => {
+        button.addEventListener('click', () => {
+            lessonLibraryState.group = button.dataset.managerLessonGroup;
+            lessonLibraryState.program = getLessonPrograms()[0];
+            lessonLibraryState.module = getLessonModules(lessonLibraryState.program)[0];
+            lessonLibraryState.level = 'A1';
+            lessonLibraryState.programSearch = '';
+            lessonLibraryState.search = '';
+            resetLessonRows();
+            renderManagerPortal();
+            showSparkToast(`${lessonLibraryState.group} curriculum loaded.`);
+        });
+    });
+    root.querySelectorAll('[data-manager-lesson-program]').forEach((button) => {
+        button.addEventListener('click', () => {
+            lessonLibraryState.program = button.dataset.managerLessonProgram;
+            lessonLibraryState.module = getLessonModules(lessonLibraryState.program)[0];
+            lessonLibraryState.level = 'A1';
+            lessonLibraryState.search = '';
+            resetLessonRows();
+            renderManagerPortal();
+            showSparkToast(`${lessonLibraryState.program} modules loaded.`);
+        });
+    });
+    root.querySelectorAll('[data-manager-lesson-level]').forEach((button) => {
+        button.addEventListener('click', () => {
+            lessonLibraryState.level = button.dataset.managerLessonLevel;
+            lessonLibraryState.module = getLessonModules()[0];
+            lessonLibraryState.search = '';
+            resetLessonRows();
+            renderManagerPortal();
+            showSparkToast(`${lessonLibraryState.level} lessons loaded.`);
+        });
+    });
+    root.querySelectorAll('[data-manager-lesson-module]').forEach((button) => {
+        button.addEventListener('click', () => {
+            lessonLibraryState.module = button.dataset.managerLessonModule;
+            lessonLibraryState.search = '';
+            resetLessonRows();
+            renderManagerPortal();
+            showSparkToast(`${lessonLibraryState.level} ${lessonLibraryState.module} loaded.`);
+        });
+    });
+    root.querySelector('[data-manager-lesson-program-search]')?.addEventListener('input', (event) => {
+        lessonLibraryState.programSearch = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelector('[data-manager-lesson-search]')?.addEventListener('input', (event) => {
+        lessonLibraryState.search = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelector('[data-manager-lesson-status]')?.addEventListener('change', (event) => {
+        lessonLibraryState.status = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelector('[data-manager-lesson-file-type]')?.addEventListener('change', (event) => {
+        lessonLibraryState.fileType = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelector('[data-manager-lesson-sort]')?.addEventListener('change', (event) => {
+        lessonLibraryState.sort = event.target.value;
+        renderManagerPortal();
+    });
+    root.querySelectorAll('[data-manager-lesson-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            lessonLibraryState.view = button.dataset.managerLessonView;
+            renderManagerPortal();
+        });
+    });
+    root.querySelector('[data-manager-lesson-clear]')?.addEventListener('click', () => {
+        lessonLibraryState.search = '';
+        lessonLibraryState.status = 'All';
+        lessonLibraryState.fileType = 'All';
+        renderManagerPortal();
+    });
+    root.querySelectorAll('[data-manager-lesson-preview]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const lesson = getManagerLessonLibraryLesson(button.dataset.managerLessonPreview);
+            if (lesson) openManagerProtectedLessonPreview(lesson);
+        });
+    });
+    root.querySelectorAll('[data-manager-lesson-open]').forEach((row) => {
+        row.addEventListener('click', (event) => {
+            if (event.target.closest('button, select, option, input, a, textarea, label')) return;
+            const lesson = getManagerLessonLibraryLesson(row.dataset.managerLessonOpen);
+            if (lesson) openManagerProtectedLessonPreview(lesson);
+        });
+    });
+    root.querySelectorAll('[data-manager-lesson-action]').forEach((select) => {
+        select.addEventListener('change', () => {
+            handleManagerLessonAction(select.value, select.dataset.managerLessonAction);
+            select.value = '';
+        });
+    });
 }
 
 function renderManagerFeedback() {
@@ -5302,61 +5827,780 @@ function renderManagerPolicies() {
 }
 
 function renderManagerProfile() {
-    const contact = staffContacts['Angela Reyes'] || {};
-    const managerStaff = staffMembers.find((staff) => staff.name === managerAccount.name) || staffMembers[0];
-    const supervisorStaff = staffMembers.find((staff) => staff.name === managerAccount.supervisor) || staffMembers[0];
+    const managerStaff = getManagerProfileStaff();
+    const contact = staffContacts[managerStaff.name] || staffContacts[managerAccount.name] || {};
+    const managerId = managerStaff.id || managerAccount.id;
+    const managerRole = managerStaff.role || managerAccount.role;
+    const managerDepartment = managerStaff.department || managerAccount.department;
+    const managerStatus = managerStaff.status || managerAccount.status;
+    const assignedOperation = managerStaff.market || managerAccount.department || 'Central Operations';
+    const supervisorName = managerStaff.supervisor || managerAccount.supervisor;
+    const workSchedule = managerStaff.schedule || 'Mon-Fri · 9:00 AM-6:00 PM';
+    const payRate = managerStaff.pay || '₱28,000/month';
+    const statusClass = managerStatus === 'Active' ? 'positive' : 'warning';
     return `
-        ${renderManagerHero('Manager Profile', 'Your manager profile, team assignment, supervisor, and operational access.')}
-        <section class="teacher-profile-photo-card manager-profile-photo-card">
-            <div class="teacher-profile-photo-avatar ${escapeHtml(getStaffFaceClass(managerStaff))}" role="img" aria-label="${escapeHtml(managerAccount.name)} mock profile photo"></div>
-            <div>
-                <span>MANAGER PROFILE</span>
-                <h3>${escapeHtml(managerAccount.name)}</h3>
-                <p>${escapeHtml(managerAccount.id)} · ${escapeHtml(managerAccount.department)} · ${escapeHtml(managerAccount.countryScope)}</p>
-            </div>
-        </section>
-        <section class="teacher-profile-overview">
-            <article class="teacher-profile-info-card">
-                <h4>Manager Information</h4>
-                <p>Operational employee record</p>
-                <dl>
-                    <div><dt>Manager ID</dt><dd>${escapeHtml(managerAccount.id)}</dd></div>
-                    <div><dt>Name</dt><dd>${escapeHtml(managerAccount.name)}</dd></div>
-                    <div><dt>Department</dt><dd>${escapeHtml(managerAccount.department)}</dd></div>
-                    <div><dt>Access Scope</dt><dd>${escapeHtml(managerAccount.countryScope)}</dd></div>
-                    <div><dt>Status</dt><dd>${marketingStatus(managerAccount.status)}</dd></div>
-                </dl>
-            </article>
-            <article class="teacher-profile-info-card manager-supervisor-card">
-                <h4>Assigned Supervisor</h4>
-                <p>Primary approval and escalation contact</p>
-                <div class="manager-supervisor-row">
-                    <span class="user-photo-avatar ${escapeHtml(getStaffFaceClass(supervisorStaff))}" role="img" aria-label="${escapeHtml(managerAccount.supervisor)} mock profile photo"></span>
-                    <div><strong>${escapeHtml(managerAccount.supervisor)}</strong><small>${escapeHtml(managerAccount.supervisorRole)}</small></div>
+        <article class="panel staff-detail-panel manager-own-profile-panel manager-staff-style-profile">
+            <header class="staff-detail-hero">
+                <div class="staff-detail-identity">
+                    <span class="staff-detail-avatar ${escapeHtml(getStaffFaceClass(managerStaff))}" role="img" aria-label="${escapeHtml(managerAccount.name)} profile photo"></span>
+                    <div>
+                        <p class="eyebrow">NON-TEACHING STAFF PROFILE</p>
+                        <h3>${escapeHtml(managerAccount.name)}</h3>
+                        <small>${escapeHtml(managerId)} · ${escapeHtml(managerRole)} · <span class="status-pill ${statusClass}">${escapeHtml(managerStatus)}</span></small>
+                    </div>
                 </div>
-                <dl>
-                    <div><dt>Manager Role</dt><dd>Operations supervision and approvals</dd></div>
-                    <div><dt>Admin-only items</dt><dd>User creation, company settings, final payroll approval</dd></div>
-                </dl>
+                <div class="staff-detail-summary">
+                    <dl>
+                        <div><dt>Department</dt><dd>${escapeHtml(managerDepartment)}</dd></div>
+                    </dl>
+                </div>
+            </header>
+
+            <nav class="student-profile-tabs teacher-profile-tabs manager-profile-tabs" role="tablist">
+                ${[
+                    ['profile', 'Profile'],
+                    ['schedule', 'Work Schedule'],
+                    ['payroll', 'Payroll'],
+                    ['documents', 'Documents'],
+                    ['feedback', 'Feedback'],
+                    ['policy', 'Company Policy Manual'],
+                ].map(([tab, label]) => `<button type="button" class="${activeManagerProfileTab === tab ? 'active' : ''}" data-manager-profile-tab="${tab}" aria-selected="${activeManagerProfileTab === tab ? 'true' : 'false'}">${label}</button>`).join('')}
+            </nav>
+
+            ${activeManagerProfileTab === 'profile' ? renderManagerProfileMainTab({ managerStaff, contact, managerId, managerRole, managerDepartment, managerStatus, statusClass, assignedOperation, supervisorName, workSchedule, payRate }) : ''}
+            ${activeManagerProfileTab === 'schedule' ? renderManagerProfileScheduleTab(managerStaff) : ''}
+            ${activeManagerProfileTab === 'payroll' ? renderManagerProfilePayrollTab(managerStaff) : ''}
+            ${activeManagerProfileTab === 'documents' ? renderManagerProfileDocumentsTab(managerStaff) : ''}
+            ${activeManagerProfileTab === 'feedback' ? renderManagerProfileFeedbackTab(managerStaff) : ''}
+            ${activeManagerProfileTab === 'policy' ? renderManagerProfilePolicyTab(managerStaff) : ''}
+        </article>`;
+}
+
+function renderManagerProfileMainTab(context) {
+    const {
+        contact,
+        managerId,
+        managerRole,
+        managerDepartment,
+        managerStatus,
+        statusClass,
+        assignedOperation,
+        supervisorName,
+        workSchedule,
+        payRate,
+    } = context;
+
+    return `
+        <div class="teacher-tab-panel active" data-manager-profile-panel="profile">
+            <section class="teacher-profile-overview staff-profile-overview">
+                <article class="teacher-profile-info-card">
+                    <h4>Staff Information</h4>
+                    <p>Individual employment record</p>
+                    <dl>
+                        <div><dt>Staff ID</dt><dd>${escapeHtml(managerId)}</dd></div>
+                        <div><dt>Full Name</dt><dd>${escapeHtml(managerAccount.name)}</dd></div>
+                        <div><dt>Role</dt><dd>${escapeHtml(managerRole)}</dd></div>
+                        <div><dt>Department</dt><dd>${escapeHtml(managerDepartment)}</dd></div>
+                        <div><dt>Employment Status</dt><dd><span class="status-pill ${statusClass}">${escapeHtml(managerStatus)}</span></dd></div>
+                        <div><dt>Pay Rate</dt><dd>${escapeHtml(payRate)}</dd></div>
+                    </dl>
+                </article>
+
+                <article class="teacher-profile-info-card">
+                    <h4>Work Assignment</h4>
+                    <p>Current workload and reporting line</p>
+                    <dl>
+                        <div><dt>Assigned Operation</dt><dd>${escapeHtml(assignedOperation)}</dd></div>
+                        <div><dt>Supervisor</dt><dd>${escapeHtml(supervisorName)}</dd></div>
+                        <div><dt>Work Schedule</dt><dd>${escapeHtml(workSchedule)}</dd></div>
+                    </dl>
+                </article>
+            </section>
+
+            <article class="employee-contact-card staff-contact-card">
+                <header>
+                    <span><i data-lucide="shield-check"></i></span>
+                    <div>
+                        <p class="eyebrow">CONTACT INFORMATION</p>
+                        <h3>Staff Contact Details</h3>
+                        <small>Standard employment contact information available to authorized dashboard users.</small>
+                    </div>
+                    <b>NOT SENSITIVE</b>
+                </header>
+                <div class="employee-contact-grid">
+                    <div><span>Primary Phone Number</span><strong>${escapeHtml(contact.primary || 'Not provided')}</strong></div>
+                    <div><span>Secondary Phone Number</span><strong>${escapeHtml(contact.secondary || 'Not provided')}</strong></div>
+                    <div><span>Email Address</span><strong>${escapeHtml(contact.email || managerAccount.email)}</strong></div>
+                    <div><span>Emergency Contact Name</span><strong>${escapeHtml(contact.emergencyName || 'Not provided')}</strong></div>
+                    <div><span>Emergency Contact Number</span><strong>${escapeHtml(contact.emergencyPhone || 'Not provided')}</strong></div>
+                </div>
+                <footer>
+                    <span>Used for work-related and emergency communication only.</span>
+                </footer>
+            </article>
+
+            <article class="student-activity-card staff-activity-card manager-own-activity-card">
+                <div class="student-activity-head">
+                    <div>
+                        <span><i data-lucide="clipboard-list"></i></span>
+                        <div>
+                            <p class="eyebrow">INTERNAL · NON-SENSITIVE</p>
+                            <h3>Profile Activity &amp; Notes</h3>
+                            <small>Track profile changes and internal notes. Payroll, passwords, and private account credentials are never shown here.</small>
+                        </div>
+                    </div>
+                    <div class="student-activity-actions">
+                        <b>Internal use only</b>
+                    </div>
+                </div>
+                <ul class="manager-own-activity-list">
+                    <li>
+                        <span></span>
+                        <div><strong>Profile information reviewed</strong><p>Department, pay rate, and supervisor assignment were confirmed for this manager profile.</p></div>
+                        <div><strong>Van A.</strong><small>Admin</small></div>
+                        <div><strong>Aug 2, 2026</strong><small>9:42 PM PHT</small></div>
+                    </li>
+                    <li>
+                        <span></span>
+                        <div><strong>Weekly availability updated</strong><p>Preferred management blocks were updated for operations coverage.</p></div>
+                        <div><strong>Ana Cruz</strong><small>Manager</small></div>
+                        <div><strong>Aug 1, 2026</strong><small>6:15 PM PHT</small></div>
+                    </li>
+                </ul>
+                <footer>
+                    <span>Visibility controlled by: User Management → Roles &amp; Permissions → Staff Profile Activity &amp; Notes</span>
+                    <b>Newest activity shown first</b>
+                </footer>
+            </article>
+        </div>
+    `;
+}
+
+function renderManagerProfileScheduleTab(staff) {
+    const workDays = getManagerProfileWorkingDays(staff);
+    const scheduleTime = staff.schedule.split('·')[1]?.trim() || '9:00 AM-6:00 PM';
+    const weekCards = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+        const active = workDays.includes(day);
+        return `
+            <article class="${active ? 'is-working' : 'is-off'}">
+                <span>${day.slice(0, 3)}</span>
+                <strong>${active ? 'Working' : 'Day off'}</strong>
+                <small>${active ? escapeHtml(scheduleTime) : 'No scheduled work'}</small>
+            </article>
+        `;
+    }).join('');
+    const attendanceRows = staffAttendanceRecords.map((record) => {
+        const status = record.status === 'Present' ? 'positive' : record.status === 'Late' ? 'warning' : 'neutral';
+        return `
+            <tr>
+                <td>${escapeHtml(record.date)}</td>
+                <td>${escapeHtml(record.day)}</td>
+                <td>${escapeHtml(record.scheduled)}</td>
+                <td>${escapeHtml(record.in)}</td>
+                <td>${escapeHtml(record.out)}</td>
+                <td>${escapeHtml(record.hours)}</td>
+                <td><span class="status-pill ${status}">${escapeHtml(record.status)}</span></td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records staff-schedule-tab active" data-manager-profile-panel="schedule">
+            <article class="panel student-record-panel">
+                <div class="student-record-head">
+                    <div>
+                        <h3>Staff Work Schedule</h3>
+                        <p>Weekly work pattern, attendance records, and approved operational hours.</p>
+                    </div>
+                    <button class="primary-button" type="button" data-manager-profile-edit-schedule>Edit Schedule</button>
+                </div>
+                <section class="staff-week-grid">${weekCards}</section>
+                <section class="staff-attendance-summary">
+                    <article><span>Present</span><strong>4</strong><small>This cutoff</small></article>
+                    <article><span>Late</span><strong>1</strong><small>Needs review</small></article>
+                    <article><span>Absent</span><strong>1</strong><small>Recorded absence</small></article>
+                    <article><span>Approved Hours</span><strong>39.8</strong><small>Payroll-ready</small></article>
+                </section>
+                <div class="table-wrap">
+                    <table class="staff-attendance-table">
+                        <thead><tr><th>Date</th><th>Day</th><th>Scheduled Hours</th><th>Time In</th><th>Time Out</th><th>Approved Hours</th><th>Status</th></tr></thead>
+                        <tbody>${attendanceRows}</tbody>
+                    </table>
+                </div>
             </article>
         </section>
-        <section class="student-sensitive-card teacher-contact-card">
-            <div class="student-sensitive-head">
-                <span class="student-sensitive-icon"><i data-lucide="shield-check"></i></span>
-                <div><span>CONTACT INFORMATION</span><h4>Manager Contact Details</h4><p>Visible to authorized Admin and Manager roles.</p></div>
+    `;
+}
+
+function getManagerProfileWorkingDays(staff) {
+    return managerProfileScheduleOverrides[staff.id]?.workingDays || staffWorkDays[staff.name] || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+}
+
+function renderManagerScheduleDayButtons(workingDays) {
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+        const selected = workingDays.includes(day);
+        return `
+            <button type="button" class="${selected ? 'selected' : ''}" data-manager-schedule-day="${day}">
+                <i>${selected ? '✓' : ''}</i>
+                <span>${day}</span>
+                <small>${selected ? 'Working day' : 'Day off'}</small>
+            </button>
+        `;
+    }).join('');
+}
+
+function updateManagerScheduleEditorSummary(overlay) {
+    const days = Array.from(overlay.querySelectorAll('[data-manager-schedule-day].selected')).map((button) => button.dataset.managerScheduleDay);
+    const start = overlay.querySelector('[data-manager-schedule-start]')?.value || '09:00';
+    const end = overlay.querySelector('[data-manager-schedule-end]')?.value || '18:00';
+    const startMinutes = getScheduleMinutes(start);
+    const endMinutes = getScheduleMinutes(end);
+    const validTime = endMinutes === 0 ? startMinutes < 1440 : startMinutes < endMinutes;
+    const valid = days.length > 0 && validTime;
+
+    const summary = overlay.querySelector('[data-manager-schedule-summary]');
+    if (summary) summary.textContent = `${days.length} working days · ${timeInputToLabel(start)}-${timeInputToLabel(end)}`;
+    overlay.querySelector('[data-manager-schedule-error]')?.toggleAttribute('hidden', validTime);
+    overlay.querySelector('[data-manager-schedule-save]')?.toggleAttribute('disabled', !valid);
+}
+
+function openManagerProfileScheduleEditor() {
+    const staff = getManagerProfileStaff();
+    const times = getStaffScheduleTimes(staff);
+    const workingDays = getManagerProfileWorkingDays(staff);
+    const overlay = document.createElement('div');
+    overlay.className = 'profile-drawer-overlay';
+    overlay.id = 'managerScheduleOverlay';
+    overlay.innerHTML = `
+        <aside class="student-edit-drawer staff-schedule-drawer" role="dialog" aria-modal="true" aria-labelledby="manager-schedule-title">
+            <header class="student-edit-head">
+                <div>
+                    <span>MANAGER PROFILE · WORK SCHEDULE</span>
+                    <h2 id="manager-schedule-title">Edit Work Schedule</h2>
+                    <p>Update ${escapeHtml(staff.name)}'s regular non-teaching hours.</p>
+                </div>
+                <button type="button" data-manager-schedule-close aria-label="Close schedule editor">×</button>
+            </header>
+
+            <form class="student-edit-body" data-manager-schedule-form>
+                <div class="schedule-staff-card">
+                    <span class="${escapeHtml(getStaffFaceClass(staff))}" role="img" aria-label="${escapeHtml(staff.name)} mock profile photo"></span>
+                    <div>
+                        <small>STAFF MEMBER</small>
+                        <strong>${escapeHtml(staff.name)}</strong>
+                        <p>${escapeHtml(staff.role)} · ${escapeHtml(staff.department)}</p>
+                    </div>
+                    <b>Philippine Time</b>
+                </div>
+
+                <div class="drawer-info-banner">
+                    <b>Schedule time zone: Asia/Manila (PHT)</b>
+                    <span>All work hours and attendance records will use Philippine time.</span>
+                </div>
+
+                <section class="drawer-form-section">
+                    <div class="drawer-section-title">
+                        <span>1</span>
+                        <div><h3>Working Days</h3><p>Select every regular workday.</p></div>
+                    </div>
+                    <div class="schedule-day-list">${renderManagerScheduleDayButtons(workingDays)}</div>
+                </section>
+
+                <section class="drawer-form-section">
+                    <div class="drawer-section-title">
+                        <span>2</span>
+                        <div><h3>Daily Hours</h3><p>Set the regular shift start and end time.</p></div>
+                    </div>
+                    <div class="drawer-form-grid">
+                        <label>Start Time<input type="time" data-manager-schedule-start value="${escapeHtml(times.start)}"></label>
+                        <label>End Time<input type="time" data-manager-schedule-end value="${escapeHtml(times.end)}"></label>
+                        <label>Effective Date<input type="date" data-manager-schedule-effective value="2026-08-03"></label>
+                        <label>Status<select data-manager-schedule-status><option>Active</option><option>Pending approval</option></select></label>
+                    </div>
+                    <p class="drawer-form-error" data-manager-schedule-error hidden>End time must be later than start time.</p>
+                </section>
+
+                <section class="drawer-form-section">
+                    <div class="drawer-section-title">
+                        <span>3</span>
+                        <div><h3>Schedule Summary</h3><p data-manager-schedule-summary></p></div>
+                    </div>
+                    <label class="drawer-wide-note">Change note <span class="optional-label">Optional</span><textarea data-manager-schedule-note placeholder="Example: Adjusted operations coverage hours."></textarea></label>
+                </section>
+            </form>
+
+            <footer class="student-edit-footer">
+                <button class="secondary-button" type="button" data-manager-schedule-close>Cancel</button>
+                <button class="primary-button" type="submit" form="" data-manager-schedule-save>Save Schedule</button>
+            </footer>
+        </aside>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.classList.add('drawer-open');
+    updateManagerScheduleEditorSummary(overlay);
+    refreshIcons();
+
+    const close = () => {
+        overlay.remove();
+        document.body.classList.remove('drawer-open');
+    };
+    overlay.querySelectorAll('[data-manager-schedule-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+        const dayButton = event.target.closest('[data-manager-schedule-day]');
+        if (dayButton) {
+            dayButton.classList.toggle('selected');
+            const selected = dayButton.classList.contains('selected');
+            const check = dayButton.querySelector('i');
+            const status = dayButton.querySelector('small');
+            if (check) check.textContent = selected ? '✓' : '';
+            if (status) status.textContent = selected ? 'Working day' : 'Day off';
+            updateManagerScheduleEditorSummary(overlay);
+        }
+    });
+    overlay.querySelectorAll('[data-manager-schedule-start], [data-manager-schedule-end]').forEach((input) => {
+        input.addEventListener('input', () => updateManagerScheduleEditorSummary(overlay));
+    });
+    overlay.querySelector('[data-manager-schedule-save]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        saveManagerProfileSchedule(overlay, staff, close);
+    });
+}
+
+function saveManagerProfileSchedule(overlay, staff, close) {
+    const days = Array.from(overlay.querySelectorAll('[data-manager-schedule-day].selected')).map((button) => button.dataset.managerScheduleDay);
+    const start = overlay.querySelector('[data-manager-schedule-start]')?.value || '09:00';
+    const end = overlay.querySelector('[data-manager-schedule-end]')?.value || '18:00';
+    const startMinutes = getScheduleMinutes(start);
+    const endMinutes = getScheduleMinutes(end);
+    const validTime = endMinutes === 0 ? startMinutes < 1440 : startMinutes < endMinutes;
+    if (!days.length || !validTime) {
+        updateManagerScheduleEditorSummary(overlay);
+        return;
+    }
+
+    const newSchedule = `${getStaffDayRangeLabel(days)} · ${timeInputToLabel(start)}-${timeInputToLabel(end)}`;
+    const actualStaff = staffMembers.find((item) => item.id === staff.id);
+    managerProfileScheduleOverrides[staff.id] = { schedule: newSchedule, workingDays: days };
+    if (actualStaff) {
+        actualStaff.schedule = newSchedule;
+        staffWorkDays[actualStaff.name] = days;
+    }
+    activeManagerProfileTab = 'schedule';
+    close();
+    renderManagerPortal();
+    showSparkToast(`Work schedule saved for ${staff.name}.`);
+}
+
+function renderManagerProfilePayrollTab(staff) {
+    const rows = staffPayrollRows.map((row, index) => `
+        <tr>
+            <td><strong>${escapeHtml(row.cutoff)}</strong></td>
+            <td>${escapeHtml(row.days)}</td>
+            <td>${escapeHtml(row.hours)}</td>
+            <td>${escapeHtml(row.gross)}</td>
+            <td>${escapeHtml(row.adjustment)}</td>
+            <td><strong class="payroll-positive">${escapeHtml(row.net)}</strong></td>
+            <td><span class="status-pill ${row.status === 'Paid' ? 'positive' : 'warning'}">${escapeHtml(row.status)}</span></td>
+            <td><button class="secondary-button" type="button" data-manager-staff-payslip="${index}">View Payslip</button></td>
+            <td><button class="secondary-button" type="button" data-manager-staff-receipt="${index}">View Receipt</button></td>
+        </tr>
+    `).join('');
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active" data-manager-profile-panel="payroll">
+            <article class="panel student-record-panel">
+                <div class="student-record-head">
+                    <div>
+                        <h3>${escapeHtml(staff.name)}'s Payroll</h3>
+                        <p>Cutoff history, approved work hours, adjustments, payslips, and payment receipts.</p>
+                    </div>
+                </div>
+                <section class="staff-payroll-summary">
+                    <article><span>Current Cutoff</span><strong>Jan 16-30, 2026</strong><small>For review</small></article>
+                    <article><span>Approved Hours</span><strong>80</strong><small>10 work days</small></article>
+                    <article><span>Gross Pay</span><strong>₱14,000.00</strong><small>Before adjustments</small></article>
+                    <article><span>Net Payroll</span><strong>₱14,000.00</strong><small>Ready for approval</small></article>
+                </section>
+                <div class="table-wrap">
+                    <table class="staff-payroll-table">
+                        <thead><tr><th>Payroll Cutoff</th><th>Days Worked</th><th>Approved Hours</th><th>Gross Pay</th><th>Adjustments</th><th>Net Payroll</th><th>Status</th><th>Payslip</th><th>Receipt</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    `;
+}
+
+function openManagerStaffPayslip(index) {
+    const staff = getManagerProfileStaff();
+    if (staff?.id) {
+        activeStaffDetailId = staff.id;
+    }
+    openStaffPayslip(index);
+}
+
+function openManagerStaffPayrollReceipt(index) {
+    const staff = getManagerProfileStaff();
+    if (staff?.id) {
+        activeStaffDetailId = staff.id;
+    }
+    openStaffPayrollReceipt(index);
+}
+
+function getManagerProfileDocuments() {
+    return [...managerProfileUploadedDocuments, ...staffDocuments];
+}
+
+function renderManagerProfileDocumentsTab(staff) {
+    const documents = getManagerProfileDocuments();
+    const rows = documents.length ? documents.map((documentRecord, index) => `
+        <tr>
+            <td class="strong">${escapeHtml(documentRecord.title)}</td>
+            <td>${escapeHtml(documentRecord.category)}</td>
+            <td><span class="document-file-badge">${escapeHtml(documentRecord.type)}</span></td>
+            <td>${escapeHtml(documentRecord.updated)}</td>
+            <td><span class="status-pill ${documentRecord.status === 'Pending Review' ? 'warning' : 'positive'}">${escapeHtml(documentRecord.status)}</span></td>
+            <td><button type="button" data-manager-staff-document="${index}">View</button></td>
+        </tr>
+    `).join('') : '<tr><td colspan="6" class="empty-row">No staff documents are currently on file.</td></tr>';
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active" data-manager-profile-panel="documents">
+            <article class="panel employee-records-panel">
+                <div class="student-record-head">
+                    <div>
+                        <h3>Staff Documents</h3>
+                        <p>Employment documents, IDs, clearances, and HR records for ${escapeHtml(staff.name)}.</p>
+                    </div>
+                    <button class="primary-button" type="button" data-manager-profile-upload-document>+ Upload Document</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="employee-record-table">
+                        <thead><tr><th>Document</th><th>Category</th><th>File Type</th><th>Updated</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    `;
+}
+
+function getManagerDocumentFileType(fileName, fallbackType) {
+    const extension = String(fileName || '').split('.').pop()?.trim().toUpperCase();
+    return extension && extension !== fileName.toUpperCase() ? extension : fallbackType;
+}
+
+function openManagerProfileDocumentUpload() {
+    const staff = getManagerProfileStaff();
+    const overlay = document.createElement('div');
+    overlay.className = 'profile-drawer-overlay';
+    overlay.id = 'managerDocumentUploadOverlay';
+    overlay.innerHTML = `
+        <aside class="student-edit-drawer manager-document-upload-drawer" role="dialog" aria-modal="true" aria-labelledby="manager-document-upload-title">
+            <header class="student-edit-head">
+                <div>
+                    <span>MANAGER PROFILE · DOCUMENTS</span>
+                    <h2 id="manager-document-upload-title">Upload Document</h2>
+                    <p>Add a file to ${escapeHtml(staff.name)}'s staff record for admin review.</p>
+                </div>
+                <button type="button" data-manager-document-upload-close aria-label="Close document uploader">×</button>
+            </header>
+
+            <form class="student-edit-body" data-manager-document-upload-form>
+                <div class="schedule-staff-card manager-document-staff-card">
+                    <span class="${escapeHtml(getStaffFaceClass(staff))}" role="img" aria-label="${escapeHtml(staff.name)} mock profile photo"></span>
+                    <div>
+                        <small>STAFF MEMBER</small>
+                        <strong>${escapeHtml(staff.name)}</strong>
+                        <p>${escapeHtml(staff.role)} · ${escapeHtml(staff.department)}</p>
+                    </div>
+                    <b>Pending Admin Review</b>
+                </div>
+
+                <section class="drawer-info-banner manager-document-review-banner">
+                    <b>Approval stays with Admin</b>
+                    <span>Uploaded documents are automatically marked Pending Review. Managers cannot approve or verify their own records.</span>
+                </section>
+
+                <section class="drawer-form-section manager-document-section">
+                    <div class="drawer-section-title">
+                        <span>1</span>
+                        <div><h3>Document Details</h3><p>Name and classify the staff document.</p></div>
+                    </div>
+                    <div class="drawer-form-grid">
+                        <label class="full">Document Title<input type="text" data-manager-document-title placeholder="Example: Signed NDA" required></label>
+                        <label>Category
+                            <select data-manager-document-category>
+                                <option>Contract</option>
+                                <option>Identification</option>
+                                <option>Compliance</option>
+                                <option>Clearance</option>
+                                <option>Payroll</option>
+                                <option>Other</option>
+                            </select>
+                        </label>
+                        <label>File Type
+                            <select data-manager-document-type>
+                                <option>PDF</option>
+                                <option>DOCX</option>
+                                <option>PNG</option>
+                                <option>JPG</option>
+                                <option>XLSX</option>
+                            </select>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="drawer-form-section manager-document-section">
+                    <div class="drawer-section-title">
+                        <span>2</span>
+                        <div><h3>File Upload</h3><p data-manager-document-file-name>No file selected yet.</p></div>
+                    </div>
+                    <label class="manager-document-upload-zone">
+                        <input type="file" data-manager-document-file accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx">
+                        <i data-lucide="upload-cloud"></i>
+                        <strong>Choose document file</strong>
+                        <span>PDF, DOCX, PNG, JPG, or XLSX</span>
+                    </label>
+                    <label class="drawer-wide-note manager-document-note">Internal Note <span class="optional-label">Optional</span>
+                        <textarea data-manager-document-note placeholder="Example: Uploaded after profile verification."></textarea>
+                    </label>
+                </section>
+            </form>
+
+            <footer class="student-edit-footer">
+                <button class="secondary-button" type="button" data-manager-document-upload-close>Cancel</button>
+                <button class="primary-button" type="submit" form="" data-manager-document-upload-save>Save Document</button>
+            </footer>
+        </aside>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.classList.add('drawer-open');
+    refreshIcons();
+
+    const close = () => {
+        overlay.remove();
+        document.body.classList.remove('drawer-open');
+    };
+    overlay.querySelectorAll('[data-manager-document-upload-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('[data-manager-document-file]')?.addEventListener('change', (event) => {
+        const file = event.target.files?.[0];
+        const fileName = overlay.querySelector('[data-manager-document-file-name]');
+        if (fileName) fileName.textContent = file ? file.name : 'No file selected yet.';
+    });
+    overlay.querySelector('[data-manager-document-upload-save]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        saveManagerProfileDocumentUpload(overlay, close);
+    });
+}
+
+function saveManagerProfileDocumentUpload(overlay, close) {
+    const titleInput = overlay.querySelector('[data-manager-document-title]');
+    const title = titleInput?.value.trim() || '';
+    if (!title) {
+        titleInput?.focus();
+        showSparkToast('Please enter a document title.');
+        return;
+    }
+
+    const file = overlay.querySelector('[data-manager-document-file]')?.files?.[0];
+    const selectedType = overlay.querySelector('[data-manager-document-type]')?.value || 'PDF';
+    managerProfileUploadedDocuments.unshift({
+        title,
+        category: overlay.querySelector('[data-manager-document-category]')?.value || 'Other',
+        type: getManagerDocumentFileType(file?.name, selectedType),
+        updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'Pending Review',
+        fileName: file?.name || '',
+        note: overlay.querySelector('[data-manager-document-note]')?.value.trim() || '',
+    });
+
+    activeManagerProfileTab = 'documents';
+    close();
+    renderManagerPortal();
+    showSparkToast(`${title} uploaded to manager documents.`);
+}
+
+function renderManagerProfileFeedbackTab(staff) {
+    const rows = staffFeedbackRecords.length ? staffFeedbackRecords.map((record, index) => `
+        <tr>
+            <td>${escapeHtml(record.period)}</td>
+            <td><strong class="link-like">${escapeHtml(record.type)}</strong></td>
+            <td>${escapeHtml(record.reviewedBy)}</td>
+            <td>${escapeHtml(record.result)}</td>
+            <td><span class="status-pill ${record.visibility === 'Published' ? 'positive' : 'neutral'}">${escapeHtml(record.visibility)}</span></td>
+            <td><span class="status-pill ${record.acknowledged ? 'positive' : 'warning'}">${record.acknowledged ? '✓ Acknowledged' : 'Pending'}</span></td>
+            <td><button type="button" data-manager-staff-feedback="${index}">${record.acknowledged ? 'View' : 'Review'}</button></td>
+        </tr>
+    `).join('') : '<tr><td colspan="7" class="empty-row">No staff feedback records are currently on file.</td></tr>';
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active" data-manager-profile-panel="feedback">
+            <article class="panel employee-records-panel">
+                <div class="student-record-head">
+                    <div>
+                        <h3>Staff Feedback</h3>
+                        <p>Performance reviews, coaching records, and feedback history for ${escapeHtml(staff.name)}.</p>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="employee-record-table">
+                        <thead><tr><th>Period</th><th>Feedback Type</th><th>Reviewed By</th><th>Result</th><th>Visibility</th><th>Acknowledgement</th><th>Action</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+    `;
+}
+
+function openManagerProfileFeedbackReview(index) {
+    const staff = getManagerProfileStaff();
+    if (staff?.id) {
+        activeStaffDetailId = staff.id;
+    }
+    openEmployeeFeedbackDetails('staff', index, staff);
+}
+
+function getManagerPolicyAcknowledgementPrefix(staff) {
+    return `manager-profile-policy:${staff.id}:`;
+}
+
+function renderManagerProfilePolicyTab(staff) {
+    const acknowledgedKeyPrefix = getManagerPolicyAcknowledgementPrefix(staff);
+    const acknowledgedCount = employeePolicyLibrary.filter((policy) => localStorage.getItem(`${acknowledgedKeyPrefix}${policy.id}`)).length;
+    const percent = Math.round((acknowledgedCount / employeePolicyLibrary.length) * 100);
+    const rows = employeePolicyLibrary.map((policy) => {
+        const confirmedOn = localStorage.getItem(`${acknowledgedKeyPrefix}${policy.id}`);
+        return `
+            <tr>
+                <td>
+                    <button class="policy-title-link" type="button" data-manager-policy-pdf="${escapeHtml(policy.id)}" aria-label="Open ${escapeHtml(policy.title)} PDF content">
+                        <span>▤</span>
+                        <div><strong>${escapeHtml(policy.title)}</strong><small>${escapeHtml(policy.id)} · PDF</small></div>
+                    </button>
+                </td>
+                <td>${escapeHtml(policy.category)}</td>
+                <td>${escapeHtml(policy.effective)}</td>
+                <td><span class="status-pill ${confirmedOn ? 'positive' : 'warning'}">${confirmedOn ? '✓ Acknowledged' : 'Pending'}</span></td>
+                <td>${confirmedOn || '—'}</td>
+                <td><button class="secondary-button" type="button" data-manager-staff-policy="${escapeHtml(policy.id)}">${confirmedOn ? 'Reviewed' : 'Review & Acknowledge'}</button></td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <section class="teacher-tab-panel teacher-detail-records active" data-manager-profile-panel="policy">
+            <article class="panel employee-policy-panel staff-policy-panel">
+                <div class="student-record-head">
+                    <div>
+                        <p class="eyebrow">EMPLOYEE COMPLIANCE</p>
+                        <h3>Company Policy Manual</h3>
+                        <p>Review and acknowledge every published VLACE policy individually.</p>
+                    </div>
+                    <div class="policy-progress">
+                        <strong>${acknowledgedCount} of ${employeePolicyLibrary.length}</strong>
+                        <span>Acknowledged</span>
+                        <i><b style="width:${percent}%"></b></i>
+                        <small>${employeePolicyLibrary.length - acknowledgedCount} policies require review</small>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="employee-record-table policy-table">
+                        <thead><tr><th>Policy</th><th>Category</th><th>Effective Date</th><th>Acknowledgement</th><th>Confirmed On</th><th>Action</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <footer class="policy-footnote">Acknowledgements are permanent. Every record is tied to the employee ID, policy version, date, and time.</footer>
+            </article>
+        </section>
+    `;
+}
+
+function openManagerProfilePolicyPdf(policyId) {
+    const policy = employeePolicyLibrary.find((item) => item.id === policyId) || employeePolicyLibrary[0];
+    const staff = getManagerProfileStaff();
+    if (!policy) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop policy-pdf-backdrop';
+    overlay.innerHTML = `
+        <section class="modal policy-pdf-viewer-modal" role="dialog" aria-modal="true" aria-labelledby="managerPolicyPdfTitle">
+            <div class="modal-head policy-pdf-toolbar">
+                <div>
+                    <p>COMPANY POLICY MANUAL · PDF PREVIEW</p>
+                    <h3 id="managerPolicyPdfTitle">${escapeHtml(policy.title)}</h3>
+                </div>
+                <button type="button" data-policy-pdf-close aria-label="Close policy PDF">×</button>
             </div>
-            <dl class="student-sensitive-list teacher-contact-list">
-                <div><dt>Primary Phone Number</dt><dd>${escapeHtml(contact.primary || 'Not provided')}</dd></div>
-                <div><dt>Secondary Phone Number</dt><dd>${escapeHtml(contact.secondary || 'Not provided')}</dd></div>
-                <div><dt>Email Address</dt><dd>${escapeHtml(contact.email || managerAccount.email)}</dd></div>
-                <div><dt>Emergency Contact Name</dt><dd>${escapeHtml(contact.emergencyName || 'Not provided')}</dd></div>
-                <div><dt>Emergency Contact Number</dt><dd>${escapeHtml(contact.emergencyPhone || 'Not provided')}</dd></div>
-            </dl>
-        </section>`;
+            <div class="policy-pdf-shell">
+                <article class="policy-pdf-page" aria-label="${escapeHtml(policy.title)} policy PDF content">
+                    <header>
+                        <div>
+                            <span>VLACE ESL COMPANY</span>
+                            <h2>${escapeHtml(policy.title)}</h2>
+                            <p>Company Policy Manual</p>
+                        </div>
+                        <strong>${escapeHtml(policy.id)}</strong>
+                    </header>
+
+                    <section class="policy-pdf-meta">
+                        <div><span>Version</span><b>${escapeHtml(policy.version)}</b></div>
+                        <div><span>Category</span><b>${escapeHtml(policy.category)}</b></div>
+                        <div><span>Effective Date</span><b>${escapeHtml(policy.effective)}</b></div>
+                        <div><span>Applies To</span><b>All VLACE employees</b></div>
+                    </section>
+
+                    <section>
+                        <h4>1. Purpose and Scope</h4>
+                        <p>${escapeHtml(policy.summary || policy.purpose || 'This policy defines expectations and compliance requirements for VLACE employees.')}</p>
+                    </section>
+
+                    <section>
+                        <h4>2. Policy Requirements</h4>
+                        <ol>
+                            ${(policy.requirements || policy.rules || []).map((requirement) => `<li>${escapeHtml(requirement)}</li>`).join('')}
+                        </ol>
+                    </section>
+
+                    <section>
+                        <h4>3. Employee Acknowledgement</h4>
+                        <p>${escapeHtml(staff.name)} must review this policy and use the Review & Acknowledge action in the Company Policy Manual table to record acknowledgement.</p>
+                    </section>
+
+                    <footer>
+                        <span>Generated for manager portal preview</span>
+                        <span>Page 1 of 1</span>
+                    </footer>
+                </article>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-policy-pdf-close>Close PDF</button>
+            </div>
+        </section>
+    `;
+
+    const close = () => {
+        overlay.remove();
+        document.body.classList.remove('drawer-open');
+    };
+    overlay.querySelectorAll('[data-policy-pdf-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    document.body.appendChild(overlay);
+    document.body.classList.add('drawer-open');
 }
 
 function openManagerScheduleFollowup(rowId) {
-    const row = getManagerLessonById(rowId);
+    const row = getManagerOperationalLessonRow(rowId);
     if (!row) {
         showSparkToast('Lesson follow-up row was not found.');
         return;
@@ -5440,6 +6684,56 @@ function openManagerScheduleFollowup(rowId) {
 }
 
 function bindManagerPortalEvents(root) {
+    if (activeManagerPortalSection === 'manager-lessons') {
+        bindManagerLessonLibraryEvents(root);
+    }
+    root.querySelectorAll('[data-manager-profile-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeManagerProfileTab = button.dataset.managerProfileTab || 'profile';
+            renderManagerPortal();
+        });
+    });
+    root.querySelector('[data-manager-profile-edit-schedule]')?.addEventListener('click', openManagerProfileScheduleEditor);
+    root.querySelector('[data-manager-profile-upload-document]')?.addEventListener('click', openManagerProfileDocumentUpload);
+    root.querySelectorAll('[data-manager-staff-payslip]').forEach((button) => {
+        button.addEventListener('click', () => openManagerStaffPayslip(Number(button.dataset.managerStaffPayslip)));
+    });
+    root.querySelectorAll('[data-manager-staff-receipt]').forEach((button) => {
+        button.addEventListener('click', () => openManagerStaffPayrollReceipt(Number(button.dataset.managerStaffReceipt)));
+    });
+    root.querySelectorAll('[data-manager-staff-document]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const documentRecord = getManagerProfileDocuments()[Number(button.dataset.managerStaffDocument)];
+            const fileName = documentRecord?.fileName ? ` (${documentRecord.fileName})` : '';
+            showSparkToast(`${documentRecord?.title || 'Staff document'}${fileName} opened for ${managerAccount.name}.`);
+        });
+    });
+    root.querySelectorAll('[data-manager-staff-feedback]').forEach((button) => {
+        button.addEventListener('click', () => {
+            openManagerProfileFeedbackReview(Number(button.dataset.managerStaffFeedback));
+        });
+    });
+    root.querySelectorAll('[data-manager-staff-policy]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const staff = getManagerProfileStaff();
+            const policy = employeePolicyLibrary.find((item) => item.id === button.dataset.managerStaffPolicy);
+            if (!policy) return;
+            localStorage.setItem(`${getManagerPolicyAcknowledgementPrefix(staff)}${policy.id}`, new Date().toLocaleString('en-PH', {
+                timeZone: 'Asia/Manila',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            }));
+            showSparkToast(`${policy.title} acknowledged for ${staff.name}.`);
+            renderManagerPortal();
+        });
+    });
+    root.querySelectorAll('[data-manager-policy-pdf]').forEach((button) => {
+        button.addEventListener('click', () => openManagerProfilePolicyPdf(button.dataset.managerPolicyPdf));
+    });
     root.querySelector('[data-manager-profile-back]')?.addEventListener('click', () => {
         activeManagerTeacherProfileId = '';
         activeManagerTeacherProfileTab = 'profile';
@@ -5579,6 +6873,19 @@ function bindManagerPortalEvents(root) {
     root.querySelectorAll('[data-manager-toast]').forEach((button) => {
         button.addEventListener('click', () => showSparkToast(button.dataset.managerToast));
     });
+    root.querySelectorAll('[data-manager-teacher-note]').forEach((button) => {
+        button.addEventListener('click', () => openManagerTeacherActivityNote(button.dataset.managerTeacherNote));
+    });
+    root.querySelectorAll('[data-manager-teacher-edit]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const teacherId = button.dataset.teacherId || activeManagerTeacherProfileId;
+            const action = button.dataset.managerTeacherEdit;
+            if (action === 'info') editTeacherInformation(teacherId);
+            if (action === 'assignment') editTeacherAssignment(teacherId);
+            if (action === 'links') openTeacherLinksDrawer(teacherId);
+            if (action === 'supervisor') editTeacherSupervisor(teacherId);
+        });
+    });
     root.querySelectorAll('[data-teacher-computer-edit]').forEach((button) => {
         button.addEventListener('click', () => openTeacherComputerSpecsEditor(button.dataset.teacherComputerEdit));
     });
@@ -5590,6 +6897,9 @@ function bindManagerPortalEvents(root) {
     });
     root.querySelectorAll('[data-manager-followup]').forEach((button) => {
         button.addEventListener('click', () => openManagerScheduleFollowup(button.dataset.managerFollowup));
+    });
+    root.querySelectorAll('[data-manager-classroom]').forEach((button) => {
+        button.addEventListener('click', () => openManagerLessonClassroom(button.dataset.managerClassroom));
     });
     root.querySelectorAll('[data-manager-teacher-policy]').forEach((button) => {
         button.addEventListener('click', () => openManagerTeacherPolicyModal(button.dataset.managerTeacherPolicy));
@@ -6165,10 +7475,6 @@ function openTeacherPortalClassroomDetails(details) {
                     <div><dt>Meeting ID / Link</dt><dd>${escapeHtml(meeting.display)}</dd></div>
                     <div><dt>Lesson</dt><dd>${escapeHtml(details.topic)}</dd></div>
                 </dl>
-                <div class="classroom-link-box">
-                    <span>Pre-recorded classroom URL</span>
-                    <a href="${escapeHtml(meeting.url)}" target="_blank" rel="noopener">${escapeHtml(meeting.url)}</a>
-                </div>
             </div>
             <div class="modal-actions">
                 <button class="secondary-button" type="button" data-teacher-modal-close>Close</button>
@@ -7144,13 +8450,16 @@ function openLessonDeleteModal(lesson) {
     });
 }
 
-function openLessonLibraryPreview(lesson) {
+function openLessonLibraryPreview(lesson, options = {}) {
+    const allowDownload = options.allowDownload !== false;
+    const isProtectedView = options.mode === 'manager' || !allowDownload;
     const existing = document.getElementById('lessonPdfReader') || document.getElementById('lessonLibraryPreview');
     existing?.remove();
     const reader = document.createElement('section');
-    reader.className = 'lesson-pdf-reader';
+    reader.className = `lesson-pdf-reader ${isProtectedView ? 'protected-lesson-reader' : ''}`;
     reader.id = 'lessonPdfReader';
     reader.setAttribute('aria-labelledby', 'lessonPreviewTitle');
+    reader.dataset.protectedPreview = isProtectedView ? 'true' : 'false';
     reader.innerHTML = `
             <header class="lesson-pdf-reader-head">
                 <button class="secondary-button" type="button" data-close-preview>Back to Lessons</button>
@@ -7159,9 +8468,10 @@ function openLessonLibraryPreview(lesson) {
                     <h3 id="lessonPreviewTitle">${escapeHtml(lesson.title)}</h3>
                 </div>
                 <span class="status-pill ${lesson.status === 'Published' ? 'positive' : 'warning'}">${escapeHtml(lesson.status)}</span>
-                <button class="secondary-button" type="button" data-preview-toast="Download">Download PDF</button>
+                ${allowDownload ? '<button class="secondary-button" type="button" data-preview-toast="Download">Download PDF</button>' : '<span class="status-pill neutral">Protected view only</span>'}
             </header>
             <main class="lesson-pdf-reader-stage ${escapeHtml(lesson.type.toLowerCase())}">
+                ${isProtectedView ? '<div class="protected-reader-banner">Protected manager view · downloads, direct URLs, right-click, and drag-save are disabled in this dashboard.</div>' : ''}
                 <div class="lesson-slide-canvas">
                     <header>
                         <span>VLACE ESL COMPANY</span>
@@ -7205,8 +8515,21 @@ function openLessonLibraryPreview(lesson) {
     `;
     document.body.appendChild(reader);
     document.body.classList.add('lesson-preview-open');
+    if (isProtectedView) {
+        reader.addEventListener('contextmenu', (event) => event.preventDefault());
+        reader.addEventListener('dragstart', (event) => event.preventDefault());
+        reader.addEventListener('selectstart', (event) => event.preventDefault());
+        reader.addEventListener('copy', (event) => event.preventDefault());
+    }
+    const protectedKeyGuard = (event) => {
+        if (!isProtectedView || event.key !== 'PrintScreen') return;
+        event.preventDefault();
+        showSparkToast('Screenshots are restricted in protected manager view.');
+    };
+    document.addEventListener('keydown', protectedKeyGuard);
     const closePreview = () => {
         if (document.fullscreenElement === reader) document.exitFullscreen?.().catch(() => {});
+        document.removeEventListener('keydown', protectedKeyGuard);
         reader.remove();
         document.body.classList.remove('lesson-preview-open');
     };
@@ -7687,7 +9010,7 @@ function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 }
 
-async function submitLogin(email, password, remember) {
+async function submitLogin(email, password, remember, portal = 'dashboard') {
     const response = await fetch('/login', {
         method: 'POST',
         headers: {
@@ -7695,7 +9018,7 @@ async function submitLogin(email, password, remember) {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': getCsrfToken(),
         },
-        body: JSON.stringify({ email, password, remember }),
+        body: JSON.stringify({ email, password, remember, portal }),
     });
 
     if (!response.ok) {
@@ -11439,12 +12762,13 @@ const userPermissionModules = [
     'Curriculum View',
     'Curriculum Edit & Download',
 ];
-const userPermissionRoles = ['Admin', 'Manager', 'Teacher', 'Staff'];
+const userPermissionRoles = ['Admin', 'Manager', 'Teacher', 'Staff', 'Student'];
 const userPermissionDefaults = {
     Admin: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
     Manager: [true, true, false, false, true, false, true, true, true, true, true, true, false, true, false],
     Teacher: [true, true, false, false, false, false, true, false, false, false, false, false, false, true, false],
     Staff: [true, false, false, false, true, false, true, false, false, false, true, true, false, true, false],
+    Student: [],
 };
 let userPermissions = Object.fromEntries(
     Object.entries(userPermissionDefaults).map(([role, values]) => [
@@ -11562,7 +12886,7 @@ function upsertDashboardUserFromAuthPayload(user) {
         staff: 'Staff',
     }[String(user.role || '').toLowerCase()] || 'Staff';
     const next = {
-        id: role === 'Teacher' ? `T-${user.email}` : `U-${user.email}`,
+        id: role === 'Teacher' ? `T-${user.email}` : role === 'Student' ? `S-${user.email}` : `U-${user.email}`,
         name: user.name || user.email,
         email: user.email,
         role,
@@ -11711,6 +13035,7 @@ function roleAccessLabel(role) {
         Manager: 'Operations and approvals',
         Teacher: 'Assigned students only',
         Staff: 'Limited records',
+        Student: 'Website student login',
     }[role] || 'Limited records';
 }
 
@@ -11784,7 +13109,7 @@ function openUserForm(userId = null) {
             <label>Full name<input id="userFormName" value="${escapeHtml(user?.name || '')}" placeholder="Enter user’s name"></label>
             <label>Login email<input id="userFormEmail" type="email" value="${escapeHtml(user?.email || '')}" placeholder="name@vlace.com"></label>
             <label>${user ? 'New password' : 'Temporary password'}<input id="userFormPassword" type="password" placeholder="${user ? 'Leave blank to keep current password' : 'Create a password for first login'}" autocomplete="new-password"><small>${user ? 'Only enter a password if you want to change it.' : 'The user will sign in with this password after you save.'}</small></label>
-            <label>Role<select id="userFormRole">${['Admin', 'Manager', 'Teacher', 'Staff'].map((role) => `<option ${role === (user?.role || 'Staff') ? 'selected' : ''}>${role}</option>`).join('')}</select></label>
+            <label>Role<select id="userFormRole">${['Admin', 'Manager', 'Teacher', 'Staff', 'Student'].map((role) => `<option ${role === (user?.role || 'Staff') ? 'selected' : ''}>${role}</option>`).join('')}</select></label>
             <div id="userRoleExtraFields"></div>
             <div class="role-summary"><strong>Default access</strong><span id="userRoleSummary"></span></div>
             <label class="sensitive-access-toggle">
@@ -12531,6 +13856,11 @@ function renderTeacherFeedbackRecords(teacher = getSelectedTeacher()) {
 function renderTeacherFeedbackDetailsItems(record) {
     const list = document.getElementById('teacherFeedbackDetailsItems');
     if (!list) return;
+    const feedbackKind = document.getElementById('teacherFeedbackDetailsOverlay')?.dataset.feedbackKind || activeEmployeeFeedbackKind || 'teacher';
+    const owner = feedbackKind === 'staff' && activeManagerPortalSection === 'manager-profile'
+        ? getManagerProfileStaff()
+        : getEmployeeFeedbackOwner(feedbackKind);
+    const acknowledgementOwner = owner?.name || (feedbackKind === 'staff' ? 'Manager' : 'Teacher');
 
     list.innerHTML = record.items.map((item, index) => `
         <article class="${record.acknowledged ? 'acknowledged' : ''}">
@@ -12542,7 +13872,7 @@ function renderTeacherFeedbackDetailsItems(record) {
                 </div>
                 <p>${escapeHtml(item.comment)}</p>
                 <button class="${record.acknowledged ? 'acknowledged' : ''}" type="button" data-teacher-feedback-ack="${index}">${record.acknowledged ? '✓ Acknowledged' : 'Acknowledge this item'}</button>
-                ${record.acknowledged ? '<small>Acknowledged by Maria Santos · Recorded in employee activity log</small>' : ''}
+                ${record.acknowledged ? `<small>Acknowledged by ${escapeHtml(acknowledgementOwner)} · Recorded in employee activity log</small>` : ''}
             </div>
         </article>
     `).join('');
@@ -12577,12 +13907,19 @@ function openEmployeeFeedbackDetails(kind, index, employee = getEmployeeFeedback
     activeEmployeeFeedbackKind = kind;
     overlay.dataset.feedbackIndex = String(index);
     overlay.dataset.feedbackKind = kind;
+    const employeeRoleLabel = kind === 'staff' ? (employee?.role || 'Staff') : 'Teacher';
     setText('#teacherFeedbackDetailsKicker', `ADMIN FEEDBACK MANAGEMENT · ${record.period.toUpperCase()}`);
-    setText('#teacherFeedbackDetailsTitle', 'View Feedback');
+    setText('#teacherFeedbackDetailsTitle', record.acknowledged ? 'View Feedback' : 'Review Feedback');
     setText('#teacherFeedbackDetailsSubtitle', `${record.type} · Reviewed by ${record.reviewedBy}`);
     setText('#teacherFeedbackDetailsResult', record.result);
     setText('#teacherFeedbackDetailsVisibility', getFeedbackVisibilityLabel(record.visibility));
     setFieldValue('#teacherFeedbackEmployeeNote', '');
+    setText('.feedback-employee-response .drawer-section-title h3', `${employeeRoleLabel} response`);
+    setText('.feedback-employee-response .drawer-section-title p', 'Required before completing acknowledgment');
+    const auditNote = document.querySelector('#teacherFeedbackDetailsOverlay .feedback-audit-note');
+    if (auditNote) auditNote.textContent = `The final acknowledgment records ${employee?.name || 'the employee'}'s name, date, Philippine time, and required response in the activity log.`;
+    const editButton = document.getElementById('teacherFeedbackDetailsEdit');
+    if (editButton) editButton.hidden = kind === 'staff';
     const visibility = document.getElementById('teacherFeedbackDetailsVisibility');
     if (visibility) visibility.className = `status-pill ${record.visibility === 'Private' || record.visibility === 'Management Only' ? 'neutral' : 'positive'}`;
     renderTeacherFeedbackDetailsItems(record);
@@ -12609,7 +13946,7 @@ function completeTeacherFeedbackAcknowledgment() {
     }
     const teacherResponse = document.getElementById('teacherFeedbackEmployeeNote')?.value.trim() || '';
     if (!teacherResponse) {
-        showSparkToast('Please add your teacher response before completing the acknowledgment.');
+        showSparkToast(`Please add your ${kind === 'staff' ? 'manager' : 'teacher'} response before completing the acknowledgment.`);
         updateTeacherFeedbackAckProgress();
         return;
     }
@@ -12617,8 +13954,12 @@ function completeTeacherFeedbackAcknowledgment() {
     record.acknowledged = true;
     if (kind === 'staff') renderStaffFeedback();
     else renderTeacherFeedbackRecords();
+    if (kind === 'staff' && activeManagerPortalSection === 'manager-profile') {
+        activeManagerProfileTab = 'feedback';
+        renderManagerPortal();
+    }
     closeTeacherFeedbackDetails();
-    showSparkToast(`${record.type} was acknowledged by the ${kind === 'staff' ? 'staff member' : 'teacher'}.`);
+    showSparkToast(`${record.type} was acknowledged by the ${kind === 'staff' ? 'manager' : 'teacher'}.`);
 }
 
 function renderTeacherFeedbackBuilder() {
@@ -13453,13 +14794,7 @@ function renderTeacherScheduleRows(teacher) {
             <td>${isCompleted ? `<button class="feedback-button recording-view-button" type="button" data-lesson-action="recording" data-lesson-topic="${topic}">▶ View Recording</button>` : '<span class="lesson-link-unavailable">Not available</span>'}</td>
             <td><div class="teacher-feedback-actions"><button class="feedback-button" type="button" data-lesson-action="feedback" data-lesson-topic="${topic}">View</button><button class="feedback-button add-feedback-button" type="button" data-lesson-action="add-feedback" data-lesson-topic="${topic}">Add</button></div></td>
             <td><button class="feedback-button meeting-link-button" type="button" data-lesson-action="meeting-url" data-lesson-topic="${topic}">${isCompleted ? 'Update Video' : 'Add Video'}</button></td>
-            <td>
-                <select class="lesson-action-select" data-lesson-row-action>
-                    <option value="">Select action</option>
-                    <option value="student-absent">Student absent</option>
-                    <option value="completed">Completed</option>
-                </select>
-            </td>
+            <td><button class="feedback-button meeting-link-button" type="button" data-admin-lesson-action data-lesson-topic="${topic}">Action</button></td>
             <td>${isCompleted
                 ? '<div class="feedback-approval-actions"><button class="reject-feedback" type="button" data-feedback-decision="Rejected">Reject</button><button class="approve-feedback" type="button" data-feedback-decision="Approved">✓ Approve</button></div>'
                 : '<span class="feedback-decision-note">Awaiting teacher feedback</span>'}
@@ -13828,9 +15163,10 @@ function getSelectedTeacher() {
     return teachers.find((teacher) => teacher.id === selectedTeacherId) || teachers[0];
 }
 
-function openTeacherLinksDrawer() {
-    const teacher = getSelectedTeacher();
+function openTeacherLinksDrawer(teacherId = selectedTeacherId) {
+    const teacher = getEditableTeacherById(teacherId);
     if (!teacher) return;
+    selectedTeacherId = teacher.id;
 
     setText('#teacherLinksRecordMeta', `${teacher.name} · ${teacher.id}`);
     setFieldValue('#teacherLinksVoov', teacher.links.voov || '');
@@ -13861,6 +15197,7 @@ function saveTeacherMeetingLinks() {
     openTeacherProfile(teacher.id);
     renderTeacherTable();
     closeTeacherLinksDrawer();
+    if (activeManagerTeacherProfileId === teacher.id) renderManagerPortal();
 
     const note = document.getElementById('teacherLinksNote')?.value.trim();
     showSparkToast(note ? 'Teacher meeting links saved with admin note.' : 'Teacher meeting links saved in prototype mode.');
@@ -13879,77 +15216,201 @@ function refreshTeacherDetailAfterEdit(teacher) {
     refreshIcons();
 }
 
-function editTeacherInformation() {
-    const teacher = getSelectedTeacher();
-    if (!teacher) return;
+function renderTeacherEditOptions(options, selectedValue) {
+    const values = [...new Set([selectedValue, ...options].filter(Boolean))];
+    return values.map((value) => `<option value="${escapeHtml(value)}" ${value === selectedValue ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('');
+}
 
-    const previousId = teacher.id;
-    const previousName = teacher.name;
-    const nextId = promptTeacherField('Teacher ID', teacher.id);
-    if (!nextId) return;
-    const nextName = promptTeacherField('Teacher name', teacher.name);
-    if (!nextName) return;
-    const nextCountry = promptTeacherField('Assigned country', teacher.country);
-    if (!nextCountry) return;
-    const nextType = promptTeacherField('Student type', teacher.type);
-    if (!nextType) return;
-    const nextStatus = promptTeacherField('Account status', teacher.status);
-    if (!nextStatus) return;
+function getTeacherEditCountryOptions(selectedValue = '') {
+    return [...new Set([
+        selectedValue,
+        ...Object.keys(dashboardStats).filter((country) => country !== 'All Countries'),
+        ...teachers.map((teacher) => teacher.country),
+        ...students.map((student) => student.country),
+    ].filter(Boolean))];
+}
 
-    teacher.id = nextId;
-    teacher.name = nextName;
-    teacher.country = nextCountry;
-    teacher.type = nextType;
-    teacher.status = nextStatus;
+function closeTeacherProfileEditModal(overlay) {
+    overlay.remove();
+    document.body.classList.remove('drawer-open');
+}
 
-    if (previousId !== nextId && teacherPortalSupervisors[previousId]) {
-        teacherPortalSupervisors[nextId] = teacherPortalSupervisors[previousId];
+function openTeacherProfileEditModal({ teacher, title, subtitle, formMarkup, formSelector, onSubmit }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop teacher-profile-edit-backdrop';
+    overlay.innerHTML = `
+        <div class="modal teacher-profile-edit-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+                <div>
+                    <p>TEACHER PROFILE</p>
+                    <h3>${escapeHtml(title)}</h3>
+                    <span>${escapeHtml(subtitle || `${teacher.name} · ${teacher.id}`)}</span>
+                </div>
+                <button type="button" data-teacher-profile-edit-close aria-label="Close">×</button>
+            </div>
+            ${formMarkup}
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.classList.add('drawer-open');
+
+    const close = () => closeTeacherProfileEditModal(overlay);
+    overlay.querySelectorAll('[data-teacher-profile-edit-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector(formSelector)?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        onSubmit(new FormData(event.currentTarget), close);
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('input, select')?.focus();
+    refreshIcons();
+}
+
+function refreshTeacherProfileEditTargets(teacher, previousId = teacher.id) {
+    refreshTeacherDetailAfterEdit(teacher);
+    if (activeManagerTeacherProfileId === previousId || activeManagerTeacherProfileId === teacher.id) {
+        activeManagerTeacherProfileId = teacher.id;
+        renderManagerPortal();
+    }
+}
+
+function syncTeacherIdentityReferences(previousId, previousName, teacher) {
+    if (previousId !== teacher.id && teacherPortalSupervisors[previousId]) {
+        teacherPortalSupervisors[teacher.id] = teacherPortalSupervisors[previousId];
         delete teacherPortalSupervisors[previousId];
     }
-    if (previousId !== nextId && teacherPortalProfilePictures[previousId]) {
-        teacherPortalProfilePictures[nextId] = teacherPortalProfilePictures[previousId];
+    if (previousId !== teacher.id && teacherPortalProfilePictures[previousId]) {
+        teacherPortalProfilePictures[teacher.id] = teacherPortalProfilePictures[previousId];
         delete teacherPortalProfilePictures[previousId];
     }
-    if (previousId !== nextId && teacherComputerSpecRecords[previousId]) {
-        teacherComputerSpecRecords[nextId] = teacherComputerSpecRecords[previousId];
+    if (previousId !== teacher.id && teacherComputerSpecRecords[previousId]) {
+        teacherComputerSpecRecords[teacher.id] = teacherComputerSpecRecords[previousId];
         delete teacherComputerSpecRecords[previousId];
     }
-    if (previousId !== nextId && teacherBankInformationRecords[previousId]) {
-        teacherBankInformationRecords[nextId] = teacherBankInformationRecords[previousId];
+    if (previousId !== teacher.id && teacherBankInformationRecords[previousId]) {
+        teacherBankInformationRecords[teacher.id] = teacherBankInformationRecords[previousId];
         delete teacherBankInformationRecords[previousId];
     }
-    if (previousName !== nextName && teacherContacts[previousName]) {
-        teacherContacts[nextName] = teacherContacts[previousName];
+    if (previousName !== teacher.name && teacherContacts[previousName]) {
+        teacherContacts[teacher.name] = teacherContacts[previousName];
         delete teacherContacts[previousName];
     }
     students.forEach((student) => {
-        if (student.teacher === previousName) student.teacher = nextName;
+        if (student.teacher === previousName) student.teacher = teacher.name;
     });
     completedLessonsToday.forEach((lesson) => {
-        if (lesson.teacher === previousName) lesson.teacher = nextName;
+        if (lesson.teacher === previousName) lesson.teacher = teacher.name;
     });
-
-    refreshTeacherDetailAfterEdit(teacher);
-    showSparkToast('Teacher information updated.');
 }
 
-function editTeacherAssignment() {
-    const teacher = getSelectedTeacher();
+function editTeacherInformation(teacherId = selectedTeacherId) {
+    const teacher = getEditableTeacherById(teacherId);
     if (!teacher) return;
+    selectedTeacherId = teacher.id;
 
-    const nextStudents = promptTeacherField('Assigned students', String(teacher.students));
-    if (nextStudents === null || nextStudents === '') return;
-    const nextToday = promptTeacherField('Classes today', String(teacher.today));
-    if (nextToday === null || nextToday === '') return;
-    const nextRate = promptTeacherField('Hourly rate', teacher.rate);
-    if (!nextRate) return;
+    openTeacherProfileEditModal({
+        teacher,
+        title: 'Edit Teacher Information',
+        formSelector: '[data-teacher-information-form]',
+        formMarkup: `
+            <form class="teacher-profile-edit-form" data-teacher-information-form>
+                <label>Teacher ID
+                    <input name="id" value="${escapeHtml(teacher.id)}" required>
+                </label>
+                <label>Teacher Name
+                    <input name="name" value="${escapeHtml(teacher.name)}" required>
+                </label>
+                <label>Assigned Country
+                    <select name="country" required>
+                        ${renderTeacherEditOptions(getTeacherEditCountryOptions(teacher.country), teacher.country)}
+                    </select>
+                </label>
+                <label>Student Type
+                    <select name="type" required>
+                        ${renderTeacherEditOptions(['Kids & Adults', 'Kids', 'Adults'], teacher.type)}
+                    </select>
+                </label>
+                <label>Account Status
+                    <select name="status" required>
+                        ${renderTeacherEditOptions(['Active', 'On leave', 'Absent', 'Inactive'], teacher.status)}
+                    </select>
+                </label>
+                <div class="modal-actions">
+                    <button class="secondary-button" type="button" data-teacher-profile-edit-close>Cancel</button>
+                    <button class="primary-button" type="submit">Save Teacher Information</button>
+                </div>
+            </form>
+        `,
+        onSubmit: (formData, close) => {
+            const previousId = teacher.id;
+            const previousName = teacher.name;
+            const nextId = formData.get('id')?.toString().trim();
+            const nextName = formData.get('name')?.toString().trim();
+            const nextCountry = formData.get('country')?.toString().trim();
+            const nextType = formData.get('type')?.toString().trim();
+            const nextStatus = formData.get('status')?.toString().trim();
+            if (!nextId || !nextName || !nextCountry || !nextType || !nextStatus) {
+                showSparkToast('Please complete all teacher information fields.');
+                return;
+            }
 
-    teacher.students = Math.max(0, Number.parseInt(nextStudents, 10) || 0);
-    teacher.today = Math.max(0, Number.parseInt(nextToday, 10) || 0);
-    teacher.rate = nextRate;
+            teacher.id = nextId;
+            teacher.name = nextName;
+            teacher.country = nextCountry;
+            teacher.type = nextType;
+            teacher.status = nextStatus;
+            syncTeacherIdentityReferences(previousId, previousName, teacher);
+            close();
+            refreshTeacherProfileEditTargets(teacher, previousId);
+            showSparkToast('Teacher information updated.');
+        },
+    });
+}
 
-    refreshTeacherDetailAfterEdit(teacher);
-    showSparkToast('Teaching assignment updated.');
+function editTeacherAssignment(teacherId = selectedTeacherId) {
+    const teacher = getEditableTeacherById(teacherId);
+    if (!teacher) return;
+    selectedTeacherId = teacher.id;
+
+    openTeacherProfileEditModal({
+        teacher,
+        title: 'Edit Teaching Assignment',
+        formSelector: '[data-teacher-assignment-form]',
+        formMarkup: `
+            <form class="teacher-profile-edit-form" data-teacher-assignment-form>
+                <label>Assigned Students
+                    <input name="students" type="number" min="0" step="1" value="${escapeHtml(String(teacher.students))}" required>
+                </label>
+                <label>Classes Today
+                    <input name="today" type="number" min="0" step="1" value="${escapeHtml(String(teacher.today))}" required>
+                </label>
+                <label>Hourly Rate
+                    <input name="rate" value="${escapeHtml(teacher.rate)}" required>
+                </label>
+                <div class="modal-actions">
+                    <button class="secondary-button" type="button" data-teacher-profile-edit-close>Cancel</button>
+                    <button class="primary-button" type="submit">Save Teaching Assignment</button>
+                </div>
+            </form>
+        `,
+        onSubmit: (formData, close) => {
+            const nextStudents = formData.get('students')?.toString().trim();
+            const nextToday = formData.get('today')?.toString().trim();
+            const nextRate = formData.get('rate')?.toString().trim();
+            if (nextStudents === '' || nextToday === '' || !nextRate) {
+                showSparkToast('Please complete all teaching assignment fields.');
+                return;
+            }
+
+            teacher.students = Math.max(0, Number.parseInt(nextStudents, 10) || 0);
+            teacher.today = Math.max(0, Number.parseInt(nextToday, 10) || 0);
+            teacher.rate = nextRate;
+            close();
+            refreshTeacherProfileEditTargets(teacher);
+            showSparkToast('Teaching assignment updated.');
+        },
+    });
 }
 
 function getEditableTeacherById(teacherId = selectedTeacherId) {
@@ -14076,24 +15537,48 @@ function openTeacherBankInformationEditor(teacherId = selectedTeacherId) {
     });
 }
 
-function editTeacherSupervisor() {
-    const teacher = getSelectedTeacher();
+function editTeacherSupervisor(teacherId = selectedTeacherId) {
+    const teacher = getEditableTeacherById(teacherId);
     if (!teacher) return;
+    selectedTeacherId = teacher.id;
 
     const currentSupervisor = getTeacherSupervisor(teacher);
-    const nextName = promptTeacherField('Assigned supervisor name', currentSupervisor.name);
-    if (!nextName) return;
-    const nextRole = promptTeacherField('Supervisor role', currentSupervisor.role);
-    if (!nextRole) return;
+    openTeacherProfileEditModal({
+        teacher,
+        title: 'Edit Assigned Supervisor',
+        formSelector: '[data-teacher-supervisor-form]',
+        formMarkup: `
+            <form class="teacher-profile-edit-form" data-teacher-supervisor-form>
+                <label>Supervisor Name
+                    <input name="name" value="${escapeHtml(currentSupervisor.name)}" required>
+                </label>
+                <label>Supervisor Role
+                    <input name="role" value="${escapeHtml(currentSupervisor.role)}" required>
+                </label>
+                <div class="modal-actions">
+                    <button class="secondary-button" type="button" data-teacher-profile-edit-close>Cancel</button>
+                    <button class="primary-button" type="submit">Save Supervisor</button>
+                </div>
+            </form>
+        `,
+        onSubmit: (formData, close) => {
+            const nextName = formData.get('name')?.toString().trim();
+            const nextRole = formData.get('role')?.toString().trim();
+            if (!nextName || !nextRole) {
+                showSparkToast('Please complete the assigned supervisor fields.');
+                return;
+            }
 
-    teacherPortalSupervisors[teacher.id] = {
-        ...currentSupervisor,
-        name: nextName,
-        role: nextRole,
-    };
-
-    refreshTeacherDetailAfterEdit(teacher);
-    showSparkToast('Assigned supervisor updated.');
+            teacherPortalSupervisors[teacher.id] = {
+                ...currentSupervisor,
+                name: nextName,
+                role: nextRole,
+            };
+            close();
+            refreshTeacherProfileEditTargets(teacher);
+            showSparkToast('Assigned supervisor updated.');
+        },
+    });
 }
 
 function openTeacherDetail(teacherId) {
@@ -16182,7 +17667,7 @@ function handleLessonAction(button) {
     const row = button.closest('tr');
 
     if (action === 'classroom') {
-        showSparkToast(`Secure classroom opened for ${topic}.`);
+        openAdminLessonClassroom(row, topic);
     } else if (action === 'recording') {
         showSparkToast(`Recording viewer opened for ${topic}.`);
     } else if (action === 'feedback') {
@@ -16210,6 +17695,11 @@ function attachLessonActionHandlers(scope = document) {
         select.replaceWith(freshSelect);
         freshSelect.addEventListener('change', () => handleLessonRowAction(freshSelect));
     });
+    scope.querySelectorAll('[data-admin-lesson-action]').forEach((button) => {
+        const freshButton = button.cloneNode(true);
+        button.replaceWith(freshButton);
+        freshButton.addEventListener('click', () => openAdminLessonAction(freshButton.closest('tr'), freshButton.dataset.lessonTopic || 'this lesson'));
+    });
     scope.querySelectorAll('[data-previous-lesson-view]').forEach((button) => {
         const freshButton = button.cloneNode(true);
         button.replaceWith(freshButton);
@@ -16219,6 +17709,144 @@ function attachLessonActionHandlers(scope = document) {
         const freshButton = button.cloneNode(true);
         button.replaceWith(freshButton);
         freshButton.addEventListener('click', () => openLessonFeedbackModal(freshButton.closest('tr'), freshButton.dataset.previousFeedbackView || 'Previous lesson'));
+    });
+}
+
+function getAdminLessonContext(row, topic) {
+    const selectedStudent = getSelectedStudent();
+    const teacherName = row?.querySelector('[data-student-lesson-teacher]')?.textContent?.trim() || selectedStudent.teacher;
+    const teacher = teachers.find((item) => item.name === teacherName) || getSelectedTeacher();
+    const status = row?.querySelector('[data-lesson-status]')?.textContent?.trim() || 'Scheduled';
+    const date = row?.children?.[0]?.textContent?.trim() || 'Scheduled date';
+    const duration = row?.children?.[3]?.textContent?.trim() || selectedStudent.schedule?.duration || '25 minutes';
+    const platform = selectedStudent.schedule?.platform || getTeacherMeetingSource(teacher)[0] || 'Classroom';
+    const meeting = getTeacherPortalMeetingDetails(teacher, platform);
+
+    return {
+        student: selectedStudent,
+        teacher,
+        topic,
+        status,
+        date,
+        duration,
+        platform,
+        meeting,
+    };
+}
+
+function openAdminLessonClassroom(row, topic) {
+    const context = getAdminLessonContext(row, topic);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop teacher-portal-modal-backdrop';
+    overlay.innerHTML = `
+        <div class="modal teacher-portal-modal teacher-classroom-modal" role="dialog" aria-modal="true">
+            <div class="modal-head">
+                <div>
+                    <p>ADMIN DASHBOARD · CLASSROOM ACCESS</p>
+                    <h3>${escapeHtml(context.topic)}</h3>
+                </div>
+                <button type="button" data-admin-classroom-close aria-label="Close">×</button>
+            </div>
+            <div class="teacher-portal-modal-body">
+                <div class="classroom-detail-hero">
+                    <div>
+                        <span>Student</span>
+                        <strong>${escapeHtml(context.student.name)}</strong>
+                        <small>${escapeHtml(context.student.id)} · Age ${escapeHtml(context.student.age || '—')} · ${escapeHtml(context.student.country)} · ${escapeHtml(context.student.level)}</small>
+                    </div>
+                    <div>
+                        <span>Lesson</span>
+                        <strong>${escapeHtml(context.date)}</strong>
+                        <small>${escapeHtml(context.duration)} · ${escapeHtml(context.status)}</small>
+                    </div>
+                </div>
+                <dl class="classroom-detail-list">
+                    <div><dt>Teacher</dt><dd>${escapeHtml(context.teacher.name)}</dd></div>
+                    <div><dt>Platform</dt><dd>${escapeHtml(context.platform)}</dd></div>
+                    <div><dt>Meeting ID / Link</dt><dd>${escapeHtml(context.meeting.display)}</dd></div>
+                    <div><dt>Admin Access</dt><dd>Allowed for class monitoring, support, and operations</dd></div>
+                </dl>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" type="button" data-admin-classroom-close>Close</button>
+                <button class="primary-button" type="button" data-admin-enter-classroom>Enter Video Meeting</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-admin-classroom-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('[data-admin-enter-classroom]')?.addEventListener('click', () => {
+        window.open(context.meeting.url, '_blank', 'noopener');
+        showSparkToast(`Admin classroom access opened for ${context.student.name}.`);
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
+    });
+}
+
+function openAdminLessonAction(row, topic) {
+    const context = getAdminLessonContext(row, topic);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-backdrop manager-followup-backdrop';
+    overlay.innerHTML = `
+        <section class="modal manager-followup-modal" role="dialog" aria-modal="true" aria-labelledby="adminLessonActionTitle">
+            <div class="modal-head">
+                <div>
+                    <p>ADMIN LESSON ACTION</p>
+                    <h3 id="adminLessonActionTitle">${escapeHtml(context.student.name)}</h3>
+                </div>
+                <button type="button" data-admin-action-close aria-label="Close">×</button>
+            </div>
+            <div class="manager-followup-body">
+                <div class="manager-followup-summary">
+                    <article><span>Lesson</span><strong>${escapeHtml(context.topic)}</strong><small>${escapeHtml(context.date)} · ${escapeHtml(context.duration)}</small></article>
+                    <article><span>Teacher</span><strong>${escapeHtml(context.teacher.name)}</strong><small>${escapeHtml(context.platform)} · ${escapeHtml(context.meeting.display)}</small></article>
+                    <article><span>Status</span><strong>${escapeHtml(context.status)}</strong><small>Admin can manage every manager action</small></article>
+                </div>
+                <form class="manager-followup-form" data-admin-lesson-action-form>
+                    <label>Action type
+                        <select data-admin-action-type>
+                            ${['Class reminder', 'Attendance check', 'Classroom link check', 'Teacher escalation', 'Student support', 'Mark completed', 'Student absent'].map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Priority
+                        <select data-admin-action-priority>
+                            ${['Normal', 'High', 'Urgent'].map((priority) => `<option value="${escapeHtml(priority)}">${escapeHtml(priority)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Owner
+                        <select data-admin-action-owner>
+                            ${['Admin', 'Manager', 'Teacher', 'Support Staff'].map((owner) => `<option value="${escapeHtml(owner)}">${escapeHtml(owner)}</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Due time
+                        <input type="time" data-admin-action-due value="18:00">
+                    </label>
+                    <label class="full">Admin note
+                        <textarea data-admin-action-note placeholder="Example: Verify classroom link and notify the teacher before class."></textarea>
+                    </label>
+                    <div class="manager-followup-checklist">
+                        <label><input type="checkbox" data-admin-action-student> Send reminder to student</label>
+                        <label><input type="checkbox" data-admin-action-teacher> Notify assigned teacher</label>
+                        <label><input type="checkbox" data-admin-action-log> Log as internal note only</label>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="secondary-button" type="button" data-admin-action-close>Cancel</button>
+                        <button class="primary-button" type="submit">Save Action</button>
+                    </div>
+                </form>
+            </div>
+        </section>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelectorAll('[data-admin-action-close]').forEach((button) => button.addEventListener('click', close));
+    overlay.querySelector('[data-admin-lesson-action-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        close();
+        showSparkToast(`Admin action saved for ${context.student.name}.`);
+    });
+    overlay.addEventListener('mousedown', (event) => {
+        if (event.target === overlay) close();
     });
 }
 
@@ -16847,7 +18475,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('teacherLinksPanelEdit')?.addEventListener('click', openTeacherLinksDrawer);
     document.getElementById('teacherInfoPanelEdit')?.addEventListener('click', editTeacherInformation);
-    document.getElementById('teacherAssignmentPanelEdit')?.addEventListener('click', editTeacherAssignment);
     document.getElementById('teacherSupervisorPanelEdit')?.addEventListener('click', editTeacherSupervisor);
     document.getElementById('teacherComputerPanelEdit')?.addEventListener('click', () => openTeacherComputerSpecsEditor());
     document.getElementById('teacherBankPanelEdit')?.addEventListener('click', () => openTeacherBankInformationEditor());
@@ -17213,7 +18840,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             submitButton.disabled = true;
             submitButton.textContent = 'Signing In...';
-            const data = await submitLogin(email.value.trim(), passwordInput.value, remember);
+            const data = await submitLogin(email.value.trim(), passwordInput.value, remember, 'dashboard');
             passwordInput.value = '';
             loadTeacherPayrollDeductions();
             showAuthenticatedDashboard(data.user);
@@ -17300,6 +18927,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('[data-manager-portal-target]').forEach((button) => {
         button.addEventListener('click', () => activateManagerPortal(button.dataset.managerPortalTarget));
+    });
+    document.getElementById('managerPortalContent')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-manager-profile-tab]');
+        if (!button) return;
+        activeManagerProfileTab = button.dataset.managerProfileTab || 'profile';
+        renderManagerPortal();
     });
 
     document.getElementById('mobileMenu')?.addEventListener('click', () => {
